@@ -1,0 +1,123 @@
+# Pre-commit configuration for Z2 Platform
+# Install with: pre-commit install
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: detect-private-key
+      - id: check-case-conflict
+
+  # Python formatting and linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.15
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # Python import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]
+
+  # Python type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.1
+    hooks:
+      - id: mypy
+        files: ^backend/
+        additional_dependencies: [types-all]
+        args: [--ignore-missing-imports]
+
+  # JavaScript/TypeScript formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: \.(js|jsx|ts|tsx|json|css|md|yml|yaml)$
+        exclude: ^(backend/|\.vscode/|node_modules/)
+
+  # JavaScript/TypeScript linting
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.57.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.57.0
+          - "@typescript-eslint/eslint-plugin@6.10.0"
+          - "@typescript-eslint/parser@6.10.0"
+          - "eslint-plugin-react@7.33.2"
+          - "eslint-plugin-react-hooks@4.6.0"
+          - "eslint-plugin-react-refresh@0.4.4"
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: ["-r", "backend/", "-f", "json", "-o", "bandit-report.json"]
+        files: ^backend/.*\.py$
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: ["--ignore", "DL3008", "--ignore", "DL3009"]
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [-c=.yamllint.yml]
+
+  # Commit message linting
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+      - id: commitizen-branch
+        stages: [push]
+
+# Global configuration
+default_language_version:
+  python: python3.11
+  node: 18.19.0
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+    \.git/|
+    \.github/|
+    \.vscode/|
+    node_modules/|
+    \.venv/|
+    venv/|
+    __pycache__/|
+    \.pytest_cache/|
+    \.mypy_cache/|
+    \.ruff_cache/|
+    dist/|
+    build/|
+    .*\.egg-info/|
+    coverage\.xml|
+    \.coverage|
+    htmlcov/|
+    \.DS_Store|
+    Thumbs\.db
+  )$

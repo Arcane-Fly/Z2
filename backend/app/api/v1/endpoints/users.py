@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
 
-
 router = APIRouter()
 
 
@@ -56,4 +55,6 @@ async def delete_user(
 ):
     """Delete user by ID."""
     # TODO: Implement user deletion
-    return {"message": f"Delete user {user_id} endpoint - TODO: Implement user deletion"}
+    return {
+        "message": f"Delete user {user_id} endpoint - TODO: Implement user deletion"
+    }

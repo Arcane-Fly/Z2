@@ -1,0 +1,48 @@
+# YAML Lint Configuration for Z2 Platform
+
+extends: default
+
+rules:
+  # Line length
+  line-length:
+    max: 120
+    level: warning
+
+  # Indentation
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+  # Comments
+  comments:
+    min-spaces-from-content: 1
+
+  # Document markers
+  document-start: disable
+  document-end: disable
+
+  # Truthy values
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+
+  # Empty values
+  empty-values:
+    forbid-in-block-mappings: true
+    forbid-in-flow-mappings: true
+
+  # Brackets
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  # Braces
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+ignore: |
+  .github/
+  node_modules/
+  .venv/
+  venv/

@@ -9,12 +9,13 @@ Changes to this file should be carefully reviewed to prevent model downgrades or
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set
 from enum import Enum
+from typing import Optional
 
 
 class ModelCapability(Enum):
     """Enumeration of model capabilities."""
+
     TEXT_GENERATION = "text_generation"
     VISION = "vision"
     AUDIO = "audio"
@@ -35,6 +36,7 @@ class ModelCapability(Enum):
 
 class ProviderType(Enum):
     """Enumeration of AI providers."""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     XAI = "xai"
@@ -43,11 +45,12 @@ class ProviderType(Enum):
 @dataclass
 class ModelSpec:
     """Complete specification for an AI model."""
+
     provider: ProviderType
     model_id: str
     name: str
     description: str
-    capabilities: Set[ModelCapability]
+    capabilities: set[ModelCapability]
     input_token_limit: int
     output_token_limit: int
     supports_streaming: bool = True
@@ -128,7 +131,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="January 31, 2025",
         model_card_url="https://platform.openai.com/docs/models/o3-mini",
     ),
-    
     # Flagship chat models
     "gpt-4.1": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -187,7 +189,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="2024",
         model_card_url="https://platform.openai.com/docs/models/chatgpt-4o-latest",
     ),
-    
     # Cost-optimized models
     "gpt-4.1-mini": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -227,7 +228,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="April 14, 2025",
         model_card_url="https://platform.openai.com/docs/models/gpt-4.1-nano",
     ),
-    
     # Deep research models
     "o3-deep-research": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -277,7 +277,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="June 26, 2025",
         model_card_url="https://platform.openai.com/docs/models/o4-mini-deep-research",
     ),
-    
     # Realtime models
     "gpt-4o-realtime-preview": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -311,7 +310,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="December 17, 2024",
         model_card_url="https://platform.openai.com/docs/models/gpt-4o-mini-realtime-preview",
     ),
-    
     # Image generation models
     "gpt-image-1": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -325,7 +323,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="2025",
         model_card_url="https://platform.openai.com/docs/models/gpt-image-1",
     ),
-    
     # Text-to-speech
     "gpt-4o-mini-tts": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -363,7 +360,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="2023",
         model_card_url="https://platform.openai.com/docs/models/tts-1-hd",
     ),
-    
     # Transcription
     "gpt-4o-transcribe": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -401,7 +397,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="2022",
         model_card_url="https://platform.openai.com/docs/models/whisper-1",
     ),
-    
     # Tool-specific models
     "gpt-4o-search-preview": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -463,7 +458,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="2025",
         model_card_url="https://platform.openai.com/docs/models/codex-mini-latest",
     ),
-    
     # Embeddings
     "text-embedding-3-small": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -501,7 +495,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="2022",
         model_card_url="https://platform.openai.com/docs/models/text-embedding-ada-002",
     ),
-    
     # Moderation
     "omni-moderation-latest": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -527,7 +520,6 @@ OPENAI_MODELS = {
         knowledge_cutoff="2023",
         model_card_url="https://platform.openai.com/docs/models/text-moderation-latest",
     ),
-    
     # Older GPT models
     "gpt-4-turbo": ModelSpec(
         provider=ProviderType.OPENAI,
@@ -654,7 +646,7 @@ XAI_MODELS = {
 }
 
 # Combined model registry
-ALL_MODELS: Dict[str, ModelSpec] = {
+ALL_MODELS: dict[str, ModelSpec] = {
     **OPENAI_MODELS,
     **ANTHROPIC_MODELS,
     **XAI_MODELS,
@@ -666,7 +658,7 @@ def get_model_by_id(model_id: str) -> Optional[ModelSpec]:
     return ALL_MODELS.get(model_id)
 
 
-def get_models_by_provider(provider: ProviderType) -> Dict[str, ModelSpec]:
+def get_models_by_provider(provider: ProviderType) -> dict[str, ModelSpec]:
     """Get all models for a specific provider."""
     return {
         model_id: spec
@@ -675,7 +667,7 @@ def get_models_by_provider(provider: ProviderType) -> Dict[str, ModelSpec]:
     }
 
 
-def get_models_by_capability(capability: ModelCapability) -> Dict[str, ModelSpec]:
+def get_models_by_capability(capability: ModelCapability) -> dict[str, ModelSpec]:
     """Get all models that support a specific capability."""
     return {
         model_id: spec
@@ -684,7 +676,7 @@ def get_models_by_capability(capability: ModelCapability) -> Dict[str, ModelSpec
     }
 
 
-def get_reasoning_models() -> Dict[str, ModelSpec]:
+def get_reasoning_models() -> dict[str, ModelSpec]:
     """Get all models optimized for reasoning tasks."""
     return {
         model_id: spec
@@ -693,16 +685,14 @@ def get_reasoning_models() -> Dict[str, ModelSpec]:
     }
 
 
-def get_multimodal_models() -> Dict[str, ModelSpec]:
+def get_multimodal_models() -> dict[str, ModelSpec]:
     """Get all multimodal models."""
     return {
-        model_id: spec
-        for model_id, spec in ALL_MODELS.items()
-        if spec.is_multimodal
+        model_id: spec for model_id, spec in ALL_MODELS.items() if spec.is_multimodal
     }
 
 
-def get_cost_efficient_models(max_input_cost: float = 1.0) -> Dict[str, ModelSpec]:
+def get_cost_efficient_models(max_input_cost: float = 1.0) -> dict[str, ModelSpec]:
     """Get models under a certain cost threshold per million input tokens."""
     return {
         model_id: spec
@@ -712,12 +702,14 @@ def get_cost_efficient_models(max_input_cost: float = 1.0) -> Dict[str, ModelSpe
     }
 
 
-def validate_model_support(model_id: str, required_capabilities: List[ModelCapability]) -> bool:
+def validate_model_support(
+    model_id: str, required_capabilities: list[ModelCapability]
+) -> bool:
     """Validate that a model supports all required capabilities."""
     spec = get_model_by_id(model_id)
     if not spec:
         return False
-    
+
     return all(capability in spec.capabilities for capability in required_capabilities)
 
 
@@ -743,7 +735,14 @@ DEFAULT_MODEL_ROUTING = {
 # Version lock to prevent model downgrades
 MODEL_REGISTRY_VERSION = "2025.01.25"
 MINIMUM_SUPPORTED_MODELS = {
-    "openai": ["gpt-4.1", "gpt-4.1-mini", "gpt-4o", "o4-mini", "o3", "o4-mini-deep-research-2025-06-26"],
+    "openai": [
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4o",
+        "o4-mini",
+        "o3",
+        "o4-mini-deep-research-2025-06-26",
+    ],
     "anthropic": ["claude-sonnet-4-20250514", "claude-3-7-sonnet-20250219"],
     "xai": ["grok-4-8789"],
 }
@@ -757,14 +756,14 @@ def validate_model_registry_integrity() -> bool:
     for provider, required_models in MINIMUM_SUPPORTED_MODELS.items():
         provider_enum = ProviderType(provider)
         provider_models = get_models_by_provider(provider_enum)
-        
+
         for required_model in required_models:
             if required_model not in provider_models:
                 raise ValueError(
                     f"CRITICAL: Required model '{required_model}' missing from "
                     f"provider '{provider}'. This would cause a production downgrade."
                 )
-    
+
     return True
 
 

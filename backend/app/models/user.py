@@ -26,18 +26,19 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     full_name: Mapped[Optional[str]] = mapped_column(String(255))
     hashed_password: Mapped[str] = mapped_column(String(255))
-    
+
     # User type and permissions
     user_type: Mapped[str] = mapped_column(
-        String(20), default="operator"  # "developer" or "operator"
+        String(20),
+        default="operator",  # "developer" or "operator"
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
-    
+
     # Profile information
     bio: Mapped[Optional[str]] = mapped_column(Text)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500))
-    
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

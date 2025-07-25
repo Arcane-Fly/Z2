@@ -2,7 +2,7 @@
 Database session and connection management for Z2.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -10,12 +10,12 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
-
 logger = structlog.get_logger(__name__)
 
 
 class Base(DeclarativeBase):
     """Base class for all database models."""
+
     pass
 
 
@@ -53,15 +53,17 @@ async def init_db() -> None:
     try:
         async with engine.begin() as conn:
             # Import all models here to ensure they are registered with SQLAlchemy
-            from app.models import user, agent, workflow  # noqa: F401
-            
+            from app.models import agent, user, workflow  # noqa: F401
+
             # Create all tables
             await conn.run_sync(Base.metadata.create_all)
-        
+
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error("Failed to create database tables", error=str(e))
         if settings.debug:
-            logger.warning("Database connection failed in debug mode, continuing without database")
+            logger.warning(
+                "Database connection failed in debug mode, continuing without database"
+            )
         else:
             raise

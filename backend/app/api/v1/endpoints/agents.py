@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
 
-
 router = APIRouter()
 
 
@@ -36,7 +35,9 @@ async def get_agent(
 ):
     """Get agent by ID."""
     # TODO: Implement agent retrieval with full configuration
-    return {"message": f"Get agent {agent_id} endpoint - TODO: Implement agent retrieval"}
+    return {
+        "message": f"Get agent {agent_id} endpoint - TODO: Implement agent retrieval"
+    }
 
 
 @router.put("/{agent_id}")
@@ -46,7 +47,9 @@ async def update_agent(
 ):
     """Update agent configuration."""
     # TODO: Implement agent update
-    return {"message": f"Update agent {agent_id} endpoint - TODO: Implement agent update"}
+    return {
+        "message": f"Update agent {agent_id} endpoint - TODO: Implement agent update"
+    }
 
 
 @router.delete("/{agent_id}")
@@ -56,7 +59,9 @@ async def delete_agent(
 ):
     """Delete agent by ID."""
     # TODO: Implement agent deletion
-    return {"message": f"Delete agent {agent_id} endpoint - TODO: Implement agent deletion"}
+    return {
+        "message": f"Delete agent {agent_id} endpoint - TODO: Implement agent deletion"
+    }
 
 
 @router.post("/{agent_id}/execute")
@@ -66,7 +71,9 @@ async def execute_agent_task(
 ):
     """Execute a task with the specified agent."""
     # TODO: Implement single agent task execution
-    return {"message": f"Execute task with agent {agent_id} - TODO: Implement execution"}
+    return {
+        "message": f"Execute task with agent {agent_id} - TODO: Implement execution"
+    }
 
 
 @router.get("/{agent_id}/status")
@@ -76,4 +83,6 @@ async def get_agent_status(
 ):
     """Get current agent status and performance metrics."""
     # TODO: Implement agent status retrieval
-    return {"message": f"Get agent {agent_id} status - TODO: Implement status retrieval"}
+    return {
+        "message": f"Get agent {agent_id} status - TODO: Implement status retrieval"
+    }

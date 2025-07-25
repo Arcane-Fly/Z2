@@ -71,7 +71,9 @@ class Settings(BaseSettings):
         default=None, description="Perplexity API key"
     )
     xai_api_key: Optional[str] = Field(default=None, description="xAI API key")
-    moonshot_api_key: Optional[str] = Field(default=None, description="Moonshot AI API key")
+    moonshot_api_key: Optional[str] = Field(
+        default=None, description="Moonshot AI API key"
+    )
     qwen_api_key: Optional[str] = Field(default=None, description="Qwen API key")
 
     # LLM Configuration
@@ -79,19 +81,23 @@ class Settings(BaseSettings):
         default="openai/gpt-4o-mini", description="Default LLM model"
     )
     reasoning_model: str = Field(
-        default="openai/o3-mini", description="Default reasoning model for complex tasks"
+        default="openai/o3-mini",
+        description="Default reasoning model for complex tasks",
     )
     advanced_model: str = Field(
-        default="anthropic/claude-sonnet-4", description="Advanced model for complex analysis"
+        default="anthropic/claude-sonnet-4",
+        description="Advanced model for complex analysis",
     )
     fast_model: str = Field(
         default="groq/llama-3.1-70b", description="Fast model for quick responses"
     )
     multimodal_model: str = Field(
-        default="google/gemini-2.5-flash", description="Multimodal model for vision/audio tasks"
+        default="google/gemini-2.5-flash",
+        description="Multimodal model for vision/audio tasks",
     )
     embedding_model: str = Field(
-        default="openai/text-embedding-3-small", description="Embedding model for vector operations"
+        default="openai/text-embedding-3-small",
+        description="Embedding model for vector operations",
     )
     max_tokens: int = Field(default=4096, description="Maximum tokens per request")
     temperature: float = Field(default=0.7, description="Default temperature")
@@ -156,7 +162,7 @@ class Settings(BaseSettings):
         return self.database_url.replace("postgresql+asyncpg://", "postgresql://")
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached application settings."""
     return Settings()
