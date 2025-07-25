@@ -59,6 +59,14 @@ class AuditLog(BaseModel):
     details: Optional[Dict] = None
 
 
+class AccessCheckRequest(BaseModel):
+    """Request to check access to a resource or tool."""
+    user_id: str
+    resource_type: str
+    resource_name: str
+    permissions: List[str]
+
+
 # In-memory storage (TODO: Move to Redis/Database)
 consent_requests: Dict[str, ConsentRequest] = {}
 consent_responses: Dict[str, ConsentResponse] = {}
@@ -289,29 +297,26 @@ async def get_consent_status(
 
 @router.post("/access/check")
 async def check_access(
-    user_id: str,
-    resource_type: str,
-    resource_name: str,
-    permissions: List[str],
+    request: AccessCheckRequest,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Check if user has access to a resource or tool."""
     # Check access policy
-    policy_key = f"{resource_type}:{resource_name}"
+    policy_key = f"{request.resource_type}:{request.resource_name}"
     policy = access_policies.get(policy_key)
     
     if not policy:
         create_audit_log(
-            user_id=user_id,
+            user_id=request.user_id,
             action="error",
-            resource_type=resource_type,
-            resource_name=resource_name,
+            resource_type=request.resource_type,
+            resource_name=request.resource_name,
             details={"error": "No access policy found"}
         )
         return {"allowed": False, "reason": "No access policy defined"}
     
     # Check required permissions
-    missing_permissions = set(policy.required_permissions) - set(permissions)
+    missing_permissions = set(policy.required_permissions) - set(request.permissions)
     if missing_permissions:
         return {
             "allowed": False,
@@ -319,7 +324,7 @@ async def check_access(
         }
     
     # Check user consents
-    user_consents = user_sessions.get(user_id, set())
+    user_consents = user_sessions.get(request.user_id, set())
     valid_consent = False
     
     for consent_id in user_consents:
@@ -329,10 +334,10 @@ async def check_access(
                 expires_at = datetime.fromisoformat(consent.expires_at)
                 if datetime.utcnow() <= expires_at:
                     # Check if this consent covers the requested resource
-                    request = consent_requests.get(consent_id)
-                    if (request and 
-                        request.resource_type == resource_type and
-                        request.resource_name == resource_name):
+                    request_data = consent_requests.get(consent_id)
+                    if (request_data and 
+                        request_data.resource_type == request.resource_type and
+                        request_data.resource_name == request.resource_name):
                         valid_consent = True
                         break
     
@@ -345,11 +350,11 @@ async def check_access(
         pass
     
     create_audit_log(
-        user_id=user_id,
+        user_id=request.user_id,
         action="access",
-        resource_type=resource_type,
-        resource_name=resource_name,
-        details={"permissions": permissions}
+        resource_type=request.resource_type,
+        resource_name=request.resource_name,
+        details={"permissions": request.permissions}
     )
     
     return {"allowed": True, "reason": "Access granted"}
