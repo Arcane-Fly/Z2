@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = Field(default=False, description="Enable debug mode")
     log_level: str = Field(default="INFO", description="Logging level")
-    port: int = Field(default=3000, description="Server port")
+    port: int = Field(default=8000, description="Server port")
     host: str = Field(default="0.0.0.0", description="Server host")
 
     # API Settings

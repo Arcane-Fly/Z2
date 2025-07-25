@@ -1,0 +1,137 @@
+{
+  "agent": {
+    "name": "Z2 AI Workforce Platform",
+    "version": "1.0.0",
+    "description": "Dynamic Multi-Agent Orchestration Platform for AI Workforce Management",
+    "author": "Z2 Team",
+    "capabilities": [
+      "reasoning",
+      "analysis", 
+      "code-generation",
+      "workflow-orchestration",
+      "multi-agent-coordination",
+      "dynamic-skill-adaptation",
+      "real-time-collaboration"
+    ],
+    "protocols": {
+      "a2a": {
+        "version": "1.0.0",
+        "endpoints": {
+          "handshake": "/api/v1/a2a/handshake",
+          "negotiate": "/api/v1/a2a/negotiate", 
+          "communicate": "/api/v1/a2a/communicate",
+          "streaming": "/api/v1/a2a/stream"
+        },
+        "supported_formats": [
+          "json-rpc",
+          "sse",
+          "websocket"
+        ],
+        "features": [
+          "skill-negotiation",
+          "task-delegation",
+          "state-synchronization",
+          "error-recovery"
+        ]
+      },
+      "mcp": {
+        "version": "2025-03-26",
+        "endpoints": {
+          "initialize": "/api/v1/mcp/initialize",
+          "tools": "/api/v1/mcp/tools",
+          "resources": "/api/v1/mcp/resources", 
+          "prompts": "/api/v1/mcp/prompts"
+        },
+        "supported_transports": [
+          "http",
+          "websocket"
+        ],
+        "features": [
+          "tool-discovery",
+          "resource-management",
+          "prompt-templates",
+          "session-management"
+        ]
+      }
+    },
+    "skills": [
+      {
+        "name": "workflow-orchestration",
+        "description": "Orchestrate complex multi-agent workflows",
+        "input_types": ["text", "json"],
+        "output_types": ["text", "json", "structured-data"],
+        "parameters": {
+          "max_agents": 10,
+          "timeout_seconds": 300,
+          "retry_count": 3
+        }
+      },
+      {
+        "name": "dynamic-reasoning",
+        "description": "Advanced reasoning and problem-solving capabilities",
+        "input_types": ["text", "json"],
+        "output_types": ["text", "json", "analysis"],
+        "parameters": {
+          "reasoning_depth": ["shallow", "deep", "comprehensive"],
+          "output_format": ["text", "structured", "visual"]
+        }
+      },
+      {
+        "name": "code-generation",
+        "description": "Generate, review, and optimize code across multiple languages",
+        "input_types": ["text", "code"],
+        "output_types": ["code", "documentation", "tests"],
+        "parameters": {
+          "languages": ["python", "typescript", "javascript", "rust", "go"],
+          "frameworks": ["fastapi", "react", "vue", "django", "flask"],
+          "quality_level": ["draft", "production", "enterprise"]
+        }
+      },
+      {
+        "name": "data-analysis",
+        "description": "Analyze and process structured and unstructured data",
+        "input_types": ["csv", "json", "text", "images"],
+        "output_types": ["insights", "visualizations", "reports"],
+        "parameters": {
+          "analysis_type": ["descriptive", "predictive", "prescriptive"],
+          "output_format": ["text", "charts", "tables", "json"]
+        }
+      }
+    ],
+    "interfaces": {
+      "api": {
+        "base_url": "${RAILWAY_PUBLIC_DOMAIN:-http://localhost:8000}",
+        "documentation": "/docs",
+        "health_check": "/health"
+      },
+      "websocket": {
+        "endpoint": "/ws",
+        "protocols": ["a2a", "mcp", "streaming"]
+      }
+    },
+    "authentication": {
+      "methods": ["jwt", "oauth2"],
+      "required": true,
+      "endpoints": {
+        "login": "/api/v1/auth/login",
+        "refresh": "/api/v1/auth/refresh",
+        "logout": "/api/v1/auth/logout"
+      }
+    },
+    "metadata": {
+      "created": "2025-01-01T00:00:00Z",
+      "updated": "2025-01-31T00:00:00Z",
+      "license": "proprietary",
+      "contact": {
+        "email": "support@z2.ai",
+        "documentation": "https://docs.z2.ai",
+        "support": "https://support.z2.ai"
+      },
+      "deployment": {
+        "environment": "${NODE_ENV:-development}",
+        "region": "global",
+        "availability": "24/7"
+      }
+    }
+  }
+}

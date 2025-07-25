@@ -15,6 +15,7 @@ services:
     variables:
       PYTHON_VERSION: 3.11
       POETRY_VERSION: 1.6.1
+      PORT: ${{PORT}}
     domains:
       - z2-api.railway.app
     
@@ -60,7 +61,9 @@ environments:
       LOG_LEVEL: INFO
       DATABASE_URL: ${{Postgres.DATABASE_URL}}
       REDIS_URL: ${{Redis.REDIS_URL}}
+      PORT: ${{PORT}}
       
       # Frontend
-      VITE_API_BASE_URL: https://z2-api.railway.app
+      VITE_API_BASE_URL: https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
       VITE_ENABLE_DEBUG: false
+      VITE_WS_BASE_URL: wss://${{backend.RAILWAY_PUBLIC_DOMAIN}}
