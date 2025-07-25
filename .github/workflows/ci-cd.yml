@@ -1,0 +1,243 @@
+name: Z2 Platform CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Backend Tests and Linting
+  backend-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: z2_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Cache Poetry dependencies
+      uses: actions/cache@v3
+      with:
+        path: backend/.venv
+        key: poetry-${{ runner.os }}-${{ hashFiles('backend/poetry.lock') }}
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: poetry install
+
+    - name: Lint with Ruff
+      working-directory: ./backend
+      run: poetry run ruff check .
+
+    - name: Format check with Ruff
+      working-directory: ./backend
+      run: poetry run ruff format --check .
+
+    - name: Type check with MyPy
+      working-directory: ./backend
+      run: poetry run mypy app/
+
+    - name: Run tests
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/z2_test
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: true
+      run: poetry run pytest --cov=app --cov-report=xml --cov-report=html
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+  # Frontend Tests and Linting
+  frontend-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Lint with ESLint
+      working-directory: ./frontend
+      run: npm run lint
+
+    - name: Format check with Prettier
+      working-directory: ./frontend
+      run: npm run format:check
+
+    - name: Type check
+      working-directory: ./frontend
+      run: npm run type-check
+
+    - name: Build application
+      working-directory: ./frontend
+      run: npm run build
+
+    - name: Run tests (if any)
+      working-directory: ./frontend
+      run: |
+        if [ -f "package.json" ] && grep -q '"test"' package.json; then
+          npm test
+        else
+          echo "No tests configured"
+        fi
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Python security check with Safety
+      working-directory: ./backend
+      run: |
+        pip install safety
+        safety check --file requirements.txt || true
+
+  # Build and Test Docker Images
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build backend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.backend
+        push: false
+        tags: z2-backend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build frontend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.frontend
+        push: false
+        tags: z2-frontend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Deploy to Railway (only on main branch)
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test, docker-build, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+
+    - name: Deploy to Railway
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        if [ -n "$RAILWAY_TOKEN" ]; then
+          railway login --token $RAILWAY_TOKEN
+          railway deploy
+        else
+          echo "Railway token not configured, skipping deployment"
+        fi
+
+  # Notify on completion
+  notify:
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test, security-scan, docker-build]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: ${{ needs.backend-test.result == 'success' && needs.frontend-test.result == 'success' }}
+      run: echo "✅ All checks passed successfully!"
+    
+    - name: Notify failure
+      if: ${{ needs.backend-test.result == 'failure' || needs.frontend-test.result == 'failure' }}
+      run: |
+        echo "❌ Some checks failed:"
+        echo "Backend: ${{ needs.backend-test.result }}"
+        echo "Frontend: ${{ needs.frontend-test.result }}"
+        echo "Security: ${{ needs.security-scan.result }}"
+        echo "Docker: ${{ needs.docker-build.result }}"

@@ -19,6 +19,16 @@ Z2 is a next-generation AI platform that delivers dynamic, goal-oriented artific
 - **Dynamic Model Routing**: Intelligent selection of optimal models based on task requirements
 - **Cost Optimization**: Hybrid strategies balancing performance and economic efficiency
 
+### A2A Protocol Support
+- **Agent-to-Agent Communication**: Standards-compliant A2A protocol implementation
+- **Skill Negotiation**: Dynamic skill discovery and task delegation between agents
+- **Real-time Streaming**: WebSocket-based communication for live collaboration
+
+### MCP Protocol Integration
+- **Model Context Protocol**: Full MCP server and client implementation
+- **Tool Discovery**: Expose and discover AI tools across the platform
+- **Resource Management**: Structured access to data and computational resources
+
 ## 👥 Dual User Experience
 
 ### For Developers ("Architects")
@@ -108,6 +118,35 @@ Z2 follows a modular, cloud-native architecture designed for enterprise-scale de
    cp .env.example .env
    # Edit .env with your API keys and configuration
    ```
+
+### Railway Deployment
+
+Z2 is optimized for one-click deployment on Railway.com:
+
+1. **Connect to Railway**
+   ```bash
+   npm install -g @railway/cli
+   railway login
+   railway link
+   ```
+
+2. **Deploy services**
+   ```bash
+   railway up
+   ```
+
+3. **Set environment variables**
+   ```bash
+   railway variables set OPENAI_API_KEY=your-key
+   railway variables set ANTHROPIC_API_KEY=your-key
+   # Add other required API keys
+   ```
+
+The `railway.toml` configuration automatically sets up:
+- Backend API service with PostgreSQL and Redis
+- Frontend static site with optimized builds
+- Environment-specific configurations
+- Health checks and monitoring
 
 See [Setup Guide](docs/setup.md) for detailed installation instructions.
 

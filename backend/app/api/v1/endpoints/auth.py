@@ -2,12 +2,11 @@
 Authentication endpoints for Z2 API.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.session import get_db
-
 
 router = APIRouter()
 security = HTTPBearer()
