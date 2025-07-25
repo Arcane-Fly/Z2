@@ -44,6 +44,29 @@ class TestContextualMemory:
         
         expected = {"task": "analysis", "status": "in_progress", "priority": "high"}
         assert memory.short_term == expected
+    
+    def test_compress_to_summary(self):
+        """Test context compression functionality."""
+        memory = ContextualMemory(
+            short_term={
+                "task1": "completed", 
+                "task2": "in_progress",
+                "task3": "pending",
+                "user_name": "Alice",
+                "session_id": "123"
+            },
+            long_term={},
+            summary={}
+        )
+        
+        memory.compress_to_summary()
+        
+        # Short-term should be cleared
+        assert memory.short_term == {}
+        
+        # Summary should contain compressed context
+        assert "recent_context" in memory.summary
+        assert len(memory.summary["recent_context"]) > 0
 
 
 class TestPromptTemplate:
