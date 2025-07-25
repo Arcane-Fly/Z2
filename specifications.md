@@ -22,15 +22,30 @@ This document defines the preferred technologies, frameworks, and services for b
 
 ## Language Model Integration
 
-*   **Primary LLM Provider:** OpenAI (GPT-4.1 series)
-    *   For complex reasoning, adaptability, and dynamic prompt generation.
-*   **Cost-Effective/High-Volume Tasks:** Groq (Llama 3.3 70B) or OpenAI (GPT-4.1-mini)
-    *   Groq for ultra-fast inference where speed is critical. GPT-4.1-mini for balance of cost/speed/performance.
+*   **Primary LLM Provider:** OpenAI (Latest Models)
+    *   **GPT-4o series:** `gpt-4o`, `gpt-4o-mini` for multimodal workflows with text, audio, image, and video
+    *   **o-series reasoning models:** `o1`, `o1-mini`, `o3-mini` for complex problem-solving and STEM tasks
+    *   **Embedding models:** `text-embedding-3-small` for semantic search and RAG
+    *   **Multimodal generation:** `dall-e-3` for image generation, `whisper-1` for speech-to-text, `tts-1`/`tts-1-hd` for text-to-speech
+*   **Advanced Reasoning Provider:** Anthropic Claude (Latest Models)
+    *   **Claude 4 series:** `claude-opus-4`, `claude-sonnet-4` for superior reasoning and vision capabilities
+    *   **Claude 3.7 series:** `claude-3-7-sonnet` with toggleable extended thinking
+    *   **Claude 3.5 series:** `claude-3-5-sonnet`, `claude-3-5-haiku` for high-performance and fast processing
+*   **Fast Inference Provider:** Groq (Hardware-Accelerated LLMs)
+    *   **Llama models:** Llama 3.1 405B, 70B, 8B for ultra-fast inference
+    *   **Other models:** Mixtral 8x7B, Gemma 2 9B, Gemma 7B
+*   **Multimodal Provider:** Google AI (Gemini 2.5 & 2.0 series)
+    *   **Gemini 2.5:** `gemini-2.5-pro`, `gemini-2.5-flash` with 2M+ token context
+    *   **Gemini 2.0:** `gemini-2.0-flash` with tool use and code execution
+    *   **Specialized models:** `imagen-4` for image generation, `veo-3-preview` for video generation
+*   **Real-time Conversational Provider:** xAI Grok
+    *   **Grok 4:** `grok-4-latest` for advanced reasoning and X platform integration
+    *   **Grok 3 series:** `grok-3`, `grok-3-mini`, `grok-3-fast` with function calling
 *   **Specialized Tasks:**
-    *   **Real-time Search/Citations:** Perplexity AI (`llama-3.1-sonar-large-128k-online`)
-    *   **Safety/Complex Analysis:** Anthropic Claude 3.5 Sonnet
-    *   **Multimodal (if needed):** Google Gemini 2.5 Flash/Pro
-*   **API Abstraction:** Standardized SDKs (`openai`, `groq`, `anthropic`, `google-genai`, `perplexityai`) for direct integration. Potentially use a unified interface layer.
+    *   **Real-time Search/Citations:** Perplexity AI with real-time web search capabilities
+    *   **Chinese Language Optimization:** Qwen models (`qwen2.5`, `qwen-vl`, `qwen-audio`, `codeqwen`)
+    *   **Web Integration:** Moonshot AI Kimi models with web search capabilities
+*   **API Abstraction:** Standardized SDKs (`openai`, `anthropic`, `groq`, `google-genai`, `perplexityai`) with unified interface layer for seamless provider switching and cost optimization.
 
 ## Data Management
 
@@ -179,7 +194,7 @@ This document outlines the core principles and practices for developing Z2, focu
 *   **Asynchronous Operations:** Leverage FastAPI's async capabilities and concurrent processing for I/O-bound tasks (like LLM calls) to improve responsiveness.
 *   **Efficient Prompting:** Use shorter, structured prompts where possible (like Cluely) for cost/latency efficiency without sacrificing quality. Employ techniques like Few-Shot learning contextually.
 *   **Caching:** Implement intelligent caching (e.g., Redis) for expensive computations or frequent LLM responses that are unlikely to change rapidly.
-*   **Model Selection:** Dynamically choose models based on task complexity/cost requirements (e.g., GPT-4.1-mini for simple tasks, Claude 3.5 Sonnet for complex analysis).
+*   **Model Selection:** Dynamically choose models based on task complexity/cost requirements (e.g., GPT-4o-mini for simple tasks, Claude 4 Sonnet for complex analysis, o3-mini for STEM reasoning).
 
 ## Security
 
