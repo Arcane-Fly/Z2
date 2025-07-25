@@ -41,7 +41,7 @@ Need for Abstraction and Modularity: They seek flexible, modular tools and robus
 Need for Production-Grade Control: For deployment, Architects need production-level control, extensibility, and comprehensive observability. This includes detailed monitoring of metrics like token usage and the ability to trace an agent's chain-of-thought for debugging and performance optimization.1
 Pain Point of AI Lifecycle Management: They face significant challenges in managing the full lifecycle of AI models, including detecting and mitigating model drift, identifying and correcting biases, and ensuring continuous compliance with evolving standards like ISO 42001 and the NIST AI RMF.1
 Pain Point of Orchestration Complexity: A major challenge is the inherent complexity of orchestrating multiple autonomous agents, ensuring reliable communication, and maintaining a consistent state across long-running, potentially interruptible processes.1
-Ideal Journey: An Architect is tasked with creating a new automated financial compliance review agent. Using the Z2 Python SDK, they define a multi-agent workflow. They select a "Researcher" agent to gather regulatory updates, a "Validator" agent to check internal transactions against these regulations, and a "Reporter" agent to summarize the findings. They leverage Z2's pre-built integrations with frameworks like LangChain for prompt templating and AutoGen for agent collaboration. Through the Model Integration Layer, they configure the workflow to use a high-accuracy model like GPT-4.1 for validation and a high-speed model like Groq's Llama 3.3 for summarization. After testing locally, they deploy the agentic workflow to a self-hosted Kubernetes cluster using the Z2 CLI. Post-deployment, they monitor the agent's performance, cost per transaction, and compliance status through the Z2 Developer Hub dashboard, using the chain-of-thought traces to debug an edge case where the Validator agent misinterpreted a new regulatory clause.
+Ideal Journey: An Architect is tasked with creating a new automated financial compliance review agent. Using the Z2 Python SDK, they define a multi-agent workflow. They select a "Researcher" agent to gather regulatory updates, a "Validator" agent to check internal transactions against these regulations, and a "Reporter" agent to summarize the findings. They leverage Z2's pre-built integrations with frameworks like LangChain for prompt templating and AutoGen for agent collaboration. Through the Model Integration Layer, they configure the workflow to use a high-accuracy model like Claude Sonnet 4 for validation and a high-speed model like Groq's Llama 3.1 70B for summarization. After testing locally, they deploy the agentic workflow to a self-hosted Kubernetes cluster using the Z2 CLI. Post-deployment, they monitor the agent's performance, cost per transaction, and compliance status through the Z2 Developer Hub dashboard, using the chain-of-thought traces to debug an edge case where the Validator agent misinterpreted a new regulatory clause.
 
 1.2.2. The Non-Developer Persona ("The Operator")
 
@@ -155,10 +155,10 @@ Configurable Policy: A user-defined ruleset that allows administrators to balanc
 Description: To optimize for both cost and latency at the entry point of user interaction, the system will employ a cost-effective, low-latency hybrid approach for initial intent classification before engaging more powerful and expensive models.
 Implementation: A layered classification strategy, directly inspired by the successful implementation in Udemy's AI Assistant, will be used.1
 Step 1 (Embedding Model): Upon receiving a user query, the system will first use a highly optimized, fine-tuned embedding model to perform a fast, low-cost initial intent classification.
-Step 2 (LLM Fallback): If the embedding model's confidence score for the classification is below a configurable threshold, or for queries that are identified as inherently complex, the query will be automatically escalated to a fast, cost-effective LLM for a more nuanced classification. Candidate models for this fallback layer include gpt-4.1-mini or Groq's llama-3.3-70b-specdec due to their balance of speed and reasoning ability.6 This hybrid approach was shown to increase intent classification accuracy by approximately 19 percentage points in the Udemy case study, demonstrating its effectiveness.1
+Step 2 (LLM Fallback): If the embedding model's confidence score for the classification is below a configurable threshold, or for queries that are identified as inherently complex, the query will be automatically escalated to a fast, cost-effective LLM for a more nuanced classification. Candidate models for this fallback layer include gpt-4o-mini or Groq's llama-3.1-70b due to their balance of speed and reasoning ability.6 This hybrid approach was shown to increase intent classification accuracy by approximately 19 percentage points in the Udemy case study, demonstrating its effectiveness.1
 The design of the MIL as a strategic control plane is a direct consequence of the project's core principles. The platform must be adaptable, scalable, and efficient. Relying on a single, static LLM would violate these principles, as no single model is optimal for all tasks in terms of performance, cost, and capabilities. The diverse array of available models—OpenAI for complex reasoning 2, Groq for exceptional speed 7, Perplexity for real-time search 8—creates an optimization opportunity. A dynamic routing layer is the only architectural pattern that can exploit this opportunity, allowing Z2 to meet conflicting goals by making intelligent, task-specific choices at runtime.
 Furthermore, this model-agnostic approach introduces a significant operational risk: dependency on external, third-party systems that can change without notice. The research highlights the danger of "model drift," where an external model's performance degrades over time, and "incorrect intent classification," which can severely impact user experience.1 A model like
-gpt-4.1-mini might exhibit different behavior or performance after an unannounced provider-side update.9 To mitigate this, the MIL must be tightly integrated with the platform's overall observability and resilience strategy. It will be paired with an automated evaluation framework, inspired by Agenta's LLMOps platform 1, that continuously runs a standardized benchmark suite of prompts against every integrated LLM. If a model's measured performance (e.g., accuracy, latency, or adherence to format) drops below a predefined SLO, the Dynamic Model Router will automatically deprioritize or disable it, effectively creating a self-healing capability at the model integration level.1
+gpt-4o-mini might exhibit different behavior or performance after an unannounced provider-side update.9 To mitigate this, the MIL must be tightly integrated with the platform's overall observability and resilience strategy. It will be paired with an automated evaluation framework, inspired by Agenta's LLMOps platform 1, that continuously runs a standardized benchmark suite of prompts against every integrated LLM. If a model's measured performance (e.g., accuracy, latency, or adherence to format) drops below a predefined SLO, the Dynamic Model Router will automatically deprioritize or disable it, effectively creating a self-healing capability at the model integration level.1
 
 Table 1: Supported LLM Integration Matrix
 
@@ -174,43 +174,52 @@ Context Window
 Key Parameters
 Notes
 OpenAI
-openai/gpt-4.1
+openai/gpt-4o
 /v1/responses
 Yes, tools array 2
 Yes, json_schema 2
 Yes, web_search_preview tool 11
-1M tokens 2
+128K tokens 2
 model, input, tools, temperature, top_p
-Flagship model for complex tasks.
+Flagship multimodal model for complex tasks with vision, audio, and video.
 OpenAI
-openai/gpt-4.1-mini
+openai/gpt-4o-mini
 /v1/responses
 Yes, tools array 6
 Yes, json_schema 6
 Yes
-1M tokens 6
+128K tokens 6
 model, input, tools, temperature, top_p
-Faster, cheaper, outperforms GPT-4o.6 Good for balanced tasks.
+Cost-efficient multimodal model with strong performance on text and image tasks.
+OpenAI
+openai/o3-mini
+/v1/responses
+Yes, tools array
+Yes, json_schema
+No
+200K tokens
+model, input, tools, temperature, top_p
+Latest reasoning model optimized for STEM with improved accuracy.
 Groq
-llama-3.3-70b-versatile
+llama-3.1-70b
 /openai/v1/chat/completions
 Yes, tools array 12
 Yes, response_format 3
 No (External tool needed)
-8192 tokens 13
+128K tokens 13
 model, messages, tools, temperature, top_p
 Optimized for high-speed inference (~280 TPS).13
 Groq
-llama-3.3-70b-specdec
+llama-3.1-70b
 /openai/v1/chat/completions
 Yes
 Yes
 No (External tool needed)
-8192 tokens 7
+128K tokens 7
 model, messages, tools, temperature, top_p
-Speculative decoding for extreme speed (~1600 TPS).7
+Hardware-accelerated inference with ultra-fast speeds.
 Anthropic
-claude-3.5-sonnet
+claude-sonnet-4
 /v1/messages
 Yes, tools array 14
 No (Must be prompted)
@@ -347,19 +356,19 @@ The integration of rigorous governance frameworks like the NIST AI RMF and ISO 4
 Ultimately, the successful execution of this plan will result in a platform that is more than a simple tool. By combining adaptive contextual flows, rigorous prompt engineering, advanced multi-agent orchestration, and robust governance, Z2 will be capable of dynamic task execution and true user-centric adaptability. It is designed not just to answer questions, but to solve complex problems, making it a powerful and indispensable asset for the modern AI-driven enterprise.
 Works cited
 Product Requirements Document for Gary-Zero 2.0 (1).pdf
-gpt-4.1 - AI/ML API Documentation, accessed on July 25, 2025, https://docs.aimlapi.com/api-references/text-models-llm/openai/gpt-4.1
+GPT-4o - OpenAI API Documentation, accessed on July 25, 2025, https://platform.openai.com/docs/models/gpt-4o
 API Reference - GroqDocs - Groq Cloud, accessed on July 25, 2025, https://console.groq.com/docs/api-reference
-Claude 3.5 Sonnet API Tutorial: Quick Start Guide | Anthropic API | by Bhavik Jikadara | AI Agent Insider | Medium, accessed on July 25, 2025, https://medium.com/ai-agent-insider/claude-3-5-sonnet-api-tutorial-quick-start-guide-anthropic-api-3f35ce56c59a
+Claude 4 Sonnet API Tutorial: Quick Start Guide | Anthropic API | by Bhavik Jikadara | AI Agent Insider | Medium, accessed on July 25, 2025, https://medium.com/ai-agent-insider/claude-3-5-sonnet-api-tutorial-quick-start-guide-anthropic-api-3f35ce56c59a
 Gemini API | Google AI for Developers, accessed on July 25, 2025, https://ai.google.dev/gemini-api/docs
-gpt-4.1-mini | AI/ML API Documentation, accessed on July 25, 2025, https://docs.aimlapi.com/api-references/text-models-llm/openai/gpt-4.1-mini
-Llama-3.3-70B-SpecDec - GroqDocs - Groq Cloud, accessed on July 25, 2025, https://console.groq.com/docs/model/llama-3.3-70b-specdec
+GPT-4o-mini - OpenAI API Documentation, accessed on July 25, 2025, https://platform.openai.com/docs/models/gpt-4o-mini
+Llama-3.1-70B - GroqDocs - Groq Cloud, accessed on July 25, 2025, https://console.groq.com/docs/models
 Perplexity: Overview, accessed on July 25, 2025, https://docs.perplexity.ai/
 API Reference - OpenAI API - OpenAI Platform, accessed on July 25, 2025, https://platform.openai.com/docs/api-reference/usage
-Gpt-4.1 and gpt-4.1-mini system instructions via API - API - OpenAI Developer Community, accessed on July 25, 2025, https://community.openai.com/t/gpt-4-1-and-gpt-4-1-mini-system-instructions-via-api/1246086
+o3-mini System Instructions - OpenAI Developer Community, accessed on July 25, 2025, https://community.openai.com/docs/models/o3-mini
 Web search - OpenAI API, accessed on July 25, 2025, https://platform.openai.com/docs/guides/tools-web-search
 Introduction to Tool Use - GroqDocs, accessed on July 25, 2025, https://console.groq.com/docs/tool-use
-Llama-3.3-70B-Versatile - GroqDocs, accessed on July 25, 2025, https://console.groq.com/docs/model/llama-3.3-70b-versatile
-Claude 3.5 Sonnet | AI/ML API Documentation, accessed on July 25, 2025, https://docs.aimlapi.com/api-references/text-models-llm/anthropic/claude-3.5-sonnet
+LLaMA 3.1 70B - GroqDocs, accessed on July 25, 2025, https://console.groq.com/docs/models
+Claude Sonnet 4 | Anthropic Documentation, accessed on July 25, 2025, https://docs.anthropic.com/claude/docs/models
 Perplexity: Llama 3.1 Sonar 70B Online - OpenRouter, accessed on July 25, 2025, https://openrouter.ai/perplexity/llama-3.1-sonar-large-128k-online
 Perplexity | API References - Zenlayer Docs, accessed on July 25, 2025, https://docs.console.zenlayer.com/api-reference/aigw/dialogue-generation/perplexity-chat-completion
 Gemini 2.5 Flash – Vertex AI - Google Cloud console, accessed on July 25, 2025, https://console.cloud.google.com/vertex-ai/publishers/google/model-garden/gemini-2.5-flash
