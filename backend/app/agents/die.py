@@ -48,9 +48,9 @@ class PromptTemplate:
     def render(self, variables: Dict[str, Any]) -> str:
         """Render the template with provided variables."""
         prompt_parts = [
-            f"Role: {self.role}",
+            f"Role: {self.role.format(**variables)}",
             f"Task: {self.task.format(**variables)}",
-            f"Format: {self.format}",
+            f"Format: {self.format.format(**variables)}",
         ]
         
         if self.context:
@@ -106,6 +106,12 @@ class DynamicPromptGenerator:
         
         # Generate base prompt
         prompt = template.render(enhanced_variables)
+        
+        # Add context summary if available and not already in template
+        context_summary = enhanced_variables["context_summary"]
+        if context_summary and context_summary != "No prior context":
+            if "Context:" not in prompt:
+                prompt += f"\n\nContext: {context_summary}"
         
         # Apply model-specific optimizations
         prompt = self._optimize_for_model(prompt, target_model)
