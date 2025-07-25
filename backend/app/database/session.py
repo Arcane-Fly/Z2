@@ -61,4 +61,7 @@ async def init_db() -> None:
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error("Failed to create database tables", error=str(e))
-        raise
+        if settings.debug:
+            logger.warning("Database connection failed in debug mode, continuing without database")
+        else:
+            raise
