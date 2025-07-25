@@ -4,10 +4,12 @@ version = "0.1.0"
 description = "Z2 AI Workforce Platform - Backend API"
 authors = ["Z2 Team <team@z2.ai>"]
 readme = "README.md"
-packages = [{include = "app"}]
+packages = [
+    { include = "app" }
+]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.14"
 fastapi = "^0.104.1"
 uvicorn = {extras = ["standard"], version = "^0.24.0"}
 pydantic = "^2.5.0"
@@ -24,14 +26,7 @@ openai = "^1.6.1"
 anthropic = "^0.8.1"
 groq = "^0.4.1"
 google-generativeai = "^0.3.2"
-crewai = "^0.28.8"
-autogen-agentchat = "^0.2.0"
-langchain = "^0.1.0"
-langchain-openai = "^0.0.2"
-langchain-anthropic = "^0.1.1"
-langchain-google-genai = "^0.0.6"
-chroma-db = "^0.4.18"
-qdrant-client = "^1.7.0"
+chromadb = "^0.4.18"
 celery = "^5.3.4"
 structlog = "^23.2.0"
 tenacity = "^8.2.3"
