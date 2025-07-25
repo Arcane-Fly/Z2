@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = Field(default=False, description="Enable debug mode")
     log_level: str = Field(default="INFO", description="Logging level")
+    port: int = Field(default=3000, description="Server port")
+    host: str = Field(default="0.0.0.0", description="Server host")
 
     # API Settings
     api_v1_prefix: str = "/api/v1"
@@ -106,6 +108,24 @@ class Settings(BaseSettings):
     storage_type: str = Field(default="local", description="Storage type")
     storage_path: str = Field(default="./storage", description="Local storage path")
     max_file_size_mb: int = Field(default=10, description="Maximum file size in MB")
+
+    # MCP Protocol Configuration
+    mcp_server_name: str = Field(
+        default="Z2 AI Workforce Platform", description="MCP server name"
+    )
+    mcp_server_version: str = Field(default="1.0.0", description="MCP server version")
+    mcp_protocol_version: str = Field(
+        default="2025-03-26", description="MCP protocol version"
+    )
+    enable_mcp_sessions: bool = Field(
+        default=True, description="Enable MCP session management"
+    )
+    session_timeout_minutes: int = Field(
+        default=30, description="Session timeout in minutes"
+    )
+    max_concurrent_sessions: int = Field(
+        default=100, description="Maximum concurrent sessions"
+    )
 
     @property
     def is_production(self) -> bool:

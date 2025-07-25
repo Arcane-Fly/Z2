@@ -6,6 +6,7 @@ instance, configures middleware, includes routers, and handles application lifec
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import AsyncGenerator
 
 import structlog
@@ -67,12 +68,33 @@ def create_application() -> FastAPI:
 
     @app.get("/health")
     async def health_check():
-        """Health check endpoint."""
-        return {
-            "status": "healthy",
-            "app": settings.app_name,
-            "version": settings.app_version,
-        }
+        """Enhanced health check endpoint for Railway."""
+        try:
+            # Basic health indicators
+            health_status = {
+                "status": "healthy",
+                "app": settings.app_name,
+                "version": settings.app_version,
+                "timestamp": datetime.utcnow().isoformat(),
+                "environment": "production" if settings.is_production else "development",
+                "checks": {
+                    "api": "ok",
+                    "database": "unknown",  # TODO: Add database health check
+                    "redis": "unknown",     # TODO: Add redis health check
+                    "llm_providers": "unknown"  # TODO: Add LLM provider health checks
+                }
+            }
+            
+            return health_status
+            
+        except Exception as e:
+            logger.error("Health check failed", error=str(e))
+            return {
+                "status": "unhealthy", 
+                "app": settings.app_name,
+                "version": settings.app_version,
+                "error": str(e)
+            }
 
     @app.get("/")
     async def root():
@@ -95,8 +117,8 @@ if __name__ == "__main__":
     
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=settings.host,
+        port=settings.port,
         reload=settings.debug,
         log_level=settings.log_level.lower(),
     )
