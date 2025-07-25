@@ -226,9 +226,14 @@ class TestA2AProtocol:
         
         assert "status" in data
         assert "app" in data
-        assert "version" in data
         assert "timestamp" in data
         assert "checks" in data
+        
+        # Check app info structure
+        app_info = data["app"]
+        assert "name" in app_info
+        assert "version" in app_info
+        assert app_info["name"] == "Z2 AI Workforce Platform"
 
     @pytest.mark.asyncio
     async def test_a2a_websocket_stream(self):
