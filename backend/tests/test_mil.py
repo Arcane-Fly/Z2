@@ -37,6 +37,22 @@ class TestModelInfo:
         assert ModelCapability.TEXT_GENERATION in model.capabilities
         assert model.context_window == 128000
         assert model.quality_score == 0.95
+    
+    def test_model_info_has_capability(self):
+        """Test capability checking."""
+        model = ModelInfo(
+            id="test-model",
+            provider="test",
+            name="Test Model",
+            description="Test",
+            capabilities=[ModelCapability.TEXT_GENERATION],
+            context_window=8000,
+            input_cost_per_million_tokens=1.0,
+            output_cost_per_million_tokens=2.0
+        )
+        
+        assert model.has_capability(ModelCapability.TEXT_GENERATION)
+        assert not model.has_capability(ModelCapability.FUNCTION_CALLING)
 
 
 class TestLLMRequest:

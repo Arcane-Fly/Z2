@@ -45,6 +45,10 @@ class ModelInfo:
     max_tokens_per_minute: Optional[int] = None
     avg_latency_ms: Optional[float] = None
     quality_score: Optional[float] = None  # 0-1 rating
+    
+    def has_capability(self, capability: ModelCapability) -> bool:
+        """Check if this model has a specific capability."""
+        return capability in self.capabilities
 
 
 @dataclass

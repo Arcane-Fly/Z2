@@ -30,8 +30,19 @@ class ContextualMemory:
     
     def compress_to_summary(self) -> None:
         """Compress short-term context into summary for efficiency."""
-        # TODO: Implement context compression logic
-        pass
+        if not self.short_term:
+            return
+        
+        # Simple implementation: move recent context to summary
+        key_items = list(self.short_term.items())[-5:]  # Keep last 5 items
+        
+        # Create a compressed summary
+        if key_items:
+            summary_text = ", ".join([f"{k}: {str(v)[:50]}" for k, v in key_items])
+            self.summary["recent_context"] = summary_text
+            
+        # Clear short-term memory
+        self.short_term.clear()
 
 
 @dataclass
