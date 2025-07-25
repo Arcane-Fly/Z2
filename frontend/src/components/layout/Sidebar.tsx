@@ -4,14 +4,14 @@ import {
   HomeIcon,
   CpuChipIcon,
   Cog6ToothIcon,
-  CircuitBoardIcon,
+  RectangleGroupIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Agents', href: '/agents', icon: CpuChipIcon },
-  { name: 'Workflows', href: '/workflows', icon: CircuitBoardIcon },
+  { name: 'Workflows', href: '/workflows', icon: RectangleGroupIcon },
   { name: 'Models', href: '/models', icon: ChartBarIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ]
