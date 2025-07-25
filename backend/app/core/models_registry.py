@@ -261,6 +261,22 @@ OPENAI_MODELS = {
         knowledge_cutoff="2025",
         model_card_url="https://platform.openai.com/docs/models/o4-mini-deep-research",
     ),
+    "o4-mini-deep-research-2025-06-26": ModelSpec(
+        provider=ProviderType.OPENAI,
+        model_id="o4-mini-deep-research-2025-06-26",
+        name="o4-mini-deep-research-2025-06-26",
+        description="Faster, more affordable deep research model (June 26, 2025 version)",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.REASONING,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=200000,
+        output_token_limit=100000,
+        is_reasoning_model=True,
+        knowledge_cutoff="June 26, 2025",
+        model_card_url="https://platform.openai.com/docs/models/o4-mini-deep-research",
+    ),
     
     # Realtime models
     "gpt-4o-realtime-preview": ModelSpec(
@@ -617,6 +633,26 @@ ANTHROPIC_MODELS = {
     ),
 }
 
+# xAI Models
+XAI_MODELS = {
+    "grok-4-8789": ModelSpec(
+        provider=ProviderType.XAI,
+        model_id="grok-4-8789",
+        name="Grok 4 8789",
+        description="Language model",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.REAL_TIME_SEARCH,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=200000,
+        output_token_limit=32000,
+        cost_per_input_token=3.00,
+        cost_per_output_token=15.00,
+        knowledge_cutoff="2024",
+    ),
+}
+
 # Combined model registry
 ALL_MODELS: Dict[str, ModelSpec] = {
     **OPENAI_MODELS,
@@ -707,7 +743,7 @@ DEFAULT_MODEL_ROUTING = {
 # Version lock to prevent model downgrades
 MODEL_REGISTRY_VERSION = "2025.01.25"
 MINIMUM_SUPPORTED_MODELS = {
-    "openai": ["gpt-4.1", "gpt-4.1-mini", "gpt-4o", "o4-mini", "o3"],
+    "openai": ["gpt-4.1", "gpt-4.1-mini", "gpt-4o", "o4-mini", "o3", "o4-mini-deep-research-2025-06-26"],
     "anthropic": ["claude-sonnet-4-20250514", "claude-3-7-sonnet-20250219"],
     "xai": ["grok-4-8789"],
 }
