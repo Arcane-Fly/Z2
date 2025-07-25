@@ -1,0 +1,102 @@
+"""
+Z2 Backend Main Application Module
+
+This is the entry point for the Z2 FastAPI application. It sets up the FastAPI
+instance, configures middleware, includes routers, and handles application lifecycle.
+"""
+
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+import structlog
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
+from app.api.v1 import api_router
+from app.core.config import settings
+from app.database.session import init_db
+
+
+logger = structlog.get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan manager."""
+    logger.info("Starting Z2 Backend API", version=settings.app_version)
+    
+    # Initialize database
+    await init_db()
+    logger.info("Database initialized")
+    
+    yield
+    
+    logger.info("Shutting down Z2 Backend API")
+
+
+def create_application() -> FastAPI:
+    """Create and configure FastAPI application."""
+    app = FastAPI(
+        title=settings.app_name,
+        version=settings.app_version,
+        description="Z2 AI Workforce Platform - Dynamic Multi-Agent Orchestration",
+        docs_url="/docs" if settings.debug else None,
+        redoc_url="/redoc" if settings.debug else None,
+        openapi_url="/openapi.json" if settings.debug else None,
+        lifespan=lifespan,
+    )
+
+    # Configure CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Configure trusted hosts
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.allowed_hosts,
+    )
+
+    # Include API router
+    app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint."""
+        return {
+            "status": "healthy",
+            "app": settings.app_name,
+            "version": settings.app_version,
+        }
+
+    @app.get("/")
+    async def root():
+        """Root endpoint."""
+        return {
+            "message": "Z2 AI Workforce Platform API",
+            "version": settings.app_version,
+            "docs": "/docs" if settings.debug else "API documentation disabled in production",
+        }
+
+    return app
+
+
+# Create application instance
+app = create_application()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=settings.debug,
+        log_level=settings.log_level.lower(),
+    )
