@@ -16,6 +16,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1 import api_router
 from app.core.config import settings
+from app.core.security import SecurityHeaders
 from app.database.session import init_db
 
 logger = structlog.get_logger(__name__)
@@ -47,20 +48,67 @@ def create_application() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Configure CORS
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # Configure CORS with enhanced security
+    if settings.debug:
+        # Development - more permissive
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    else:
+        # Production - restrictive CORS
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,  # Should be specific domains in production
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=[
+                "Accept",
+                "Accept-Language",
+                "Content-Language",
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "X-CSRFToken"
+            ],
+            expose_headers=["X-Total-Count", "X-Page-Count"],
+            max_age=600,  # Cache preflight requests for 10 minutes
+        )
 
-    # Configure trusted hosts
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=settings.allowed_hosts,
-    )
+    # Configure trusted hosts with environment-specific settings
+    if settings.is_production:
+        # Production - strict host validation
+        allowed_hosts = [host for host in settings.allowed_hosts if host != "*"]
+        if allowed_hosts:
+            app.add_middleware(
+                TrustedHostMiddleware,
+                allowed_hosts=allowed_hosts,
+            )
+    else:
+        # Development - allow all hosts
+        app.add_middleware(
+            TrustedHostMiddleware,
+            allowed_hosts=settings.allowed_hosts,
+        )
+
+    # Add security headers middleware
+    @app.middleware("http")
+    async def add_security_headers(request, call_next):
+        response = await call_next(request)
+        
+        # Add security headers
+        security_headers = SecurityHeaders.get_security_headers()
+        for header, value in security_headers.items():
+            response.headers[header] = value
+        
+        # Add HSTS only in production with HTTPS
+        if settings.is_production and request.url.scheme == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        
+        return response
 
     # Include API router
     app.include_router(api_router, prefix=settings.api_v1_prefix)
