@@ -8,6 +8,7 @@ instance, configures middleware, includes routers, and handles application lifec
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+import time
 
 import structlog
 from fastapi import FastAPI
@@ -18,6 +19,7 @@ from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.security import SecurityHeaders
 from app.database.session import init_db
+from app.utils.monitoring import initialize_monitoring, health_checker, metrics_collector
 
 logger = structlog.get_logger(__name__)
 
@@ -26,6 +28,9 @@ logger = structlog.get_logger(__name__)
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager."""
     logger.info("Starting Z2 Backend API", version=settings.app_version)
+
+    # Initialize monitoring and observability
+    initialize_monitoring()
 
     # Initialize database
     await init_db()
@@ -110,6 +115,29 @@ def create_application() -> FastAPI:
         
         return response
 
+    # Add metrics collection middleware
+    @app.middleware("http")
+    async def collect_metrics(request, call_next):
+        start_time = time.time()
+        
+        response = await call_next(request)
+        
+        # Calculate duration
+        duration = time.time() - start_time
+        
+        # Record metrics
+        metrics_collector.record_request(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=response.status_code,
+            duration=duration
+        )
+        
+        # Add response time header
+        response.headers["X-Response-Time"] = f"{duration:.3f}s"
+        
+        return response
+
     # Include API router
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
@@ -160,25 +188,20 @@ def create_application() -> FastAPI:
 
     @app.get("/health")
     async def health_check():
-        """Enhanced health check endpoint for Railway."""
+        """Enhanced health check endpoint for Railway and monitoring."""
         try:
-            # Basic health indicators
-            health_status = {
-                "status": "healthy",
-                "app": settings.app_name,
-                "version": settings.app_version,
-                "timestamp": datetime.now(UTC).isoformat(),
-                "environment": "production"
-                if settings.is_production
-                else "development",
-                "checks": {
-                    "api": "ok",
-                    "database": "unknown",  # TODO: Add database health check
-                    "redis": "unknown",  # TODO: Add redis health check
-                    "llm_providers": "unknown",  # TODO: Add LLM provider health checks
-                },
-            }
-
+            # Use comprehensive health checker
+            health_status = await health_checker.comprehensive_health_check()
+            
+            # Return appropriate HTTP status based on health
+            status_code = 200
+            if health_status["status"] == "degraded":
+                status_code = 200  # Still accept traffic but log warning
+                logger.warning("Service degraded", unhealthy_services=health_status.get("unhealthy_services"))
+            elif health_status["status"] == "unhealthy":
+                status_code = 503  # Service unavailable
+                logger.error("Service unhealthy", error=health_status.get("error"))
+            
             return health_status
 
         except Exception as e:
@@ -187,8 +210,23 @@ def create_application() -> FastAPI:
                 "status": "unhealthy",
                 "app": settings.app_name,
                 "version": settings.app_version,
+                "timestamp": datetime.now(UTC).isoformat(),
                 "error": str(e),
             }
+
+    @app.get("/metrics")
+    async def get_metrics():
+        """Get application metrics for monitoring."""
+        try:
+            return {
+                "timestamp": datetime.now(UTC).isoformat(),
+                "app": settings.app_name,
+                "version": settings.app_version,
+                "metrics": metrics_collector.get_metrics()
+            }
+        except Exception as e:
+            logger.error("Metrics collection failed", error=str(e))
+            return {"error": str(e)}
 
     @app.get("/")
     async def root():
