@@ -1,6 +1,9 @@
 # Backend Dockerfile
 FROM python:3.11-slim as backend
 
+# Accept PORT as build argument with default
+ARG PORT=8000
+
 WORKDIR /app
 
 # Install system dependencies
@@ -22,8 +25,11 @@ RUN poetry config virtualenvs.create false \
 # Copy application code
 COPY backend/app ./app
 
-# Expose port
-EXPOSE 8000
+# Set environment variable for port
+ENV PORT=${PORT}
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Expose port dynamically
+EXPOSE ${PORT}
+
+# Run the application with dynamic port binding
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}

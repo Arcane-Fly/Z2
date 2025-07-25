@@ -6,7 +6,7 @@ This module sets up the main API router and includes all endpoint modules.
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, agents, workflows, models, mcp, consent
+from app.api.v1.endpoints import auth, users, agents, workflows, models, mcp, consent, a2a
 
 
 api_router = APIRouter()
@@ -19,3 +19,4 @@ api_router.include_router(workflows.router, prefix="/workflows", tags=["workflow
 api_router.include_router(models.router, prefix="/models", tags=["models"])
 api_router.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
 api_router.include_router(consent.router, prefix="/consent", tags=["consent"])
+api_router.include_router(a2a.router, prefix="/a2a", tags=["a2a"])
