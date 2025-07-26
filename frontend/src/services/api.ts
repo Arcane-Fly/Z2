@@ -2,7 +2,7 @@
  * API service for Z2 platform
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { ApiResponse, User, Agent, Workflow, AuthToken, LoginRequest } from '../types';
 
 class ApiService {

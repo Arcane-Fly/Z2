@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { User, Agent, Workflow, LoadingState } from '../types';
+import { User, LoadingState } from '../types';
 import { apiService } from '../services/api';
 
 // Authentication hook
