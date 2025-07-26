@@ -55,14 +55,22 @@ class PromptTemplate:
 
     def render(self, variables: dict[str, Any]) -> str:
         """Render the template with provided variables."""
+        def safe_format(template_str: str, vars_dict: dict[str, Any]) -> str:
+            """Safely format a template string, handling missing variables."""
+            try:
+                return template_str.format(**vars_dict)
+            except (KeyError, ValueError):
+                # Return template with variable placeholders if formatting fails
+                return template_str
+        
         prompt_parts = [
-            f"Role: {self.role.format(**variables)}",
-            f"Task: {self.task.format(**variables)}",
-            f"Format: {self.format.format(**variables)}",
+            f"Role: {safe_format(self.role, variables)}",
+            f"Task: {safe_format(self.task, variables)}",
+            f"Format: {safe_format(self.format, variables)}",
         ]
 
         if self.context:
-            prompt_parts.append(f"Context: {self.context.format(**variables)}")
+            prompt_parts.append(f"Context: {safe_format(self.context, variables)}")
 
         if self.constraints:
             prompt_parts.append("Constraints:")
@@ -138,21 +146,78 @@ class DynamicPromptGenerator:
 
     def _summarize_context(self, context: ContextualMemory) -> str:
         """Create a concise summary of contextual information."""
-        # TODO: Implement intelligent context summarization
         summary_parts = []
 
+        # Add historical summary
         if context.summary:
-            summary_parts.append(
-                "Previous: " + str(context.summary.get("main_points", ""))
-            )
+            main_points = context.summary.get("main_points", "")
+            if main_points:
+                summary_parts.append(f"History: {main_points}")
+            
+            # Add performance metrics if available
+            success_rate = context.summary.get("overall_success_rate")
+            if success_rate is not None:
+                summary_parts.append(f"Success rate: {success_rate:.1%}")
 
+        # Add recent context with prioritization
         if context.short_term:
-            recent_items = list(context.short_term.items())[-3:]  # Last 3 items
-            summary_parts.append(
-                "Recent: " + ", ".join([f"{k}: {v}" for k, v in recent_items])
-            )
+            # Prioritize recent items by relevance
+            prioritized_items = self._prioritize_context_items(context.short_term)
+            if prioritized_items:
+                recent_summary = ", ".join([f"{k}: {v}" for k, v in prioritized_items])
+                summary_parts.append(f"Current: {recent_summary}")
+
+        # Add long-term context if relevant
+        if context.long_term:
+            relevant_long_term = self._extract_relevant_long_term(context.long_term)
+            if relevant_long_term:
+                summary_parts.append(f"Context: {relevant_long_term}")
 
         return " | ".join(summary_parts) if summary_parts else "No prior context"
+
+    def _prioritize_context_items(self, short_term: dict[str, Any]) -> list[tuple[str, Any]]:
+        """Prioritize context items by relevance."""
+        # Define priority keywords that indicate important context
+        priority_keywords = {
+            "error", "failure", "success", "task", "goal", "objective", 
+            "user", "current", "active", "status", "result", "output"
+        }
+        
+        items = list(short_term.items())
+        
+        # Sort by priority (items with priority keywords first)
+        def priority_score(item):
+            key, value = item
+            score = 0
+            key_lower = key.lower()
+            value_str = str(value).lower()
+            
+            # Boost score for priority keywords
+            for keyword in priority_keywords:
+                if keyword in key_lower or keyword in value_str:
+                    score += 1
+            
+            # Boost score for recent timestamps or numeric values
+            if isinstance(value, (int, float)):
+                score += 0.5
+                
+            return score
+        
+        sorted_items = sorted(items, key=priority_score, reverse=True)
+        
+        # Return top 3 most relevant items
+        return sorted_items[:3]
+
+    def _extract_relevant_long_term(self, long_term: dict[str, Any]) -> str:
+        """Extract relevant information from long-term memory."""
+        relevant_items = []
+        
+        # Extract user preferences and settings
+        for key, value in long_term.items():
+            if key in ["user_preferences", "settings", "constraints", "requirements"]:
+                relevant_items.append(f"{key}: {value}")
+        
+        return ", ".join(relevant_items) if relevant_items else ""
 
     def _optimize_for_model(self, prompt: str, model: str) -> str:
         """Apply model-specific optimizations."""

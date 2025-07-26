@@ -15,6 +15,7 @@ from typing import Any, Optional
 from uuid import UUID, uuid4
 
 import structlog
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.agents.die import ContextualMemory, DynamicIntelligenceEngine
 from app.agents.mil import LLMRequest, ModelIntegrationLayer, RoutingPolicy
@@ -44,6 +45,7 @@ class TaskStatus(Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    RETRYING = "retrying"
 
 
 class WorkflowStatus(Enum):
@@ -55,6 +57,7 @@ class WorkflowStatus(Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    STOPPING = "stopping"
 
 
 @dataclass
@@ -141,11 +144,34 @@ class Task:
     end_time: Optional[float] = None
     output_data: dict[str, Any] = field(default_factory=dict)
     error_message: Optional[str] = None
+    retry_count: int = 0
+    max_retries: int = 3
 
     # Performance metrics
     tokens_used: int = 0
     cost_usd: float = 0.0
     iterations: int = 0
+
+    # Cancellation support
+    _cancel_event: Optional[asyncio.Event] = field(default=None, init=False)
+
+    def __post_init__(self):
+        """Initialize internal state."""
+        self._cancel_event = asyncio.Event()
+
+    def request_cancellation(self):
+        """Request task cancellation."""
+        if self._cancel_event:
+            self._cancel_event.set()
+        self.status = TaskStatus.CANCELLED
+
+    def is_cancellation_requested(self) -> bool:
+        """Check if cancellation has been requested."""
+        return self._cancel_event and self._cancel_event.is_set()
+
+    def can_retry(self) -> bool:
+        """Check if task can be retried."""
+        return self.retry_count < self.max_retries and self.status == TaskStatus.FAILED
 
 
 @dataclass
@@ -180,12 +206,37 @@ class WorkflowDefinition:
     current_tasks: list[UUID] = field(default_factory=list)
     completed_tasks: list[UUID] = field(default_factory=list)
     failed_tasks: list[UUID] = field(default_factory=list)
+    cancelled_tasks: list[UUID] = field(default_factory=list)
 
     # Execution metadata
     start_time: Optional[float] = None
     end_time: Optional[float] = None
     total_tokens_used: int = 0
     total_cost_usd: float = 0.0
+
+    # Cancellation support
+    _stop_event: Optional[asyncio.Event] = field(default=None, init=False)
+
+    def __post_init__(self):
+        """Initialize internal state."""
+        self._stop_event = asyncio.Event()
+
+    def request_stop(self):
+        """Request workflow stop."""
+        if self._stop_event:
+            self._stop_event.set()
+        self.status = WorkflowStatus.STOPPING
+
+    def is_stop_requested(self) -> bool:
+        """Check if stop has been requested."""
+        return self._stop_event and self._stop_event.is_set()
+
+    def get_task_by_id(self, task_id: UUID) -> Optional[Task]:
+        """Get task by ID."""
+        for task in self.tasks:
+            if task.id == task_id:
+                return task
+        return None
 
 
 class Agent:
@@ -203,14 +254,25 @@ class Agent:
         self.memory = ContextualMemory(short_term={}, long_term={}, summary={})
         self.execution_history: list[dict[str, Any]] = []
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
     async def execute_task(self, task: Task, context: dict[str, Any]) -> dict[str, Any]:
-        """Execute a specific task."""
+        """Execute a specific task with retry logic."""
         logger.info(
             "Starting task execution",
             agent=self.definition.name,
             task=task.name,
             task_id=str(task.id),
+            retry_count=task.retry_count,
         )
+
+        # Check for cancellation before starting
+        if task.is_cancellation_requested():
+            task.status = TaskStatus.CANCELLED
+            raise asyncio.CancelledError(f"Task {task.name} was cancelled")
 
         start_time = time.time()
         task.start_time = start_time
@@ -230,8 +292,16 @@ class Agent:
             # Use routing policy if defined
             policy = self.definition.model_routing_policy
 
-            # Generate response
-            response = await self.mil.generate_response(request, policy)
+            # Generate response with timeout
+            response = await asyncio.wait_for(
+                self.mil.generate_response(request, policy),
+                timeout=self.definition.timeout_seconds
+            )
+
+            # Check for cancellation after LLM call
+            if task.is_cancellation_requested():
+                task.status = TaskStatus.CANCELLED
+                raise asyncio.CancelledError(f"Task {task.name} was cancelled")
 
             # Process and validate response
             result = self._process_response(response, task)
@@ -242,7 +312,7 @@ class Agent:
             task.output_data = result
             task.tokens_used = response.tokens_used
             task.cost_usd = response.cost_usd
-            task.iterations = 1  # Simple case for now
+            task.iterations = task.retry_count + 1
 
             # Update agent memory
             self._update_memory(task, response, result)
@@ -254,32 +324,89 @@ class Agent:
                 duration=task.end_time - task.start_time,
                 tokens=task.tokens_used,
                 cost=task.cost_usd,
+                retry_count=task.retry_count,
             )
 
             return result
 
-        except Exception as e:
+        except asyncio.CancelledError:
             task.end_time = time.time()
-            task.status = TaskStatus.FAILED
-            task.error_message = str(e)
-
-            logger.error(
-                "Task execution failed",
+            task.status = TaskStatus.CANCELLED
+            logger.info(
+                "Task execution cancelled",
                 agent=self.definition.name,
                 task=task.name,
-                error=str(e),
             )
-
             raise
+
+        except asyncio.TimeoutError:
+            task.end_time = time.time()
+            task.status = TaskStatus.FAILED
+            task.error_message = f"Task execution timed out after {self.definition.timeout_seconds}s"
+            
+            logger.error(
+                "Task execution timed out",
+                agent=self.definition.name,
+                task=task.name,
+                timeout=self.definition.timeout_seconds,
+            )
+            raise
+
+        except Exception as e:
+            task.end_time = time.time()
+            task.retry_count += 1
+            
+            if task.can_retry():
+                task.status = TaskStatus.RETRYING
+                logger.warning(
+                    "Task execution failed, retrying",
+                    agent=self.definition.name,
+                    task=task.name,
+                    error=str(e),
+                    retry_count=task.retry_count,
+                    max_retries=task.max_retries,
+                )
+                raise  # Let tenacity handle the retry
+            else:
+                task.status = TaskStatus.FAILED
+                task.error_message = str(e)
+                logger.error(
+                    "Task execution failed permanently",
+                    agent=self.definition.name,
+                    task=task.name,
+                    error=str(e),
+                    retry_count=task.retry_count,
+                )
+                raise
 
     def _generate_task_prompt(self, task: Task, context: dict[str, Any]) -> str:
         """Generate a contextual prompt for the task."""
+
+        # Prepare input data with safe formatting
+        input_data_str = ""
+        if task.input_data:
+            try:
+                # Try to format with context variables, fall back to safe representation
+                formatted_input = {}
+                for key, value in task.input_data.items():
+                    if isinstance(value, str) and "{" in value and "}" in value:
+                        # Try to format with context, fall back to removing braces
+                        try:
+                            formatted_input[key] = value.format(**context)
+                        except (KeyError, ValueError):
+                            # Remove template braces for safe representation
+                            formatted_input[key] = value.replace("{", "").replace("}", "")
+                    else:
+                        formatted_input[key] = value
+                input_data_str = json.dumps(formatted_input, indent=2)
+            except Exception:
+                input_data_str = json.dumps(task.input_data, indent=2, default=str)
 
         # Use DIE to generate dynamic prompt
         template_variables = {
             "agent_role": self.definition.role.value,
             "task_description": task.description,
-            "input_data": json.dumps(task.input_data, indent=2),
+            "input_data": input_data_str,
             "expected_output": json.dumps(task.expected_output, indent=2),
             "success_criteria": "\n".join(
                 f"- {criteria}" for criteria in task.success_criteria
@@ -410,6 +537,8 @@ class WorkflowOrchestrator:
         self.mil = mil
         self.active_workflows: dict[UUID, WorkflowDefinition] = {}
         self.agent_pool: dict[UUID, Agent] = {}
+        self.task_futures: dict[UUID, asyncio.Task] = {}
+        self._orchestration_lock = asyncio.Lock()
 
     async def execute_workflow(self, workflow: WorkflowDefinition) -> dict[str, Any]:
         """Execute a complete workflow with multiple agents."""
@@ -422,16 +551,17 @@ class WorkflowOrchestrator:
             tasks=len(workflow.tasks),
         )
 
-        workflow.status = WorkflowStatus.RUNNING
-        workflow.start_time = time.time()
-        self.active_workflows[workflow.id] = workflow
+        async with self._orchestration_lock:
+            workflow.status = WorkflowStatus.RUNNING
+            workflow.start_time = time.time()
+            self.active_workflows[workflow.id] = workflow
 
         try:
             # Initialize agents
             self._initialize_workflow_agents(workflow)
 
-            # Execute workflow
-            result = await self._execute_workflow_graph(workflow)
+            # Execute workflow with enhanced coordination
+            result = await self._execute_workflow_with_coordination(workflow)
 
             # Finalize workflow
             workflow.status = WorkflowStatus.COMPLETED
@@ -443,9 +573,16 @@ class WorkflowOrchestrator:
                 duration=workflow.end_time - workflow.start_time,
                 total_tokens=workflow.total_tokens_used,
                 total_cost=workflow.total_cost_usd,
+                completed_tasks=len(workflow.completed_tasks),
+                failed_tasks=len(workflow.failed_tasks),
+                cancelled_tasks=len(workflow.cancelled_tasks),
             )
 
             return result
+
+        except asyncio.CancelledError:
+            await self._handle_workflow_cancellation(workflow)
+            raise
 
         except Exception as e:
             workflow.status = WorkflowStatus.FAILED
@@ -455,14 +592,341 @@ class WorkflowOrchestrator:
                 "Workflow execution failed",
                 workflow=workflow.name,
                 error=str(e),
+                duration=workflow.end_time - workflow.start_time if workflow.end_time else None,
             )
 
+            # Cancel any running tasks
+            await self._cancel_workflow_tasks(workflow)
             raise
 
         finally:
             # Cleanup
-            if workflow.id in self.active_workflows:
-                del self.active_workflows[workflow.id]
+            await self._cleanup_workflow(workflow)
+
+    async def _execute_workflow_with_coordination(
+        self, workflow: WorkflowDefinition
+    ) -> dict[str, Any]:
+        """Execute workflow with enhanced coordination and event loop."""
+        
+        # Build task execution plan
+        execution_plan = self._build_execution_plan(workflow)
+        
+        # Shared context for all tasks
+        workflow_context = {
+            "workflow_id": str(workflow.id),
+            "workflow_goal": workflow.goal,
+            "start_time": workflow.start_time,
+            "agents": {str(agent.id): agent.name for agent in workflow.agents},
+        }
+
+        # Event loop for coordinated execution
+        completed_tasks = set()
+        failed_tasks = set()
+        cancelled_tasks = set()
+        
+        while execution_plan and not workflow.is_stop_requested():
+            # Check for cost and time limits
+            if await self._check_workflow_limits(workflow):
+                break
+
+            # Get ready tasks for this iteration
+            ready_tasks = self._get_ready_tasks_from_plan(
+                execution_plan, completed_tasks, failed_tasks
+            )
+
+            if not ready_tasks and not self.task_futures:
+                # No tasks ready and none running - check for deadlock
+                if execution_plan:
+                    logger.error(
+                        "Workflow deadlock detected",
+                        workflow=workflow.name,
+                        remaining_tasks=len(execution_plan),
+                    )
+                    break
+                else:
+                    # All tasks completed
+                    break
+
+            # Start ready tasks
+            await self._start_ready_tasks(ready_tasks, workflow, workflow_context)
+
+            # Wait for task completion or timeout
+            await self._coordinate_task_execution(workflow)
+
+            # Process completed tasks
+            completed_this_round, failed_this_round, cancelled_this_round = (
+                await self._process_completed_tasks(workflow)
+            )
+
+            completed_tasks.update(completed_this_round)
+            failed_tasks.update(failed_this_round)
+            cancelled_tasks.update(cancelled_this_round)
+
+            # Remove completed/failed tasks from execution plan
+            execution_plan = [
+                task for task in execution_plan 
+                if task.id not in (completed_tasks | failed_tasks | cancelled_tasks)
+            ]
+
+            # Short delay to prevent busy loop
+            await asyncio.sleep(0.1)
+
+        # Wait for any remaining tasks to finish
+        if self.task_futures:
+            await self._wait_for_remaining_tasks(workflow)
+
+        # Collect final results
+        return self._collect_workflow_results(workflow)
+
+    def _build_execution_plan(self, workflow: WorkflowDefinition) -> list[Task]:
+        """Build task execution plan based on dependencies."""
+        # Start with all tasks
+        execution_plan = workflow.tasks.copy()
+        
+        # Sort by dependencies (tasks with fewer dependencies first)
+        def dependency_count(task):
+            return len(task.dependencies)
+        
+        execution_plan.sort(key=dependency_count)
+        return execution_plan
+
+    def _get_ready_tasks_from_plan(
+        self, execution_plan: list[Task], completed: set, failed: set
+    ) -> list[Task]:
+        """Get tasks that are ready to execute."""
+        ready = []
+        
+        for task in execution_plan:
+            if task.status == TaskStatus.PENDING:
+                # Check if all dependencies are satisfied
+                dependencies_satisfied = all(
+                    dep_id in completed for dep_id in task.dependencies
+                )
+                
+                # Check if any dependency failed
+                dependencies_failed = any(
+                    dep_id in failed for dep_id in task.dependencies
+                )
+                
+                if dependencies_satisfied and not dependencies_failed:
+                    ready.append(task)
+        
+        return ready
+
+    async def _start_ready_tasks(
+        self, ready_tasks: list[Task], workflow: WorkflowDefinition, context: dict[str, Any]
+    ) -> None:
+        """Start execution of ready tasks."""
+        for task in ready_tasks:
+            if task.id not in self.task_futures:
+                # Create task execution coroutine
+                task_coro = self._execute_task_with_tracking(task, workflow, context)
+                
+                # Schedule task execution
+                future = asyncio.create_task(task_coro)
+                self.task_futures[task.id] = future
+                workflow.current_tasks.append(task.id)
+                
+                logger.debug(
+                    "Started task execution",
+                    task=task.name,
+                    workflow=workflow.name,
+                    dependencies=len(task.dependencies),
+                )
+
+    async def _coordinate_task_execution(self, workflow: WorkflowDefinition) -> None:
+        """Coordinate running tasks with intelligent waiting."""
+        if not self.task_futures:
+            return
+
+        # Wait for at least one task to complete or a timeout
+        try:
+            done, pending = await asyncio.wait(
+                self.task_futures.values(),
+                timeout=1.0,  # Check every second
+                return_when=asyncio.FIRST_COMPLETED
+            )
+        except Exception as e:
+            logger.error(
+                "Error in task coordination",
+                workflow=workflow.name,
+                error=str(e),
+            )
+
+    async def _process_completed_tasks(
+        self, workflow: WorkflowDefinition
+    ) -> tuple[set[UUID], set[UUID], set[UUID]]:
+        """Process completed tasks and update workflow state."""
+        completed = set()
+        failed = set()
+        cancelled = set()
+
+        # Check all task futures
+        finished_task_ids = []
+        
+        for task_id, future in self.task_futures.items():
+            if future.done():
+                finished_task_ids.append(task_id)
+                task = workflow.get_task_by_id(task_id)
+                
+                if task:
+                    try:
+                        # Get the result (this will raise if the task failed)
+                        await future
+                        
+                        if task.status == TaskStatus.COMPLETED:
+                            completed.add(task_id)
+                            workflow.completed_tasks.append(task_id)
+                        elif task.status == TaskStatus.CANCELLED:
+                            cancelled.add(task_id)
+                            workflow.cancelled_tasks.append(task_id)
+                        else:
+                            failed.add(task_id)
+                            workflow.failed_tasks.append(task_id)
+                            
+                    except asyncio.CancelledError:
+                        cancelled.add(task_id)
+                        workflow.cancelled_tasks.append(task_id)
+                        task.status = TaskStatus.CANCELLED
+                        
+                    except Exception as e:
+                        failed.add(task_id)
+                        workflow.failed_tasks.append(task_id)
+                        task.status = TaskStatus.FAILED
+                        task.error_message = str(e)
+                        
+                        logger.error(
+                            "Task failed during execution",
+                            task=task.name,
+                            workflow=workflow.name,
+                            error=str(e),
+                        )
+
+        # Remove finished tasks from tracking
+        for task_id in finished_task_ids:
+            if task_id in self.task_futures:
+                del self.task_futures[task_id]
+            if task_id in workflow.current_tasks:
+                workflow.current_tasks.remove(task_id)
+
+        return completed, failed, cancelled
+
+    async def _check_workflow_limits(self, workflow: WorkflowDefinition) -> bool:
+        """Check if workflow has exceeded time or cost limits."""
+        if not workflow.start_time:
+            return False
+
+        # Check time limit
+        elapsed = time.time() - workflow.start_time
+        if elapsed > workflow.max_duration_seconds:
+            logger.warning(
+                "Workflow exceeded time limit",
+                workflow=workflow.name,
+                elapsed=elapsed,
+                limit=workflow.max_duration_seconds,
+            )
+            workflow.request_stop()
+            return True
+
+        # Check cost limit - be more aggressive about stopping
+        if workflow.total_cost_usd >= workflow.max_cost_usd:
+            logger.warning(
+                "Workflow exceeded cost limit",
+                workflow=workflow.name,
+                cost=workflow.total_cost_usd,
+                limit=workflow.max_cost_usd,
+            )
+            workflow.request_stop()
+            return True
+
+        return False
+
+    async def _cancel_workflow_tasks(self, workflow: WorkflowDefinition) -> None:
+        """Cancel all running tasks in the workflow."""
+        # Cancel all task futures
+        for task_id, future in self.task_futures.items():
+            if not future.done():
+                future.cancel()
+
+        # Request cancellation for all tasks
+        for task in workflow.tasks:
+            if task.status in [TaskStatus.PENDING, TaskStatus.IN_PROGRESS, TaskStatus.RETRYING]:
+                task.request_cancellation()
+
+        # Wait for cancellations to complete
+        if self.task_futures:
+            await asyncio.gather(*self.task_futures.values(), return_exceptions=True)
+
+    async def _handle_workflow_cancellation(self, workflow: WorkflowDefinition) -> None:
+        """Handle workflow cancellation gracefully."""
+        workflow.status = WorkflowStatus.CANCELLED
+        workflow.end_time = time.time()
+        
+        await self._cancel_workflow_tasks(workflow)
+        
+        logger.info(
+            "Workflow cancelled",
+            workflow=workflow.name,
+            duration=workflow.end_time - workflow.start_time if workflow.start_time else None,
+        )
+
+    async def _wait_for_remaining_tasks(self, workflow: WorkflowDefinition) -> None:
+        """Wait for any remaining tasks to finish."""
+        if self.task_futures:
+            logger.debug(
+                "Waiting for remaining tasks",
+                workflow=workflow.name,
+                remaining=len(self.task_futures),
+            )
+            
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*self.task_futures.values(), return_exceptions=True),
+                    timeout=30.0  # 30 second grace period
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Timeout waiting for remaining tasks",
+                    workflow=workflow.name,
+                )
+                # Force cancel remaining tasks
+                for future in self.task_futures.values():
+                    if not future.done():
+                        future.cancel()
+
+    async def _cleanup_workflow(self, workflow: WorkflowDefinition) -> None:
+        """Clean up workflow resources."""
+        # Remove from active workflows
+        if workflow.id in self.active_workflows:
+            del self.active_workflows[workflow.id]
+
+        # Clean up agent pool entries for this workflow
+        workflow_agent_ids = {agent.id for agent in workflow.agents}
+        for agent_id in list(self.agent_pool.keys()):
+            if agent_id in workflow_agent_ids:
+                del self.agent_pool[agent_id]
+
+        # Clear task futures
+        self.task_futures.clear()
+
+    def _collect_workflow_results(self, workflow: WorkflowDefinition) -> dict[str, Any]:
+        """Collect and format workflow execution results."""
+        results = {}
+        
+        for task in workflow.tasks:
+            if task.status == TaskStatus.COMPLETED:
+                results[task.name] = task.output_data
+
+        return {
+            "status": "completed" if not workflow.failed_tasks else "partial_failure",
+            "completed_tasks": len(workflow.completed_tasks),
+            "failed_tasks": len(workflow.failed_tasks),
+            "cancelled_tasks": len(workflow.cancelled_tasks),
+            "total_tokens": workflow.total_tokens_used,
+            "total_cost": workflow.total_cost_usd,
+            "execution_time": (workflow.end_time - workflow.start_time) if workflow.end_time and workflow.start_time else None,
+            "results": results,
+        }
 
     def _initialize_workflow_agents(self, workflow: WorkflowDefinition) -> None:
         """Initialize all agents for the workflow."""
@@ -477,65 +941,6 @@ class WorkflowOrchestrator:
                 role=agent_def.role.value,
                 agent_id=str(agent_def.id),
             )
-
-    async def _execute_workflow_graph(
-        self, workflow: WorkflowDefinition
-    ) -> dict[str, Any]:
-        """Execute the workflow task graph."""
-
-        # Build dependency graph
-        task_map = {task.id: task for task in workflow.tasks}
-        ready_tasks = self._get_ready_tasks(workflow.tasks)
-
-        # Shared context for all tasks
-        workflow_context = {
-            "workflow_id": str(workflow.id),
-            "workflow_goal": workflow.goal,
-            "start_time": workflow.start_time,
-        }
-
-        # Execute tasks in dependency order
-        while ready_tasks or workflow.current_tasks:
-            # Start ready tasks
-            for task_id in ready_tasks:
-                if task_id not in workflow.current_tasks:
-                    asyncio.create_task(
-                        self._execute_task_with_tracking(
-                            task_map[task_id], workflow, workflow_context
-                        )
-                    )
-                    workflow.current_tasks.append(task_id)
-
-            # Wait for any task to complete
-            if workflow.current_tasks:
-                await asyncio.sleep(0.1)  # Short polling interval
-
-            # Update ready tasks
-            ready_tasks = self._get_ready_tasks(
-                [t for t in workflow.tasks if t.status == TaskStatus.PENDING]
-            )
-
-            # Check for completion
-            if not ready_tasks and not workflow.current_tasks:
-                break
-
-        # Collect results
-        results = {}
-        for task in workflow.tasks:
-            if task.status == TaskStatus.COMPLETED:
-                results[task.name] = task.output_data
-                workflow.completed_tasks.append(task.id)
-            elif task.status == TaskStatus.FAILED:
-                workflow.failed_tasks.append(task.id)
-
-        return {
-            "status": "completed" if not workflow.failed_tasks else "partial_failure",
-            "completed_tasks": len(workflow.completed_tasks),
-            "failed_tasks": len(workflow.failed_tasks),
-            "total_tokens": workflow.total_tokens_used,
-            "total_cost": workflow.total_cost_usd,
-            "results": results,
-        }
 
     async def _execute_task_with_tracking(
         self,
@@ -552,12 +957,31 @@ class WorkflowOrchestrator:
 
             agent = self.agent_pool[task.assigned_agent]
 
-            # Execute task
+            # Execute task with enhanced error handling
             result = await agent.execute_task(task, context)
 
             # Update workflow metrics
             workflow.total_tokens_used += task.tokens_used
             workflow.total_cost_usd += task.cost_usd
+
+            # Log successful completion
+            logger.info(
+                "Task completed successfully",
+                task=task.name,
+                workflow=workflow.name,
+                tokens=task.tokens_used,
+                cost=task.cost_usd,
+                duration=task.end_time - task.start_time if task.end_time and task.start_time else None,
+            )
+
+        except asyncio.CancelledError:
+            logger.info(
+                "Task execution cancelled",
+                task=task.name,
+                workflow=workflow.name,
+            )
+            task.status = TaskStatus.CANCELLED
+            raise
 
         except Exception as e:
             logger.error(
@@ -565,14 +989,11 @@ class WorkflowOrchestrator:
                 task=task.name,
                 workflow=workflow.name,
                 error=str(e),
+                retry_count=task.retry_count,
             )
             task.status = TaskStatus.FAILED
             task.error_message = str(e)
-
-        finally:
-            # Remove from current tasks
-            if task.id in workflow.current_tasks:
-                workflow.current_tasks.remove(task.id)
+            raise
 
     def _get_ready_tasks(self, tasks: list[Task]) -> list[UUID]:
         """Get tasks that are ready to execute (dependencies satisfied)."""
@@ -597,22 +1018,71 @@ class WorkflowOrchestrator:
     def _auto_assign_agent(self, task: Task, workflow: WorkflowDefinition) -> UUID:
         """Automatically assign the best agent for a task."""
 
-        # Simple assignment based on agent role and task requirements
-        # TODO: Implement more sophisticated assignment logic
-
         available_agents = workflow.agents
 
         if not available_agents:
             raise ValueError("No agents available for task assignment")
 
-        # For now, just assign the first available agent
-        # In a real implementation, this would consider:
-        # - Agent capabilities and skills
-        # - Current workload
-        # - Task requirements
-        # - Agent performance history
+        # Enhanced assignment logic based on agent capabilities
+        best_agent = None
+        best_score = -1
 
+        for agent in available_agents:
+            score = self._calculate_agent_task_score(agent, task)
+            if score > best_score:
+                best_score = score
+                best_agent = agent
+
+        if best_agent:
+            logger.debug(
+                "Assigned task to agent",
+                task=task.name,
+                agent=best_agent.name,
+                role=best_agent.role.value,
+                score=best_score,
+            )
+            return best_agent.id
+
+        # Fallback to first available agent
         return available_agents[0].id
+
+    def _calculate_agent_task_score(self, agent: AgentDefinition, task: Task) -> float:
+        """Calculate how well an agent matches a task."""
+        score = 0.0
+
+        # Base score from trust level
+        score += agent.trust_level * 0.3
+
+        # Score based on role matching (simple keyword matching)
+        task_lower = (task.name + " " + task.description).lower()
+        role_keywords = {
+            AgentRole.RESEARCHER: ["research", "analyze", "investigate", "find", "gather"],
+            AgentRole.CODER: ["code", "implement", "develop", "program", "script"],
+            AgentRole.WRITER: ["write", "document", "report", "explain", "summarize"],
+            AgentRole.ANALYST: ["analyze", "evaluate", "assess", "review", "examine"],
+            AgentRole.REVIEWER: ["review", "check", "validate", "verify", "audit"],
+            AgentRole.PLANNER: ["plan", "design", "strategy", "organize", "structure"],
+            AgentRole.EXECUTOR: ["execute", "run", "perform", "do", "complete"],
+            AgentRole.COORDINATOR: ["coordinate", "manage", "organize", "lead"],
+            AgentRole.VALIDATOR: ["validate", "test", "verify", "confirm", "check"],
+        }
+
+        keywords = role_keywords.get(agent.role, [])
+        for keyword in keywords:
+            if keyword in task_lower:
+                score += 0.2
+
+        # Score based on skills matching
+        for skill in agent.skills:
+            if skill.lower() in task_lower:
+                score += 0.1
+
+        # Score based on knowledge domains
+        for domain in agent.knowledge_domains:
+            if domain.lower() in task_lower:
+                score += 0.15
+
+        return score
 
 
 class MultiAgentOrchestrationFramework:
@@ -681,6 +1151,7 @@ class MultiAgentOrchestrationFramework:
         research_task = Task(
             name="Initial Research",
             description="Conduct comprehensive research on the given topic",
+            input_data={"research_topic": "{research_topic}"},
             expected_output={
                 "research_findings": "dict",
                 "sources": "list",
@@ -762,6 +1233,7 @@ class MultiAgentOrchestrationFramework:
         planning_task = Task(
             name="Technical Planning",
             description="Create technical plan and architecture",
+            input_data={"requirements": "{code_requirements}"},
             expected_output={
                 "plan": "dict",
                 "architecture": "dict",
@@ -773,6 +1245,7 @@ class MultiAgentOrchestrationFramework:
             name="Code Implementation",
             description="Implement the planned solution",
             dependencies=[planning_task.id],
+            input_data={"programming_language": "{programming_language}"},
             expected_output={
                 "code": "string",
                 "documentation": "string",
@@ -808,6 +1281,7 @@ class MultiAgentOrchestrationFramework:
         goal: str,
         template_name: Optional[str] = None,
         custom_agents: Optional[list[AgentDefinition]] = None,
+        input_data: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Execute a goal-oriented workflow."""
 
@@ -815,9 +1289,15 @@ class MultiAgentOrchestrationFramework:
         if template_name and template_name in self.workflow_templates:
             workflow = self.workflow_templates[template_name]
             workflow.goal = goal  # Update goal
+            
+            # Update task input data if provided
+            if input_data:
+                for task in workflow.tasks:
+                    # Merge provided input data with task input data
+                    task.input_data.update(input_data)
         else:
             # Create dynamic workflow based on goal
-            workflow = await self._create_dynamic_workflow(goal, custom_agents)
+            workflow = await self._create_dynamic_workflow(goal, custom_agents, input_data)
 
         # Execute workflow
         return await self.orchestrator.execute_workflow(workflow)
@@ -826,6 +1306,7 @@ class MultiAgentOrchestrationFramework:
         self,
         goal: str,
         custom_agents: Optional[list[AgentDefinition]] = None,
+        input_data: Optional[dict[str, Any]] = None,
     ) -> WorkflowDefinition:
         """Create a dynamic workflow based on goal analysis."""
 
@@ -859,6 +1340,7 @@ class MultiAgentOrchestrationFramework:
             name="Goal Planning",
             description=f"Create a plan to achieve: {goal}",
             assigned_agent=agents[0].id,
+            input_data=input_data or {"goal": goal},
         )
 
         execute_task = Task(
@@ -866,6 +1348,7 @@ class MultiAgentOrchestrationFramework:
             description="Execute the planned approach",
             dependencies=[plan_task.id],
             assigned_agent=agents[1].id,
+            input_data=input_data or {"goal": goal},
         )
 
         validate_task = Task(
@@ -873,6 +1356,7 @@ class MultiAgentOrchestrationFramework:
             description="Validate that the goal has been achieved",
             dependencies=[execute_task.id],
             assigned_agent=agents[2].id,
+            input_data=input_data or {"goal": goal},
         )
 
         return WorkflowDefinition(
