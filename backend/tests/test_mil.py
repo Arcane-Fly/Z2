@@ -2,22 +2,24 @@
 Tests for the Model Integration Layer (MIL) Core Module
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+
 from app.agents.mil import (
-    ModelCapability,
-    ModelInfo,
+    DynamicModelRouter,
+    LLMProvider,
     LLMRequest,
     LLMResponse,
-    LLMProvider,
-    DynamicModelRouter,
+    ModelCapability,
+    ModelInfo,
     OpenAIProvider,
 )
 
 
 class TestModelInfo:
     """Test cases for ModelInfo dataclass."""
-    
+
     def test_model_info_creation(self):
         """Test ModelInfo creation with all fields."""
         model = ModelInfo(
@@ -31,13 +33,13 @@ class TestModelInfo:
             output_cost_per_million_tokens=30.0,
             quality_score=0.95
         )
-        
+
         assert model.id == "gpt-4"
         assert model.provider == "openai"
         assert ModelCapability.TEXT_GENERATION in model.capabilities
         assert model.context_window == 128000
         assert model.quality_score == 0.95
-    
+
     def test_model_info_has_capability(self):
         """Test capability checking."""
         model = ModelInfo(
@@ -50,14 +52,14 @@ class TestModelInfo:
             input_cost_per_million_tokens=1.0,
             output_cost_per_million_tokens=2.0
         )
-        
+
         assert model.has_capability(ModelCapability.TEXT_GENERATION)
         assert not model.has_capability(ModelCapability.FUNCTION_CALLING)
 
 
 class TestLLMRequest:
     """Test cases for LLMRequest dataclass."""
-    
+
     def test_llm_request_creation(self):
         """Test LLMRequest creation."""
         request = LLMRequest(
@@ -66,7 +68,7 @@ class TestLLMRequest:
             max_tokens=100,
             temperature=0.7
         )
-        
+
         assert request.prompt == "Hello, how are you?"
         assert request.model_id == "gpt-4"
         assert request.max_tokens == 100
@@ -75,7 +77,7 @@ class TestLLMRequest:
 
 class TestLLMResponse:
     """Test cases for LLMResponse dataclass."""
-    
+
     def test_llm_response_creation(self):
         """Test LLMResponse creation."""
         response = LLMResponse(
@@ -87,7 +89,7 @@ class TestLLMResponse:
             latency_ms=250.0,
             finish_reason="stop"
         )
-        
+
         assert response.content == "Hello there!"
         assert response.model_used == "gpt-4"
         assert response.provider == "openai"
@@ -98,18 +100,18 @@ class TestLLMResponse:
 
 class MockProvider(LLMProvider):
     """Mock provider for testing."""
-    
+
     def __init__(self, name: str, api_key: str = "test_key"):
         super().__init__(api_key)
         self.name = name
         self.models = {}
-    
+
     def get_provider_name(self) -> str:
         return self.name
-    
+
     def get_available_models(self) -> list[ModelInfo]:
         return list(self.models.values())
-    
+
     async def generate(self, request: LLMRequest) -> LLMResponse:
         return LLMResponse(
             content=f"Mock response from {self.name}",
@@ -120,32 +122,32 @@ class MockProvider(LLMProvider):
             latency_ms=100.0,
             finish_reason="stop"
         )
-    
+
     def calculate_cost(self, input_tokens: int, output_tokens: int, model_id: str) -> float:
         return input_tokens * 0.00001 + output_tokens * 0.00003
-    
+
     def add_model(self, model: ModelInfo):
         self.models[model.id] = model
 
 
 class TestDynamicModelRouter:
     """Test cases for DynamicModelRouter."""
-    
+
     def test_router_initialization(self):
         """Test router initialization."""
         router = DynamicModelRouter()
-        
+
         assert hasattr(router, 'providers')
         assert hasattr(router, 'models')
         assert hasattr(router, 'performance_history')
         assert len(router.providers) == 0
         assert len(router.models) == 0
-    
+
     def test_register_provider(self):
         """Test provider registration."""
         router = DynamicModelRouter()
         mock_provider = MockProvider("test_provider")
-        
+
         # Add a model to the provider
         mock_provider.add_model(ModelInfo(
             id="test_model",
@@ -157,17 +159,17 @@ class TestDynamicModelRouter:
             input_cost_per_million_tokens=1.0,
             output_cost_per_million_tokens=2.0
         ))
-        
+
         router.register_provider("test_provider", mock_provider)
-        
+
         assert "test_provider" in router.providers
         assert router.providers["test_provider"] == mock_provider
         assert "test_provider/test_model" in router.models
-    
+
     def test_get_available_models_through_registry(self):
         """Test getting available models from the router's registry."""
         router = DynamicModelRouter()
-        
+
         provider = MockProvider("test_provider")
         provider.add_model(ModelInfo(
             id="model1",
@@ -179,9 +181,9 @@ class TestDynamicModelRouter:
             input_cost_per_million_tokens=1.0,
             output_cost_per_million_tokens=2.0
         ))
-        
+
         router.register_provider("test_provider", provider)
-        
+
         # Check that model was registered
         assert len(router.models) == 1
         assert "test_provider/model1" in router.models
@@ -189,26 +191,26 @@ class TestDynamicModelRouter:
 
 class TestOpenAIProvider:
     """Tests for OpenAI provider (mocked)."""
-    
+
     def test_openai_provider_initialization(self):
         """Test OpenAI provider initialization."""
         with patch('openai.AsyncOpenAI') as mock_client:
             provider = OpenAIProvider(api_key="test_key")
             assert hasattr(provider, 'client')
             mock_client.assert_called_once()
-    
+
     def test_openai_available_models(self):
         """Test OpenAI available models."""
         with patch('openai.AsyncOpenAI'):
             provider = OpenAIProvider(api_key="test_key")
             models = provider.get_available_models()
-            
+
             assert len(models) > 0
-            
+
             # Check for common OpenAI models
             model_ids = [m.id for m in models]
             assert any("gpt" in model_id for model_id in model_ids)
-    
+
     @pytest.mark.asyncio
     async def test_openai_generate_response(self):
         """Test OpenAI response generation (mocked)."""
@@ -219,18 +221,18 @@ class TestOpenAIProvider:
             mock_response.choices[0].message.content = "Test response"
             mock_response.usage.total_tokens = 25
             mock_response.model = "gpt-4"
-            
+
             mock_client.return_value.chat.completions.create = AsyncMock(return_value=mock_response)
-            
+
             provider = OpenAIProvider(api_key="test_key")
-            
+
             request = LLMRequest(
                 prompt="Hello, how are you?",
                 model_id="gpt-4"
             )
-            
+
             response = await provider.generate(request)
-            
+
             assert response.content == "Test response"
             assert response.model_used == "gpt-4"
             assert response.tokens_used == 25

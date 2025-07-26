@@ -5,10 +5,10 @@ This is the entry point for the Z2 FastAPI application. It sets up the FastAPI
 instance, configures middleware, includes routers, and handles application lifecycle.
 """
 
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-import time
 
 import structlog
 from fastapi import FastAPI
@@ -19,7 +19,11 @@ from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.security import SecurityHeaders
 from app.database.session import init_db
-from app.utils.monitoring import initialize_monitoring, health_checker, metrics_collector
+from app.utils.monitoring import (
+    health_checker,
+    initialize_monitoring,
+    metrics_collector,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -103,28 +107,28 @@ def create_application() -> FastAPI:
     @app.middleware("http")
     async def add_security_headers(request, call_next):
         response = await call_next(request)
-        
+
         # Add security headers
         security_headers = SecurityHeaders.get_security_headers()
         for header, value in security_headers.items():
             response.headers[header] = value
-        
+
         # Add HSTS only in production with HTTPS
         if settings.is_production and request.url.scheme == "https":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-        
+
         return response
 
     # Add metrics collection middleware
     @app.middleware("http")
     async def collect_metrics(request, call_next):
         start_time = time.time()
-        
+
         response = await call_next(request)
-        
+
         # Calculate duration
         duration = time.time() - start_time
-        
+
         # Record metrics
         metrics_collector.record_request(
             endpoint=request.url.path,
@@ -132,10 +136,10 @@ def create_application() -> FastAPI:
             status_code=response.status_code,
             duration=duration
         )
-        
+
         # Add response time header
         response.headers["X-Response-Time"] = f"{duration:.3f}s"
-        
+
         return response
 
     # Include API router
@@ -192,7 +196,7 @@ def create_application() -> FastAPI:
         try:
             # Use comprehensive health checker
             health_status = await health_checker.comprehensive_health_check()
-            
+
             # Return appropriate HTTP status based on health
             status_code = 200
             if health_status["status"] == "degraded":
@@ -201,7 +205,7 @@ def create_application() -> FastAPI:
             elif health_status["status"] == "unhealthy":
                 status_code = 503  # Service unavailable
                 logger.error("Service unhealthy", error=health_status.get("error"))
-            
+
             return health_status
 
         except Exception as e:

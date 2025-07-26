@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 # Base schemas
@@ -46,10 +46,10 @@ class UserRegister(BaseModel):
     """User registration request."""
 
     username: str = Field(..., min_length=3, max_length=50)
-    email: EmailStr
+    email: str = Field(..., pattern=r"^[^@]+@[^@]+\.[^@]+$")
     password: str = Field(..., min_length=6)
     full_name: Optional[str] = Field(None, max_length=255)
-    user_type: str = Field(default="operator", regex="^(developer|operator)$")
+    user_type: str = Field(default="operator", pattern="^(developer|operator)$")
 
 
 class TokenResponse(BaseModel):
@@ -84,7 +84,7 @@ class AgentCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=1000)
     role: str = Field(
         ...,
-        regex="^(researcher|analyst|writer|coder|reviewer|planner|executor|coordinator|validator)$",
+        pattern="^(researcher|analyst|writer|coder|reviewer|planner|executor|coordinator|validator)$",
     )
     system_prompt: str = Field(..., min_length=10)
 
@@ -244,7 +244,7 @@ class WorkflowExecutionRequest(BaseModel):
     """Workflow execution request."""
 
     input_data: dict[str, Any] = Field(default_factory=dict)
-    priority: str = Field(default="normal", regex="^(low|normal|high)$")
+    priority: str = Field(default="normal", pattern="^(low|normal|high)$")
     notify_on_completion: bool = Field(default=True)
 
 

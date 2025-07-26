@@ -4,7 +4,6 @@ Integration tests for consent and access control system.
 These tests validate the security framework for resource and tool access.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -15,13 +14,13 @@ class TestConsentSystem:
         """Test listing access control policies."""
         response = client.get("/api/v1/consent/policies")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "policies" in data
-        
+
         policies = data["policies"]
         assert len(policies) > 0
-        
+
         # Check policy structure
         for policy in policies:
             assert "resource_type" in policy
@@ -40,10 +39,10 @@ class TestConsentSystem:
             "permissions": ["agent:read"],
             "expires_in_hours": 24
         }
-        
+
         response = client.post("/api/v1/consent/consent/request", json=request_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "consent_id" in data
         assert data["status"] == "granted"  # Should be auto-approved
@@ -61,15 +60,15 @@ class TestConsentSystem:
             "permissions": ["agent:execute"],
             "expires_in_hours": 12
         }
-        
+
         response = client.post("/api/v1/consent/consent/request", json=request_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "consent_id" in data
         assert data["status"] == "pending"  # Should require manual approval
         assert data["permissions"] == ["agent:execute"]
-        
+
         return data["consent_id"]
 
     def test_grant_consent(self, client: TestClient):
@@ -83,18 +82,18 @@ class TestConsentSystem:
             "permissions": ["workflow:create"],
             "expires_in_hours": 6
         }
-        
+
         response = client.post("/api/v1/consent/consent/request", json=request_data)
         assert response.status_code == 200
         consent_id = response.json()["consent_id"]
-        
+
         # Grant the consent
         grant_response = client.post(
             f"/api/v1/consent/consent/{consent_id}/grant",
             params={"user_id": "test-user-grant"}
         )
         assert grant_response.status_code == 200
-        
+
         data = grant_response.json()
         assert data["consent_id"] == consent_id
         assert data["status"] == "granted"
@@ -111,18 +110,18 @@ class TestConsentSystem:
             "description": "Execute agent tasks",
             "permissions": ["agent:execute"]
         }
-        
+
         response = client.post("/api/v1/consent/consent/request", json=request_data)
         assert response.status_code == 200
         consent_id = response.json()["consent_id"]
-        
+
         # Deny the consent
         deny_response = client.post(
             f"/api/v1/consent/consent/{consent_id}/deny",
             params={"user_id": "test-user-deny", "reason": "Security policy violation"}
         )
         assert deny_response.status_code == 200
-        
+
         data = deny_response.json()
         assert data["consent_id"] == consent_id
         assert data["status"] == "denied"
@@ -137,15 +136,15 @@ class TestConsentSystem:
             "description": "Access workflow resources",
             "permissions": ["workflow:read"]
         }
-        
+
         response = client.post("/api/v1/consent/consent/request", json=request_data)
         assert response.status_code == 200
         consent_id = response.json()["consent_id"]
-        
+
         # Get consent status
         status_response = client.get(f"/api/v1/consent/consent/{consent_id}")
         assert status_response.status_code == 200
-        
+
         data = status_response.json()
         assert data["consent_id"] == consent_id
         assert "status" in data
@@ -167,11 +166,11 @@ class TestConsentSystem:
             "description": "Access agent resources",
             "permissions": ["agent:read"]
         }
-        
+
         response = client.post("/api/v1/consent/consent/request", json=request_data)
         assert response.status_code == 200
         assert response.json()["status"] == "granted"  # Auto-approved
-        
+
         # Check access
         access_data = {
             "user_id": "test-user-access",
@@ -179,10 +178,10 @@ class TestConsentSystem:
             "resource_name": "agent",
             "permissions": ["agent:read"]
         }
-        
+
         access_response = client.post("/api/v1/consent/access/check", json=access_data)
         assert access_response.status_code == 200
-        
+
         data = access_response.json()
         assert data["allowed"] == True
 
@@ -194,10 +193,10 @@ class TestConsentSystem:
             "resource_name": "execute_agent",
             "permissions": ["agent:execute"]
         }
-        
+
         response = client.post("/api/v1/consent/access/check", json=access_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["allowed"] == False
         assert "No valid consent found" in data["reason"]
@@ -210,10 +209,10 @@ class TestConsentSystem:
             "resource_name": "execute_agent",
             "permissions": ["agent:read"]  # Missing agent:execute
         }
-        
+
         response = client.post("/api/v1/consent/access/check", json=access_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["allowed"] == False
         assert "Missing permissions" in data["reason"]
@@ -226,10 +225,10 @@ class TestConsentSystem:
             "resource_name": "mystery_resource",
             "permissions": ["some:permission"]
         }
-        
+
         response = client.post("/api/v1/consent/access/check", json=access_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["allowed"] == False
         assert "No access policy defined" in data["reason"]
@@ -244,19 +243,19 @@ class TestConsentSystem:
             "description": "Testing audit logs",
             "permissions": ["agent:read"]
         }
-        
+
         client.post("/api/v1/consent/consent/request", json=request_data)
-        
+
         # Check audit logs
         response = client.get("/api/v1/consent/audit")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "logs" in data
-        
+
         logs = data["logs"]
         assert len(logs) > 0
-        
+
         # Check log structure
         for log in logs:
             assert "log_id" in log
@@ -277,16 +276,16 @@ class TestConsentSystem:
             "description": "Filter test",
             "permissions": ["workflow:read"]
         }
-        
+
         client.post("/api/v1/consent/consent/request", json=request_data)
-        
+
         # Get filtered logs
         response = client.get(f"/api/v1/consent/audit?user_id={user_id}")
         assert response.status_code == 200
-        
+
         data = response.json()
         logs = data["logs"]
-        
+
         # All logs should be for the specified user
         for log in logs:
             assert log["user_id"] == user_id
@@ -294,7 +293,7 @@ class TestConsentSystem:
     def test_user_sessions(self, client: TestClient):
         """Test retrieving user consent sessions."""
         user_id = "test-user-sessions"
-        
+
         # Create some consents
         request_data = {
             "user_id": user_id,
@@ -303,17 +302,17 @@ class TestConsentSystem:
             "description": "Session test",
             "permissions": ["agent:read"]
         }
-        
+
         client.post("/api/v1/consent/consent/request", json=request_data)
-        
+
         # Get user sessions
         response = client.get(f"/api/v1/consent/sessions/{user_id}")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["user_id"] == user_id
         assert "active_consents" in data
-        
+
         # Should have at least one active consent
         active_consents = data["active_consents"]
         if len(active_consents) > 0:

@@ -1,4 +1,9 @@
-# Import all models to ensure they are registered with SQLAlchemy
+"""
+Z2 Platform Database Models
+
+This module exports all database models for the Z2 platform.
+"""
+
 from .agent import Agent
 from .user import User
 from .workflow import Workflow, WorkflowExecution
