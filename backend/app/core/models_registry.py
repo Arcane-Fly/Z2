@@ -79,6 +79,9 @@ OPENAI_MODELS = {
         },
         input_token_limit=200000,
         output_token_limit=100000,
+        cost_per_input_token=3.00,  # USD per 1M tokens
+        cost_per_output_token=12.00,  # USD per 1M tokens
+        context_window=200000,
         is_reasoning_model=True,
         knowledge_cutoff="April 16, 2025",
         model_card_url="https://platform.openai.com/docs/models/o4-mini",
@@ -95,6 +98,9 @@ OPENAI_MODELS = {
         },
         input_token_limit=200000,
         output_token_limit=100000,
+        cost_per_input_token=20.00,  # USD per 1M tokens
+        cost_per_output_token=60.00,  # USD per 1M tokens
+        context_window=200000,
         is_reasoning_model=True,
         knowledge_cutoff="April 16, 2025",
         model_card_url="https://platform.openai.com/docs/models/o3",
@@ -147,6 +153,9 @@ OPENAI_MODELS = {
         },
         input_token_limit=1000000,
         output_token_limit=32768,
+        cost_per_input_token=5.00,  # USD per 1M tokens
+        cost_per_output_token=15.00,  # USD per 1M tokens
+        context_window=1000000,
         is_multimodal=True,
         knowledge_cutoff="April 14, 2025",
         model_card_url="https://platform.openai.com/docs/models/gpt-4.1",
@@ -166,6 +175,9 @@ OPENAI_MODELS = {
         },
         input_token_limit=128000,
         output_token_limit=16384,
+        cost_per_input_token=2.50,  # USD per 1M tokens
+        cost_per_output_token=10.00,  # USD per 1M tokens
+        context_window=128000,
         is_multimodal=True,
         knowledge_cutoff="October 2024",
         model_card_url="https://platform.openai.com/docs/models/gpt-4o",
@@ -205,6 +217,9 @@ OPENAI_MODELS = {
         },
         input_token_limit=1000000,
         output_token_limit=32768,
+        cost_per_input_token=0.15,  # USD per 1M tokens
+        cost_per_output_token=0.60,  # USD per 1M tokens
+        context_window=1000000,
         is_multimodal=True,
         knowledge_cutoff="April 14, 2025",
         model_card_url="https://platform.openai.com/docs/models/gpt-4.1-mini",
@@ -556,6 +571,7 @@ ANTHROPIC_MODELS = {
         output_token_limit=32000,
         cost_per_input_token=15.00,
         cost_per_output_token=75.00,
+        context_window=200000,
         knowledge_cutoff="March 2025",
     ),
     "claude-sonnet-4-20250514": ModelSpec(
@@ -573,6 +589,7 @@ ANTHROPIC_MODELS = {
         output_token_limit=64000,
         cost_per_input_token=3.00,
         cost_per_output_token=15.00,
+        context_window=200000,
         knowledge_cutoff="March 2025",
     ),
     "claude-3-7-sonnet-20250219": ModelSpec(
@@ -641,6 +658,7 @@ XAI_MODELS = {
         output_token_limit=32000,
         cost_per_input_token=3.00,
         cost_per_output_token=15.00,
+        context_window=200000,
         knowledge_cutoff="2024",
     ),
 }
