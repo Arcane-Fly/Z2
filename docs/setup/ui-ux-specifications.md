@@ -510,10 +510,14 @@ $breakpoints: (
 
 ## Visual Design System
 
-### Typography Scale
+> **Deep Blue Neon Theme**: The Z2 platform features a distinctive cyberpunk-inspired design system with electric blue, neon green, and neon yellow accents against dark backgrounds. This futuristic aesthetic reinforces the AI workforce concept while maintaining professional usability.
+
+### Typography Scale - Futuristic Design
 ```scss
-$font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-$font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+// Modern Futuristic Font Stack
+$font-family-sans: 'Inter', 'Space Grotesk', 'Sora', 'Montserrat', 'DM Sans', 'Poppins', 'Segoe UI', Arial, sans-serif;
+$font-family-heading: 'Space Grotesk', 'Montserrat', 'Geist', 'DM Sans', 'Poppins', 'Inter', Arial, sans-serif;
+$font-family-mono: 'JetBrains Mono', 'Fira Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
 
 $font-sizes: (
   xs: 0.75rem,    // 12px
@@ -528,63 +532,79 @@ $font-sizes: (
 );
 ```
 
-### Color Palette
+### Deep Blue Neon Color Palette
 
-#### Primary Colors
+#### Primary Colors - Futuristic Theme
 ```scss
 $colors: (
-  // Brand
-  primary: #2563eb,     // Blue
-  secondary: #7c3aed,   // Purple
-  accent: #059669,      // Emerald
+  // Deep Blue Neon Brand Colors
+  primary: #00BFFF,         // Electric Blue
+  primary-shade-50: #1C3F5D,
+  primary-shade-100: #102B40,
+  secondary: #39FF14,       // Neon Green
+  secondary-shade-50: #EEFF00, // Neon Yellow
+  accent: #00BFFF,          // Electric Blue accent
   
-  // Semantic
-  success: #10b981,     // Green
-  warning: #f59e0b,     // Amber
-  error: #ef4444,       // Red
-  info: #3b82f6,        // Blue
+  // Semantic Colors with Neon Touch
+  success: #39FF14,         // Neon Green
+  warning: #EEFF00,         // Neon Yellow
+  error: #FF073A,           // Neon Red
+  info: #00BFFF,            // Electric Blue
   
-  // Neutral
-  gray-50: #f9fafb,
-  gray-100: #f3f4f6,
-  gray-200: #e5e7eb,
-  gray-300: #d1d5db,
-  gray-400: #9ca3af,
-  gray-500: #6b7280,
-  gray-600: #4b5563,
-  gray-700: #374151,
-  gray-800: #1f2937,
-  gray-900: #111827,
+  // Neutral Colors - Dark Futuristic
+  white: #D3E2F4,
+  light: #89CFF0,
+  light-shade-50: #142C44,
+  light-shade-100: #0A1B2A,
+  medium: #1C3F5D,
+  dark: #0A1B2A,
+  disabled: #777980,
+  typing: #404040,
+  
+  // Background Variations
+  bg-primary: #0A1B2A,      // Deep dark blue
+  bg-secondary: #142C44,    // Medium dark blue
+  bg-tertiary: #1C3F5D,     // Lighter dark blue
+  bg-surface: #102B40,      // Surface color
+  
+  // Text Colors
+  text-primary: #D3E2F4,    // Light blue-white
+  text-secondary: #89CFF0,  // Medium light blue
+  text-accent: #39FF14,     // Neon green for highlights
+  text-muted: #777980,      // Disabled/muted text
+  
+  // Border Colors
+  border-primary: #1C3F5D,
+  border-secondary: #142C44,
+  border-neon: #39FF14,     // Neon green borders
+  border-electric: #00BFFF, // Electric blue borders
 );
 ```
 
-#### Dark Theme Colors
+#### Neon Glow Effects
 ```scss
-$dark-colors: (
-  // Background
-  bg-primary: #0f172a,    // Slate 900
-  bg-secondary: #1e293b,  // Slate 800
-  bg-tertiary: #334155,   // Slate 700
+$neon-effects: (
+  // Glow shadows for neon elements
+  glow-green: 0 0 14px 0 #39FF1422, 0 2px 8px 0 #EEFF0022,
+  glow-yellow: 0 0 10px 0 #EEFF0055, 0 2px 8px 0 #39FF1444,
+  glow-blue: 0 0 16px 0 #00BFFF44, 0 2px 8px 0 #00BFFF22,
+  glow-window: 0 4px 32px 0 #39FF1411, 0 0 32px 2px #EEFF0011,
   
-  // Text
-  text-primary: #f1f5f9,  // Slate 100
-  text-secondary: #cbd5e1, // Slate 300
-  text-muted: #64748b,    // Slate 500
-  
-  // Borders
-  border-primary: #334155, // Slate 700
-  border-secondary: #475569, // Slate 600
+  // Text shadows for neon text
+  text-neon-green: 0 0 6px #39FF14, 0 0 12px #39FF14,
+  text-neon-blue: 0 0 6px #00BFFF, 0 0 12px #00BFFF,
+  text-neon-yellow: 0 0 6px #EEFF00, 0 0 12px #EEFF00,
 );
 ```
 
-### Spacing System
+### Futuristic Spacing & Layout System
 ```scss
 $spacing: (
   0: 0,
   1: 0.25rem,   // 4px
   2: 0.5rem,    // 8px
   3: 0.75rem,   // 12px
-  4: 1rem,      // 16px
+  4: 1rem,      // 16px - Base spacing unit
   5: 1.25rem,   // 20px
   6: 1.5rem,    // 24px
   8: 2rem,      // 32px
@@ -594,41 +614,91 @@ $spacing: (
   20: 5rem,     // 80px
   24: 6rem,     // 96px
 );
+
+// Neon-specific layout properties
+$neon-layout: (
+  border-radius: 0.7rem,           // Rounded corners
+  transition-duration: 0.2s,       // Smooth transitions
+  window-border-width: 1.5px,      // Thin neon borders
+  button-border-radius: 50%,        // Fully rounded buttons
+  input-border-radius: 0.7rem,     // Rounded inputs
+);
 ```
 
-### Component Styling Guidelines
+### Neon Component Styling Guidelines
 
-#### Cards
+#### Cards with Neon Effects
 ```scss
 .card {
   background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
-  border-radius: 0.5rem;
+  border: 1.5px solid var(--border-electric);
+  border-radius: var(--border-radius);
   padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease-in-out;
+  box-shadow: var(--glow-blue);
+  transition: all var(--transition-duration) ease-in-out;
   
   &:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+    box-shadow: 0 0 20px 0 #00BFFF66, 0 4px 12px 0 #39FF1444;
+    transform: translateY(-2px);
+    border-color: var(--secondary);
+  }
+  
+  &.agent-card {
+    background: var(--bg-secondary);
+    border-color: var(--border-neon);
+    box-shadow: var(--glow-green);
   }
 }
 ```
 
-#### Buttons
+#### Neon Buttons
 ```scss
 .button {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
+  padding: 0.6em 1.2em;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-family: var(--font-family-sans);
+  transition: all var(--transition-duration) ease-in-out;
+  border: none;
+  cursor: pointer;
   
   &.primary {
-    background: var(--primary);
-    color: white;
+    background: var(--secondary-shade-50); // Neon Yellow
+    color: var(--dark);
+    box-shadow: 0 0 10px 0 #EEFF00cc, 0 0 4px #39FF14cc;
     
     &:hover {
-      background: var(--primary-dark);
+      background: var(--secondary); // Neon Green
+      box-shadow: 0 0 14px 2px #39FF14cc, 0 0 12px #EEFF00cc;
+    }
+  }
+  
+  &.secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-electric);
+    box-shadow: var(--glow-blue);
+    
+    &:hover {
+      border-color: var(--secondary);
+      box-shadow: var(--glow-green);
+    }
+  }
+  
+  &.icon-button {
+    border-radius: 50% !important;
+    aspect-ratio: 1 / 1;
+    padding: 0.6em;
+    background: var(--secondary-shade-50);
+    
+    svg {
+      fill: var(--secondary-shade-50);
+      filter: drop-shadow(0 0 8px #EEFF00cc);
+    }
+    
+    &:hover svg {
+      fill: var(--secondary);
+      filter: drop-shadow(0 0 8px #39FF14cc);
     }
   }
   
@@ -645,9 +715,168 @@ $spacing: (
       left: 50%;
       margin: -0.5rem 0 0 -0.5rem;
       border: 2px solid transparent;
-      border-top-color: currentColor;
+      border-top-color: var(--secondary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      filter: drop-shadow(0 0 4px var(--secondary));
+    }
+  }
+}
+```
+
+#### Neon Inputs
+```scss
+.input {
+  padding: 1rem;
+  font-size: 1rem;
+  font-family: var(--font-family-sans);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: 0 0 12px 0 #39FF1455, 0 0 6px 0 #EEFF0055;
+  outline: none;
+  transition: box-shadow var(--transition-duration);
+  
+  &:focus {
+    box-shadow: 0 0 0 2px var(--secondary),
+                0 0 16px 0 var(--secondary);
+  }
+  
+  &::placeholder {
+    color: var(--text-muted);
+  }
+}
+```
+
+#### Navigation with Neon Styling
+```scss
+.navigation {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+  box-shadow: 0 2px 8px 0 #39FF1422;
+  
+  .nav-item {
+    color: var(--text-secondary);
+    padding: 0.75rem 1rem;
+    transition: all var(--transition-duration);
+    border-radius: var(--border-radius);
+    
+    &:hover {
+      color: var(--text-accent);
+      background: var(--bg-secondary);
+      box-shadow: 0 0 8px 0 #39FF1433;
+    }
+    
+    &.active {
+      color: var(--secondary);
+      background: var(--bg-secondary);
+      text-shadow: var(--text-neon-green);
+      box-shadow: var(--glow-green);
+    }
+  }
+}
+```
+
+#### Agent Status Indicators
+```scss
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  
+  &.active {
+    background: rgba(57, 255, 20, 0.1);
+    color: var(--secondary);
+    border: 1px solid var(--secondary);
+    box-shadow: 0 0 8px 0 #39FF1433;
+    
+    &::before {
+      content: '';
+      width: 0.5rem;
+      height: 0.5rem;
+      background: var(--secondary);
+      border-radius: 50%;
+      box-shadow: 0 0 4px var(--secondary);
+      animation: pulse 2s infinite;
+    }
+  }
+  
+  &.inactive {
+    background: rgba(119, 121, 128, 0.1);
+    color: var(--disabled);
+    border: 1px solid var(--disabled);
+  }
+  
+  &.error {
+    background: rgba(255, 7, 58, 0.1);
+    color: #FF073A;
+    border: 1px solid #FF073A;
+    box-shadow: 0 0 8px 0 #FF073A33;
+  }
+}
+```
+
+#### Chat Interface Styling
+```scss
+.chat-window {
+  background: var(--bg-primary);
+  border: var(--window-border-width) solid var(--primary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--glow-window);
+  
+  .chat-header {
+    background: var(--dark);
+    color: var(--text-primary);
+    padding: 0.3rem 1rem;
+    
+    .chat-heading {
+      font-family: var(--font-family-heading);
+      font-size: 1.5em;
+      font-weight: 700;
+      color: var(--dark);
+      text-shadow: var(--text-neon-green);
+      margin-bottom: 0.02em;
+    }
+    
+    .chat-subtitle {
+      font-size: 1em;
+      line-height: 1.1;
+      color: var(--text-secondary);
+      opacity: 0.9;
+    }
+  }
+  
+  .chat-bubble {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    line-height: 1.6;
+    
+    &.user {
+      background: var(--primary-shade-50);
+      color: var(--white);
+      box-shadow: var(--glow-yellow);
+      align-self: flex-end;
+    }
+    
+    &.bot {
+      background: var(--primary-shade-100);
+      color: var(--white);
+      box-shadow: var(--glow-green);
+      align-self: flex-start;
+    }
+    
+    code, pre {
+      background: rgba(20, 44, 68, 0.55);
+      font-family: var(--font-family-mono);
+      color: var(--secondary-shade-50);
+      border-radius: 0.35em;
+      padding: 0.25em 0.5em;
     }
   }
 }
@@ -755,58 +984,225 @@ export { Button };
 
 ### Design Token Implementation
 
-#### CSS Custom Properties
+#### CSS Custom Properties - Deep Blue Neon Theme
 ```css
 :root {
-  /* Colors */
-  --color-primary: 37 99 235;
-  --color-secondary: 124 58 237;
-  --color-success: 16 185 129;
-  --color-warning: 245 158 11;
-  --color-error: 239 68 68;
-  
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-4: 1rem;
-  --space-8: 2rem;
-  
-  /* Typography */
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
+  /* Deep Blue Neon Theme Color Variables */
+  --z2-color-primary: 0 191 255;           /* Electric Blue #00BFFF */
+  --z2-color-primary-shade-50: 28 63 93;   /* #1C3F5D */
+  --z2-color-primary-shade-100: 16 43 64;  /* #102B40 */
+  --z2-color-secondary: 57 255 20;         /* Neon Green #39FF14 */
+  --z2-color-secondary-shade-50: 238 255 0; /* Neon Yellow #EEFF00 */
+  --z2-color-white: 211 226 244;           /* #D3E2F4 */
+  --z2-color-light: 137 207 240;           /* #89CFF0 */
+  --z2-color-light-shade-50: 20 44 68;     /* #142C44 */
+  --z2-color-light-shade-100: 10 27 42;    /* #0A1B2A */
+  --z2-color-medium: 28 63 93;             /* #1C3F5D */
+  --z2-color-dark: 10 27 42;               /* #0A1B2A */
+  --z2-color-disabled: 119 121 128;        /* #777980 */
+  --z2-color-typing: 64 64 64;             /* #404040 */
+
+  /* Semantic Colors with Neon Enhancement */
+  --z2-color-success: 57 255 20;           /* Neon Green */
+  --z2-color-warning: 238 255 0;           /* Neon Yellow */
+  --z2-color-error: 255 7 58;              /* Neon Red */
+  --z2-color-info: 0 191 255;              /* Electric Blue */
+
+  /* Background Colors */
+  --z2-bg-primary: 10 27 42;               /* Deep dark blue */
+  --z2-bg-secondary: 20 44 68;             /* Medium dark blue */
+  --z2-bg-tertiary: 28 63 93;              /* Lighter dark blue */
+  --z2-bg-surface: 16 43 64;               /* Surface color */
+
+  /* Text Colors */
+  --z2-text-primary: 211 226 244;          /* Light blue-white */
+  --z2-text-secondary: 137 207 240;        /* Medium light blue */
+  --z2-text-accent: 57 255 20;             /* Neon green highlights */
+  --z2-text-muted: 119 121 128;            /* Disabled/muted text */
+
+  /* Border Colors */
+  --z2-border-primary: 28 63 93;
+  --z2-border-secondary: 20 44 68;
+  --z2-border-neon: 57 255 20;             /* Neon green borders */
+  --z2-border-electric: 0 191 255;         /* Electric blue borders */
+
+  /* Futuristic Typography Stack */
+  --z2-font-family: 'Inter', 'Space Grotesk', 'Sora', 'Montserrat', 'DM Sans', 'Poppins', 'Segoe UI', Arial, sans-serif;
+  --z2-font-family-heading: 'Space Grotesk', 'Montserrat', 'Geist', 'DM Sans', 'Poppins', 'Inter', Arial, sans-serif;
+  --z2-font-family-mono: 'JetBrains Mono', 'Fira Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
+
+  /* Layout & Spacing */
+  --z2-spacing: 1rem;
+  --z2-border-radius: 0.7rem;
+  --z2-transition-duration: 0.2s;
+  --z2-window-border-width: 1.5px;
+
+  /* Typography Scale */
+  --z2-text-xs: 0.75rem;
+  --z2-text-sm: 0.875rem;
+  --z2-text-base: 1rem;
+  --z2-text-lg: 1.125rem;
+  --z2-text-xl: 1.25rem;
+  --z2-text-2xl: 1.5rem;
+  --z2-text-3xl: 1.875rem;
+  --z2-text-4xl: 2.25rem;
+  --z2-text-5xl: 3rem;
+
+  /* Neon Glow Effects */
+  --z2-glow-green: 0 0 14px 0 rgba(57, 255, 20, 0.13), 0 2px 8px 0 rgba(238, 255, 0, 0.13);
+  --z2-glow-yellow: 0 0 10px 0 rgba(238, 255, 0, 0.33), 0 2px 8px 0 rgba(57, 255, 20, 0.27);
+  --z2-glow-blue: 0 0 16px 0 rgba(0, 191, 255, 0.27), 0 2px 8px 0 rgba(0, 191, 255, 0.13);
+  --z2-glow-window: 0 4px 32px 0 rgba(57, 255, 20, 0.067), 0 0 32px 2px rgba(238, 255, 0, 0.067);
+
+  /* Text Shadows for Neon Effects */
+  --z2-text-neon-green: 0 0 6px rgb(57 255 20), 0 0 12px rgb(57 255 20);
+  --z2-text-neon-blue: 0 0 6px rgb(0 191 255), 0 0 12px rgb(0 191 255);
+  --z2-text-neon-yellow: 0 0 6px rgb(238 255 0), 0 0 12px rgb(238 255 0);
+
+  /* Component-Specific Variables */
+  --z2-button-border-radius: 50%;
+  --z2-input-border-radius: 0.7rem;
+  --z2-card-border-width: 1.5px;
 }
 
-[data-theme="dark"] {
-  --color-bg-primary: 15 23 42;
-  --color-bg-secondary: 30 41 59;
-  --color-text-primary: 241 245 249;
-  --color-text-secondary: 203 213 225;
+/* Dark Theme Enhancement (Default for Neon Theme) */
+[data-theme="dark"], :root {
+  color-scheme: dark;
+}
+
+/* Animation Keyframes for Neon Effects */
+@keyframes z2-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes z2-glow {
+  0%, 100% { 
+    box-shadow: var(--z2-glow-green);
+  }
+  50% { 
+    box-shadow: 0 0 20px 0 rgba(57, 255, 20, 0.4), 0 4px 12px 0 rgba(238, 255, 0, 0.3);
+  }
+}
+
+@keyframes z2-spin {
+  to { transform: rotate(360deg); }
 }
 ```
 
-#### Tailwind Configuration
+#### Tailwind Configuration - Deep Blue Neon Theme
 ```javascript
 // tailwind.config.js
 module.exports = {
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        primary: 'rgb(var(--color-primary) / <alpha-value>)',
-        secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
-        // ... other colors
+        // Deep Blue Neon Primary Colors
+        primary: 'rgb(var(--z2-color-primary) / <alpha-value>)',
+        'primary-50': 'rgb(var(--z2-color-primary-shade-50) / <alpha-value>)',
+        'primary-100': 'rgb(var(--z2-color-primary-shade-100) / <alpha-value>)',
+        secondary: 'rgb(var(--z2-color-secondary) / <alpha-value>)',
+        'secondary-50': 'rgb(var(--z2-color-secondary-shade-50) / <alpha-value>)',
+        
+        // Semantic Colors
+        success: 'rgb(var(--z2-color-success) / <alpha-value>)',
+        warning: 'rgb(var(--z2-color-warning) / <alpha-value>)',
+        error: 'rgb(var(--z2-color-error) / <alpha-value>)',
+        info: 'rgb(var(--z2-color-info) / <alpha-value>)',
+        
+        // Background Colors
+        'bg-primary': 'rgb(var(--z2-bg-primary) / <alpha-value>)',
+        'bg-secondary': 'rgb(var(--z2-bg-secondary) / <alpha-value>)',
+        'bg-tertiary': 'rgb(var(--z2-bg-tertiary) / <alpha-value>)',
+        'bg-surface': 'rgb(var(--z2-bg-surface) / <alpha-value>)',
+        
+        // Text Colors
+        'text-primary': 'rgb(var(--z2-text-primary) / <alpha-value>)',
+        'text-secondary': 'rgb(var(--z2-text-secondary) / <alpha-value>)',
+        'text-accent': 'rgb(var(--z2-text-accent) / <alpha-value>)',
+        'text-muted': 'rgb(var(--z2-text-muted) / <alpha-value>)',
+        
+        // Border Colors
+        'border-primary': 'rgb(var(--z2-border-primary) / <alpha-value>)',
+        'border-secondary': 'rgb(var(--z2-border-secondary) / <alpha-value>)',
+        'border-neon': 'rgb(var(--z2-border-neon) / <alpha-value>)',
+        'border-electric': 'rgb(var(--z2-border-electric) / <alpha-value>)',
+        
+        // Neon Colors
+        white: 'rgb(var(--z2-color-white) / <alpha-value>)',
+        light: 'rgb(var(--z2-color-light) / <alpha-value>)',
+        'light-50': 'rgb(var(--z2-color-light-shade-50) / <alpha-value>)',
+        'light-100': 'rgb(var(--z2-color-light-shade-100) / <alpha-value>)',
+        medium: 'rgb(var(--z2-color-medium) / <alpha-value>)',
+        dark: 'rgb(var(--z2-color-dark) / <alpha-value>)',
+        disabled: 'rgb(var(--z2-color-disabled) / <alpha-value>)',
       },
+      
       spacing: {
-        1: 'var(--space-1)',
-        2: 'var(--space-2)',
-        // ... other spacing
+        1: 'var(--z2-spacing-1, 0.25rem)',
+        2: 'var(--z2-spacing-2, 0.5rem)',
+        3: 'var(--z2-spacing-3, 0.75rem)',
+        4: 'var(--z2-spacing, 1rem)',
+        5: 'var(--z2-spacing-5, 1.25rem)',
+        6: 'var(--z2-spacing-6, 1.5rem)',
+        8: 'var(--z2-spacing-8, 2rem)',
+        10: 'var(--z2-spacing-10, 2.5rem)',
+        12: 'var(--z2-spacing-12, 3rem)',
+        16: 'var(--z2-spacing-16, 4rem)',
+        20: 'var(--z2-spacing-20, 5rem)',
+        24: 'var(--z2-spacing-24, 6rem)',
       },
+      
       fontFamily: {
-        sans: ['var(--font-sans)'],
-        mono: ['var(--font-mono)'],
+        sans: ['var(--z2-font-family)'],
+        heading: ['var(--z2-font-family-heading)'],
+        mono: ['var(--z2-font-family-mono)'],
+      },
+      
+      fontSize: {
+        xs: 'var(--z2-text-xs)',
+        sm: 'var(--z2-text-sm)',
+        base: 'var(--z2-text-base)',
+        lg: 'var(--z2-text-lg)',
+        xl: 'var(--z2-text-xl)',
+        '2xl': 'var(--z2-text-2xl)',
+        '3xl': 'var(--z2-text-3xl)',
+        '4xl': 'var(--z2-text-4xl)',
+        '5xl': 'var(--z2-text-5xl)',
+      },
+      
+      borderRadius: {
+        'default': 'var(--z2-border-radius)',
+        'button': 'var(--z2-button-border-radius)',
+        'input': 'var(--z2-input-border-radius)',
+      },
+      
+      transitionDuration: {
+        'default': 'var(--z2-transition-duration)',
+      },
+      
+      borderWidth: {
+        'neon': 'var(--z2-window-border-width)',
+      },
+      
+      boxShadow: {
+        'neon-green': 'var(--z2-glow-green)',
+        'neon-yellow': 'var(--z2-glow-yellow)',
+        'neon-blue': 'var(--z2-glow-blue)',
+        'neon-window': 'var(--z2-glow-window)',
+      },
+      
+      textShadow: {
+        'neon-green': 'var(--z2-text-neon-green)',
+        'neon-blue': 'var(--z2-text-neon-blue)',
+        'neon-yellow': 'var(--z2-text-neon-yellow)',
+      },
+      
+      animation: {
+        'pulse-neon': 'z2-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'glow': 'z2-glow 3s ease-in-out infinite',
+        'spin-neon': 'z2-spin 1s linear infinite',
       },
     },
   },
@@ -814,9 +1210,180 @@ module.exports = {
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
     require('@tailwindcss/aspect-ratio'),
+    // Custom plugin for text shadows
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.text-shadow-neon-green': {
+          textShadow: 'var(--z2-text-neon-green)',
+        },
+        '.text-shadow-neon-blue': {
+          textShadow: 'var(--z2-text-neon-blue)',
+        },
+        '.text-shadow-neon-yellow': {
+          textShadow: 'var(--z2-text-neon-yellow)',
+        },
+      }
+      addUtilities(newUtilities)
+    }
   ],
 };
 ```
+
+### Deep Blue Neon Theme Implementation
+
+#### Theme Overview
+The Z2 platform uses a distinctive Deep Blue Neon theme that emphasizes the futuristic AI workforce concept with:
+
+- **Electric Blue (#00BFFF)** as the primary brand color
+- **Neon Green (#39FF14)** for success states and active elements  
+- **Neon Yellow (#EEFF00)** for highlights and call-to-action elements
+- **Dark backgrounds** with subtle blue tints for professional appearance
+- **Glowing effects** that enhance user interaction feedback
+- **Modern typography** with carefully selected font stacks
+
+#### Usage Examples
+
+##### Component Implementation
+```tsx
+// Example: Neon Button Component
+const NeonButton = ({ variant = 'primary', children, ...props }) => {
+  const baseClasses = 'px-4 py-2 rounded-default font-semibold transition-default cursor-pointer border-none';
+  
+  const variantClasses = {
+    primary: 'bg-secondary-50 text-dark shadow-neon-yellow hover:bg-secondary hover:shadow-neon-green',
+    secondary: 'bg-bg-secondary text-text-primary border border-border-electric shadow-neon-blue hover:border-border-neon hover:shadow-neon-green',
+    icon: 'rounded-button aspect-square p-3 bg-secondary-50 shadow-neon-yellow hover:shadow-neon-green'
+  };
+  
+  return (
+    <button 
+      className={`${baseClasses} ${variantClasses[variant]}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+// Example: Agent Status Card
+const AgentStatusCard = ({ agent, isActive }) => (
+  <div className={`
+    p-6 rounded-default border-neon transition-default
+    ${isActive 
+      ? 'bg-bg-secondary border-border-neon shadow-neon-green' 
+      : 'bg-bg-primary border-border-primary shadow-neon-blue'
+    }
+    hover:transform hover:-translate-y-1 hover:shadow-neon-green
+  `}>
+    <h3 className={`font-heading text-lg font-bold mb-2 ${
+      isActive ? 'text-secondary text-shadow-neon-green' : 'text-text-primary'
+    }`}>
+      {agent.name}
+    </h3>
+    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+      isActive
+        ? 'bg-secondary/10 text-secondary border border-secondary shadow-neon-green'
+        : 'bg-disabled/10 text-disabled border border-disabled'
+    }`}>
+      <div className={`w-2 h-2 rounded-full ${
+        isActive ? 'bg-secondary animate-pulse-neon' : 'bg-disabled'
+      }`} />
+      {isActive ? 'Active' : 'Inactive'}
+    </div>
+  </div>
+);
+```
+
+##### Chat Interface Example
+```tsx
+const NeonChatInterface = () => (
+  <div className="w-full max-w-md mx-auto bg-bg-primary border-neon border-primary rounded-default shadow-neon-window">
+    {/* Header */}
+    <div className="bg-dark text-text-primary p-2 px-4">
+      <h2 className="font-heading text-xl font-bold text-dark text-shadow-neon-green mb-0">
+        Z2 Agent Chat
+      </h2>
+      <p className="text-sm text-text-secondary opacity-90 mt-0">
+        AI Workforce Assistant
+      </p>
+    </div>
+    
+    {/* Messages */}
+    <div className="p-4 space-y-4 max-h-80 overflow-y-auto">
+      <div className="bg-primary-100 text-white p-4 rounded-default shadow-neon-green self-start">
+        Hello! I'm your AI agent. How can I help you today?
+      </div>
+      <div className="bg-primary-50 text-white p-4 rounded-default shadow-neon-yellow self-end ml-8">
+        I need help setting up a workflow for document processing.
+      </div>
+    </div>
+    
+    {/* Input */}
+    <div className="p-2 bg-light-50 flex gap-2">
+      <input 
+        type="text"
+        placeholder="Type your message..."
+        className="flex-1 p-3 bg-bg-secondary text-text-primary border-none rounded-default shadow-neon-blue focus:shadow-neon-green outline-none"
+      />
+      <button className="rounded-button aspect-square p-3 bg-secondary-50 shadow-neon-yellow hover:bg-secondary hover:shadow-neon-green">
+        <SendIcon className="w-5 h-5 fill-dark" />
+      </button>
+    </div>
+  </div>
+);
+```
+
+#### Responsive Design with Neon Theme
+```css
+/* Mobile-first neon responsive design */
+@media (max-width: 768px) {
+  .neon-card {
+    border-width: 1px;
+    box-shadow: var(--z2-glow-blue);
+  }
+  
+  .neon-text-large {
+    font-size: var(--z2-text-2xl);
+    text-shadow: var(--z2-text-neon-green);
+  }
+}
+
+@media (min-width: 769px) {
+  .neon-card {
+    border-width: var(--z2-window-border-width);
+    box-shadow: var(--z2-glow-window);
+  }
+  
+  .neon-text-large {
+    font-size: var(--z2-text-3xl);
+    text-shadow: var(--z2-text-neon-green);
+  }
+}
+```
+
+#### Dark Mode Integration
+The Deep Blue Neon theme is designed primarily for dark mode but includes light mode adaptations:
+
+```css
+/* Default (Dark) Theme */
+:root, [data-theme="dark"] {
+  /* Neon colors work best in dark environments */
+}
+
+/* Light Mode Adaptations */
+[data-theme="light"] {
+  --z2-bg-primary: 241 245 249;        /* Light blue-gray */
+  --z2-bg-secondary: 226 232 240;      /* Lighter blue-gray */
+  --z2-text-primary: 10 27 42;         /* Dark blue text */
+  --z2-text-secondary: 28 63 93;       /* Medium blue text */
+  
+  /* Reduce glow intensity for light mode */
+  --z2-glow-green: 0 0 4px 0 rgba(57, 255, 20, 0.3);
+  --z2-glow-blue: 0 0 4px 0 rgba(0, 191, 255, 0.3);
+}
+```
+
+---
 
 ### Testing UI Components
 
@@ -907,4 +1474,4 @@ npx lhci autorun
 
 ---
 
-*This UI/UX specification is a living document that will be updated as the Z2 platform evolves. Last updated: 2024-12-19*
+*This UI/UX specification is a living document that will be updated as the Z2 platform evolves. The Deep Blue Neon theme provides a distinctive cyberpunk aesthetic that emphasizes the platform's AI workforce capabilities. Last updated: 2024-12-19*
