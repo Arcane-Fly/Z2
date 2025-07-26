@@ -229,19 +229,77 @@ async def update_routing_policy(
     }
 
 
-@router.get("/metrics")
-async def get_model_metrics(
-    model_id: Optional[str] = None,
-    provider: Optional[str] = None,
+@router.post("/estimate-cost")
+async def estimate_request_cost(
+    prompt: str,
+    model_id: str,
+    max_tokens: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get model usage metrics and performance statistics."""
-    # TODO: Implement actual metrics collection
+    """Estimate cost for a potential LLM request."""
+    spec = get_model_by_id(model_id)
+    
+    if not spec:
+        raise HTTPException(status_code=404, detail=f"Model '{model_id}' not found")
+    
+    if spec.cost_per_input_token is None:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cost information not available for model '{model_id}'"
+        )
+    
+    # Estimate input tokens (rough approximation: 1 token ≈ 4 characters)
+    estimated_input_tokens = len(prompt) // 4
+    estimated_output_tokens = max_tokens or 150
+    
+    # Calculate costs
+    input_cost = (estimated_input_tokens / 1_000_000) * spec.cost_per_input_token
+    output_cost = (estimated_output_tokens / 1_000_000) * spec.cost_per_output_token
+    total_cost = input_cost + output_cost
+    
     return {
-        "message": "Model metrics endpoint - Implementation pending",
+        "model_id": model_id,
+        "estimated_input_tokens": estimated_input_tokens,
+        "estimated_output_tokens": estimated_output_tokens,
+        "estimated_total_tokens": estimated_input_tokens + estimated_output_tokens,
+        "cost_breakdown": {
+            "input_cost_usd": round(input_cost, 6),
+            "output_cost_usd": round(output_cost, 6),
+            "total_cost_usd": round(total_cost, 6),
+        },
+        "cost_per_million_tokens": {
+            "input": spec.cost_per_input_token,
+            "output": spec.cost_per_output_token,
+        },
+    }
+
+
+@router.get("/usage/stats")
+async def get_usage_statistics(
+    provider: Optional[str] = None,
+    model_id: Optional[str] = None,
+    hours_back: int = 24,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get usage statistics and cost tracking."""
+    # TODO: Implement actual usage tracking from Redis/database
+    # For now, return a mock response showing the expected structure
+    
+    return {
+        "message": "Usage statistics endpoint - Implementation pending",
         "filters": {
-            "model_id": model_id,
             "provider": provider,
+            "model_id": model_id,
+            "hours_back": hours_back,
+        },
+        "expected_structure": {
+            "total_requests": 0,
+            "total_cost_usd": 0.0,
+            "total_tokens": 0,
+            "average_latency_ms": 0.0,
+            "cost_by_model": {},
+            "requests_by_hour": [],
+            "cache_hit_rate": 0.0,
         },
         "registry_version": MODEL_REGISTRY_VERSION,
     }

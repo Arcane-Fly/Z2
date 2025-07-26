@@ -215,12 +215,23 @@ class TestOpenAIProvider:
     async def test_openai_generate_response(self):
         """Test OpenAI response generation (mocked)."""
         with patch('openai.AsyncOpenAI') as mock_client:
-            # Mock the OpenAI response
+            # Mock the OpenAI response with proper structure
             mock_response = Mock()
             mock_response.choices = [Mock()]
             mock_response.choices[0].message.content = "Test response"
+            mock_response.choices[0].message.tool_calls = None  # No function calls
+            mock_response.choices[0].finish_reason = "stop"
+            
+            # Mock usage properly
+            mock_response.usage = Mock()
+            mock_response.usage.prompt_tokens = 10
+            mock_response.usage.completion_tokens = 15
             mock_response.usage.total_tokens = 25
-            mock_response.model = "gpt-4"
+            mock_response.usage.model_dump.return_value = {
+                "prompt_tokens": 10,
+                "completion_tokens": 15,
+                "total_tokens": 25
+            }
 
             mock_client.return_value.chat.completions.create = AsyncMock(return_value=mock_response)
 
@@ -228,12 +239,12 @@ class TestOpenAIProvider:
 
             request = LLMRequest(
                 prompt="Hello, how are you?",
-                model_id="gpt-4"
+                model_id="gpt-4.1-mini"  # Use a model that exists in the registry
             )
 
             response = await provider.generate(request)
 
             assert response.content == "Test response"
-            assert response.model_used == "gpt-4"
+            assert response.model_used == "gpt-4.1-mini"
             assert response.tokens_used == 25
             assert response.cost_usd > 0  # Should calculate some cost
