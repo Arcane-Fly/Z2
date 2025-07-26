@@ -5,7 +5,6 @@ These tests validate compliance with the MCP specification:
 https://modelcontextprotocol.io/specification/2025-03-26
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -16,7 +15,7 @@ class TestMCPProtocol:
         """Test the enhanced health check endpoint."""
         response = client.get("/health")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["status"] == "healthy"
         assert data["app"] == "Z2 AI Workforce Platform"
@@ -29,14 +28,14 @@ class TestMCPProtocol:
         """Test successful MCP session initialization."""
         response = client.post("/api/v1/mcp/initialize", json=sample_mcp_initialize_request)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["protocolVersion"] == "2025-03-26"
         assert "serverInfo" in data
         assert data["serverInfo"]["name"] == "Z2 AI Workforce Platform"
         assert data["serverInfo"]["version"] == "1.0.0"
         assert "capabilities" in data
-        
+
         # Check server capabilities
         capabilities = data["capabilities"]
         assert "resources" in capabilities
@@ -51,7 +50,7 @@ class TestMCPProtocol:
             "capabilities": {},
             "clientInfo": {"name": "test", "version": "1.0.0"}
         }
-        
+
         response = client.post("/api/v1/mcp/initialize", json=request)
         assert response.status_code == 400
         assert "Unsupported protocol version" in response.json()["detail"]
@@ -60,13 +59,13 @@ class TestMCPProtocol:
         """Test listing MCP resources."""
         response = client.get("/api/v1/mcp/resources")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "resources" in data
-        
+
         resources = data["resources"]
         assert len(resources) > 0
-        
+
         # Check resource structure
         for resource in resources:
             assert "uri" in resource
@@ -79,16 +78,16 @@ class TestMCPProtocol:
         # Test agent resource
         response = client.get("/api/v1/mcp/resources/agent://default")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["uri"] == "agent://default"
         assert data["mimeType"] == "application/json"
         assert "text" in data
-        
+
         # Test workflow resource
         response = client.get("/api/v1/mcp/resources/workflow://templates")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["uri"] == "workflow://templates"
         assert data["mimeType"] == "application/json"
@@ -102,19 +101,19 @@ class TestMCPProtocol:
         """Test listing MCP tools."""
         response = client.get("/api/v1/mcp/tools")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "tools" in data
-        
+
         tools = data["tools"]
         assert len(tools) > 0
-        
+
         # Check tool structure
         for tool in tools:
             assert "name" in tool
             assert "description" in tool
             assert "inputSchema" in tool
-            
+
             # Validate input schema structure
             schema = tool["inputSchema"]
             assert schema["type"] == "object"
@@ -128,10 +127,10 @@ class TestMCPProtocol:
             "task": "Analyze some data",
             "parameters": {"format": "json"}
         }
-        
+
         response = client.post("/api/v1/mcp/tools/execute_agent/call", json=request_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "content" in data
         assert len(data["content"]) > 0
@@ -144,10 +143,10 @@ class TestMCPProtocol:
             "agents": ["agent1", "agent2"],
             "configuration": {"timeout": 300}
         }
-        
+
         response = client.post("/api/v1/mcp/tools/create_workflow/call", json=request_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "content" in data
 
@@ -160,13 +159,13 @@ class TestMCPProtocol:
         """Test listing MCP prompts."""
         response = client.get("/api/v1/mcp/prompts")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "prompts" in data
-        
+
         prompts = data["prompts"]
         assert len(prompts) > 0
-        
+
         # Check prompt structure
         for prompt in prompts:
             assert "name" in prompt
@@ -182,7 +181,7 @@ class TestMCPProtocol:
         # Test analyze_compliance prompt
         response = client.get("/api/v1/mcp/prompts/analyze_compliance")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "description" in data
         assert "messages" in data
@@ -202,11 +201,11 @@ class TestMCPProtocol:
             "clientInfo": {"name": "test", "version": "1.0.0"}
         }
         client.post("/api/v1/mcp/initialize", json=init_request)
-        
+
         # Then list sessions
         response = client.get("/api/v1/mcp/sessions")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "sessions" in data
 
@@ -217,10 +216,10 @@ class TestMCPProtocol:
             "messages": [{"role": "user", "content": "Hello"}],
             "max_tokens": 100
         }
-        
+
         response = client.post("/api/v1/mcp/sampling/createMessage", json=request_data)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "model" in data
         assert "role" in data

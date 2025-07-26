@@ -2,20 +2,18 @@
 Tests for the models registry to ensure all model specifications are correct.
 """
 
-import pytest
 from app.core.models_registry import (
-    ALL_MODELS,
-    ProviderType,
-    ModelCapability,
-    get_model_by_id,
-    get_models_by_provider,
-    get_models_by_capability,
-    get_reasoning_models,
-    get_multimodal_models,
-    validate_model_support,
-    validate_model_registry_integrity,
     DEFAULT_MODEL_ROUTING,
     MINIMUM_SUPPORTED_MODELS,
+    ModelCapability,
+    ProviderType,
+    get_model_by_id,
+    get_models_by_capability,
+    get_models_by_provider,
+    get_multimodal_models,
+    get_reasoning_models,
+    validate_model_registry_integrity,
+    validate_model_support,
 )
 
 
@@ -32,7 +30,7 @@ class TestModelsRegistry:
         for provider_name, required_models in MINIMUM_SUPPORTED_MODELS.items():
             provider = ProviderType(provider_name)
             provider_models = get_models_by_provider(provider)
-            
+
             for required_model in required_models:
                 assert required_model in provider_models, (
                     f"Required model '{required_model}' missing from provider '{provider_name}'"
@@ -101,7 +99,7 @@ class TestModelsRegistry:
         """Test getting reasoning-optimized models."""
         reasoning_models = get_reasoning_models()
         assert len(reasoning_models) >= 2  # o4-mini, o3, o3-mini, etc.
-        
+
         # Check for available reasoning models
         reasoning_model_ids = list(reasoning_models.keys())
         assert any(model_id in ["o4-mini", "o3", "o3-mini"] for model_id in reasoning_model_ids)
@@ -127,7 +125,7 @@ class TestModelsRegistry:
         # Test valid combinations
         assert validate_model_support("gpt-4o", [ModelCapability.TEXT_GENERATION])
         assert validate_model_support("gpt-4o", [ModelCapability.VISION, ModelCapability.MULTIMODAL])
-        
+
         # Test reasoning models - use available ones
         reasoning_models = get_reasoning_models()
         if reasoning_models:
@@ -151,7 +149,7 @@ class TestModelsRegistry:
         assert get_model_by_id("gpt-4.1") is not None
         assert get_model_by_id("gpt-4.1-mini") is not None
         assert get_model_by_id("gpt-4.1-nano") is not None
-        
+
         # GPT-4o series
         assert get_model_by_id("gpt-4o") is not None
         assert get_model_by_id("chatgpt-4o-latest") is not None
@@ -165,7 +163,7 @@ class TestModelsRegistry:
         # Ensure latest models have expected features
         gpt41 = get_model_by_id("gpt-4.1")
         assert gpt41.input_token_limit == 1000000  # 1M context window
-        
+
         o4_mini = get_model_by_id("o4-mini")
         assert o4_mini.input_token_limit == 200000  # 200k context window
 
@@ -196,7 +194,7 @@ class TestModelsRegistry:
     def test_registry_version_and_locking(self):
         """Test that registry version and model locking is in place."""
         from app.core.models_registry import MODEL_REGISTRY_VERSION
-        
+
         # Registry should have a version
         assert MODEL_REGISTRY_VERSION is not None
         assert "2025" in MODEL_REGISTRY_VERSION  # Should be current year

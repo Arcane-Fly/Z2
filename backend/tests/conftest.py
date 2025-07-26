@@ -4,7 +4,6 @@ Test configuration and fixtures for Z2 backend tests.
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.main import create_application
 
