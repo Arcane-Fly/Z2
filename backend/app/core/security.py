@@ -5,6 +5,7 @@ Provides JWT-based authentication, user management, and security utilities
 with enhanced security features for production deployment.
 """
 
+import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any, Optional
@@ -15,6 +16,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 
@@ -288,6 +291,119 @@ class JWTManager:
             expires_in=self.access_token_expire_minutes * 60,
             scope=" ".join(permissions) if permissions else None
         )
+
+    async def store_refresh_token(
+        self, 
+        db: AsyncSession, 
+        refresh_token: str, 
+        user_id: str, 
+        session_id: str,
+        expires_at: datetime
+    ) -> None:
+        """Store refresh token in database."""
+        from app.models.role import RefreshToken
+        
+        # Hash the token for storage
+        token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
+        
+        refresh_token_record = RefreshToken(
+            token_hash=token_hash,
+            user_id=user_id,
+            session_id=session_id,
+            expires_at=expires_at
+        )
+        
+        db.add(refresh_token_record)
+        await db.commit()
+
+    async def verify_refresh_token(
+        self, 
+        db: AsyncSession, 
+        refresh_token: str
+    ) -> Optional[TokenData]:
+        """Verify refresh token and check if it's in database."""
+        from app.models.role import RefreshToken
+        
+        try:
+            # First verify JWT
+            token_data = self.verify_token(refresh_token, token_type="refresh_token")
+            
+            # Then check if token exists in database and is not revoked
+            token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
+            
+            stmt = select(RefreshToken).where(
+                RefreshToken.token_hash == token_hash,
+                RefreshToken.is_revoked == False,
+                RefreshToken.expires_at > datetime.now(UTC)
+            )
+            result = await db.execute(stmt)
+            db_token = result.scalar_one_or_none()
+            
+            if not db_token:
+                return None
+                
+            # Update last used timestamp
+            stmt = update(RefreshToken).where(
+                RefreshToken.id == db_token.id
+            ).values(last_used=datetime.now(UTC))
+            await db.execute(stmt)
+            await db.commit()
+            
+            return token_data
+            
+        except Exception as e:
+            logger.warning("Refresh token verification failed", error=str(e))
+            return None
+
+    async def revoke_refresh_token(
+        self, 
+        db: AsyncSession, 
+        refresh_token: str
+    ) -> bool:
+        """Revoke a refresh token."""
+        from app.models.role import RefreshToken
+        
+        token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
+        
+        stmt = update(RefreshToken).where(
+            RefreshToken.token_hash == token_hash
+        ).values(is_revoked=True)
+        
+        result = await db.execute(stmt)
+        await db.commit()
+        
+        return result.rowcount > 0
+
+    async def revoke_user_tokens(
+        self, 
+        db: AsyncSession, 
+        user_id: str
+    ) -> int:
+        """Revoke all refresh tokens for a user."""
+        from app.models.role import RefreshToken
+        
+        stmt = update(RefreshToken).where(
+            RefreshToken.user_id == user_id
+        ).values(is_revoked=True)
+        
+        result = await db.execute(stmt)
+        await db.commit()
+        
+        return result.rowcount
+
+    async def cleanup_expired_tokens(self, db: AsyncSession) -> int:
+        """Clean up expired refresh tokens."""
+        from app.models.role import RefreshToken
+        
+        # Delete expired tokens
+        stmt = RefreshToken.__table__.delete().where(
+            RefreshToken.expires_at < datetime.now(UTC)
+        )
+        
+        result = await db.execute(stmt)
+        await db.commit()
+        
+        return result.rowcount
 
 
 class SecurityHeaders:

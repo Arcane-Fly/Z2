@@ -9,6 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth_dependencies import (
+    get_current_user, 
+    RequireUserRead,
+    RequireUserWrite, 
+    RequireUserDelete,
+    RequireSystemAdmin
+)
 from app.database.session import get_db
 from app.models.user import User
 from app.schemas import BaseResponse, PaginatedResponse, UserProfile
@@ -23,6 +30,7 @@ async def list_users(
     search: Optional[str] = Query(None, description="Search by username, email, or full name"),
     user_type: Optional[str] = Query(None, description="Filter by user type"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    current_user: User = Depends(RequireUserRead),
     db: AsyncSession = Depends(get_db),
 ):
     """List all users with filtering and pagination."""
@@ -109,6 +117,7 @@ async def create_user(
 @router.get("/{user_id}", response_model=UserProfile)
 async def get_user(
     user_id: UUID,
+    current_user: User = Depends(RequireUserRead),
     db: AsyncSession = Depends(get_db),
 ):
     """Get user by ID."""
@@ -137,6 +146,7 @@ async def get_user(
 @router.put("/{user_id}", response_model=UserProfile)
 async def update_user(
     user_id: UUID,
+    current_user: User = Depends(RequireUserWrite),
     db: AsyncSession = Depends(get_db),
 ):
     """Update user by ID."""
@@ -151,6 +161,7 @@ async def update_user(
 @router.delete("/{user_id}", response_model=BaseResponse)
 async def delete_user(
     user_id: UUID,
+    current_user: User = Depends(RequireUserDelete),
     db: AsyncSession = Depends(get_db),
 ):
     """Delete user by ID."""
@@ -162,6 +173,13 @@ async def delete_user(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
+        )
+
+    # Prevent self-deletion unless admin
+    if user.id == current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account"
         )
 
     # Soft delete by deactivating the user
