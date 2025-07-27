@@ -40,6 +40,7 @@ class UserLogin(BaseModel):
 
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6)
+    remember_me: bool = Field(default=False)
 
 
 class UserRegister(BaseModel):
@@ -56,8 +57,15 @@ class TokenResponse(BaseModel):
     """Token response."""
 
     access_token: str
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
     expires_in: int
+
+
+class RefreshTokenRequest(BaseModel):
+    """Refresh token request."""
+    
+    refresh_token: str
 
 
 class UserProfile(BaseModel):
