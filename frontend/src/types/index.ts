@@ -2,6 +2,9 @@
  * Type definitions for the Z2 platform
  */
 
+// Re-export auth types
+export * from './auth';
+
 // API Response types
 export interface ApiResponse<T = any> {
   data?: T;
@@ -10,7 +13,7 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
-// User types
+// User types (keeping existing for compatibility)
 export interface User {
   id: string;
   email: string;
@@ -44,7 +47,7 @@ export interface Workflow {
   updated_at: string;
 }
 
-// Authentication types
+// Authentication types (keeping existing for compatibility)
 export interface AuthToken {
   access_token: string;
   refresh_token: string;
