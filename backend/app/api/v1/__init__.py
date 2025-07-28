@@ -13,6 +13,7 @@ from app.api.v1.endpoints import (
     consent,
     mcp,
     models,
+    quantum,
     users,
     workflows,
 )
@@ -28,3 +29,4 @@ api_router.include_router(models.router, prefix="/models", tags=["models"])
 api_router.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
 api_router.include_router(consent.router, prefix="/consent", tags=["consent"])
 api_router.include_router(a2a.router, prefix="/a2a", tags=["a2a"])
+api_router.include_router(quantum.router, prefix="/multi-agent-system/quantum", tags=["quantum"])

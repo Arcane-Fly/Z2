@@ -8,6 +8,21 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+# Import quantum schemas
+from .quantum import (
+    QuantumTaskCreate,
+    QuantumTaskUpdate,
+    QuantumTaskResponse,
+    QuantumTaskDetailResponse,
+    QuantumTaskListResponse,
+    QuantumTaskExecutionRequest,
+    QuantumThreadResultResponse,
+    VariationCreate,
+    VariationResponse,
+    MetricsConfiguration,
+    QuantumError,
+)
+
 
 # Base schemas
 class BaseResponse(BaseModel):
