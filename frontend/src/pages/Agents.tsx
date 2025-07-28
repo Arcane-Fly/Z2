@@ -1,11 +1,57 @@
 import { useState } from 'react';
 import { useAgents } from '../hooks/useApi';
+import { useMCPAgents, useMCPAgentExecution } from '../hooks/useMCP';
 import { Agent } from '../types';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, PlayIcon } from '@heroicons/react/24/outline';
 
 export function Agents() {
   const { data: agents, isLoading, error } = useAgents();
+  const { agents: mcpAgents, isLoading: mcpLoading } = useMCPAgents();
+  const { executeAgent, isPending: executionPending } = useMCPAgentExecution();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [executingAgent, setExecutingAgent] = useState<string | null>(null);
+
+  // Enhanced agents data with MCP real-time status
+  const enhancedAgents = agents || [];
+  if (mcpAgents) {
+    // Add MCP agent data if available
+    mcpAgents.forEach((mcpAgent: any) => {
+      if (mcpAgent?.content) {
+        const existing = enhancedAgents.find(a => a.id === mcpAgent.content.id);
+        if (!existing) {
+          enhancedAgents.push({
+            id: mcpAgent.content.id,
+            name: mcpAgent.content.id.charAt(0).toUpperCase() + mcpAgent.content.id.slice(1),
+            status: mcpAgent.content.status,
+            description: `MCP Agent - Load: ${mcpAgent.content.load}`,
+            type: mcpAgent.content.type,
+            capabilities: mcpAgent.content.capabilities,
+            config: {},
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        }
+      }
+    });
+  }
+
+  const handleQuickExecute = (agentId: string) => {
+    setExecutingAgent(agentId);
+    try {
+      executeAgent(
+        agentId,
+        'Perform a quick status check and report current capabilities',
+        {},
+        (progress) => {
+          console.log(`Agent ${agentId} progress: ${progress.progress * 100}%`);
+        }
+      );
+    } catch (error) {
+      console.error('Error executing agent:', error);
+    } finally {
+      setExecutingAgent(null);
+    }
+  };
 
   if (error) {
     return (
@@ -32,6 +78,11 @@ export function Agents() {
           <h1 className="text-3xl font-bold text-gray-900">Agents</h1>
           <p className="mt-2 text-gray-600">
             Manage your AI agents and their configurations
+            {mcpAgents && mcpAgents.length > 0 && (
+              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
+                ✨ MCP Enhanced
+              </span>
+            )}
           </p>
         </div>
         <button
@@ -44,7 +95,7 @@ export function Agents() {
         </button>
       </div>
 
-      {isLoading ? (
+      {(isLoading || mcpLoading) ? (
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <div className="animate-pulse space-y-4">
@@ -56,10 +107,10 @@ export function Agents() {
             </div>
           </div>
         </div>
-      ) : agents && agents.length > 0 ? (
+      ) : enhancedAgents && enhancedAgents.length > 0 ? (
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
           <ul className="divide-y divide-gray-200">
-            {agents.map((agent: Agent) => (
+            {enhancedAgents.map((agent: Agent) => (
               <li key={agent.id}>
                 <div className="px-4 py-4 flex items-center justify-between">
                   <div className="flex items-center min-w-0 flex-1">
@@ -102,6 +153,20 @@ export function Agents() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {/* MCP Quick Execute - Magic Button ✨ */}
+                    <button
+                      type="button"
+                      onClick={() => handleQuickExecute(agent.id)}
+                      disabled={executingAgent === agent.id || executionPending}
+                      className="inline-flex items-center p-2 border border-purple-300 rounded-md shadow-sm text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Quick MCP Execute ✨"
+                    >
+                      {executingAgent === agent.id ? (
+                        <div className="h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <PlayIcon className="h-4 w-4" />
+                      )}
+                    </button>
                     <button
                       type="button"
                       className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

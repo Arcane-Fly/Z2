@@ -189,6 +189,11 @@ export function classNames(...classes: (string | undefined | null | false)[]): s
   return classes.filter(Boolean).join(' ');
 }
 
+// Tailwind class name utility (cn)
+export function cn(...inputs: (string | undefined | null | false)[]): string {
+  return inputs.filter(Boolean).join(' ');
+}
+
 // Random utilities
 export function generateId(): string {
   return Math.random().toString(36).substr(2, 9);
