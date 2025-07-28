@@ -6,6 +6,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { User, LoadingState } from '../types';
 import { apiService } from '../services/api';
 
+// Export all MCP hooks
+export * from './useMCP';
+
 // Authentication hook
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);

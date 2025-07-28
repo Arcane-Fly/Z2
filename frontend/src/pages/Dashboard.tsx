@@ -1,8 +1,56 @@
 import { useDashboardStats } from '../hooks/useApi';
 import { DashboardChart } from '../components/DashboardChart';
+import { MCPControlPanel } from '../components/MCPControlPanel';
+import { 
+  useMCPSession, 
+  useMCPStatistics, 
+  useMCPAgents,
+  useMCPWorkflows,
+  useMCPMetrics,
+  useMCPCleanup 
+} from '../hooks/useMCP';
+import { useEffect, useState } from 'react';
 
 export function Dashboard() {
-  const { data: stats, isLoading, error } = useDashboardStats();
+  // Traditional API data as fallback
+  const { data: stats, isLoading: statsLoading, error: statsError } = useDashboardStats();
+  
+  // MCP Integration - The Magic ✨
+  useMCPCleanup(); // Cleanup on unmount
+  const { data: mcpSession, isLoading: sessionLoading } = useMCPSession();
+  const { data: mcpStats } = useMCPStatistics();
+  const { agents: mcpAgents } = useMCPAgents();
+  const { activeWorkflows } = useMCPWorkflows();
+  const { system: systemMetrics } = useMCPMetrics();
+  
+  // Real-time activity updates
+  const [activities, setActivities] = useState<any[]>([]);
+  
+  // Use MCP data if available, fallback to traditional API
+  const isLoading = sessionLoading || statsLoading;
+  const error = statsError;
+  
+  // Enhanced stats with MCP data
+  const enhancedStats = {
+    activeAgents: mcpAgents?.length || stats?.activeAgents || 0,
+    runningWorkflows: activeWorkflows?.length || stats?.runningWorkflows || 0,
+    totalCost: systemMetrics?.cost || stats?.totalCost || 0,
+    tokensUsed: systemMetrics?.tokens || stats?.tokensUsed || 0,
+  };
+
+  // Real-time activity feed from MCP
+  useEffect(() => {
+    if (mcpStats?.tasks?.running_tasks) {
+      const newActivities = mcpStats.tasks.running_tasks.map((task) => ({
+        id: task.task_id,
+        time: new Date(task.started_at || Date.now()).toLocaleTimeString(),
+        message: `Task "${task.task_name}" is ${task.progress * 100}% complete`,
+        type: 'task',
+        color: 'blue'
+      }));
+      setActivities(prev => [...newActivities, ...prev.slice(0, 3)].slice(0, 4));
+    }
+  }, [mcpStats]);
 
   // Sample chart data - in a real app this would come from the API
   const chartData = {
@@ -109,7 +157,7 @@ export function Dashboard() {
                     animation: 'pulse 2s infinite'
                   }}></div>
                 ) : (
-                  stats?.activeAgents || 0
+                  enhancedStats.activeAgents
                 )}
               </p>
             </div>
@@ -165,7 +213,7 @@ export function Dashboard() {
                     animation: 'pulse 2s infinite'
                   }}></div>
                 ) : (
-                  stats?.runningWorkflows || 0
+                  enhancedStats.runningWorkflows
                 )}
               </p>
             </div>
@@ -221,7 +269,7 @@ export function Dashboard() {
                     animation: 'pulse 2s infinite'
                   }}></div>
                 ) : (
-                  `$${stats?.totalCost?.toFixed(2) || '0.00'}`
+                  `$${enhancedStats.totalCost?.toFixed(2) || '0.00'}`
                 )}
               </p>
             </div>
@@ -277,7 +325,7 @@ export function Dashboard() {
                     animation: 'pulse 2s infinite'
                   }}></div>
                 ) : (
-                  stats?.tokensUsed?.toLocaleString() || 0
+                  enhancedStats.tokensUsed?.toLocaleString() || 0
                 )}
               </p>
             </div>
@@ -347,81 +395,140 @@ export function Dashboard() {
             Recent Activity
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                borderRadius: '50%',
-                marginRight: '12px'
-              }}></div>
-              <span style={{
-                color: '#6b7280',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>2 minutes ago</span>
-              <span style={{
-                marginLeft: '8px',
-                color: '#374151',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>Agent "DataProcessor" started</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderRadius: '50%',
-                marginRight: '12px'
-              }}></div>
-              <span style={{
-                color: '#6b7280',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>5 minutes ago</span>
-              <span style={{
-                marginLeft: '8px',
-                color: '#374151',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>Workflow "EmailAutomation" completed</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                borderRadius: '50%',
-                marginRight: '12px'
-              }}></div>
-              <span style={{
-                color: '#6b7280',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>10 minutes ago</span>
-              <span style={{
-                marginLeft: '8px',
-                color: '#374151',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>New model "GPT-4" configured</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                borderRadius: '50%',
-                marginRight: '12px'
-              }}></div>
-              <span style={{
-                color: '#6b7280',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>15 minutes ago</span>
-              <span style={{
-                marginLeft: '8px',
-                color: '#374151',
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>Agent "ContentWriter" updated</span>
-            </div>
+            {/* MCP Session Status */}
+            {mcpSession && (
+              <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  borderRadius: '50%',
+                  marginRight: '12px',
+                  animation: 'pulse 2s infinite'
+                }}></div>
+                <span style={{ color: '#6b7280', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  Now
+                </span>
+                <span style={{
+                  marginLeft: '8px',
+                  color: '#374151',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>
+                  MCP Protocol v{mcpSession.protocolVersion} connected ✨
+                </span>
+              </div>
+            )}
+            
+            {/* Real-time Activities from MCP */}
+            {activities.map((activity, index) => (
+              <div key={activity.id || index} style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  background: `linear-gradient(135deg, ${
+                    activity.color === 'blue' ? '#3b82f6 0%, #1d4ed8 100%' :
+                    activity.color === 'green' ? '#10b981 0%, #059669 100%' :
+                    activity.color === 'yellow' ? '#f59e0b 0%, #d97706 100%' :
+                    '#8b5cf6 0%, #7c3aed 100%'
+                  })`,
+                  borderRadius: '50%',
+                  marginRight: '12px'
+                }}></div>
+                <span style={{
+                  color: '#6b7280',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>{activity.time}</span>
+                <span style={{
+                  marginLeft: '8px',
+                  color: '#374151',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>{activity.message}</span>
+              </div>
+            ))}
+            
+            {/* Static activities as fallback */}
+            {activities.length === 0 && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                    borderRadius: '50%',
+                    marginRight: '12px'
+                  }}></div>
+                  <span style={{
+                    color: '#6b7280',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>2 minutes ago</span>
+                  <span style={{
+                    marginLeft: '8px',
+                    color: '#374151',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>Agent "DataProcessor" started</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    borderRadius: '50%',
+                    marginRight: '12px'
+                  }}></div>
+                  <span style={{
+                    color: '#6b7280',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>5 minutes ago</span>
+                  <span style={{
+                    marginLeft: '8px',
+                    color: '#374151',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>Workflow "EmailAutomation" completed</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    borderRadius: '50%',
+                    marginRight: '12px'
+                  }}></div>
+                  <span style={{
+                    color: '#6b7280',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>10 minutes ago</span>
+                  <span style={{
+                    marginLeft: '8px',
+                    color: '#374151',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>New model "GPT-4" configured</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', fontSize: '14px' }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                    borderRadius: '50%',
+                    marginRight: '12px'
+                  }}></div>
+                  <span style={{
+                    color: '#6b7280',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>15 minutes ago</span>
+                  <span style={{
+                    marginLeft: '8px',
+                    color: '#374151',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>Agent "ContentWriter" updated</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {/* MCP Control Panel - The Magic ✨ */}
+      <MCPControlPanel />
 
       {/* Welcome Section */}
       <div style={{
@@ -471,12 +578,14 @@ export function Dashboard() {
               fontFamily: 'system-ui, -apple-system, sans-serif'
             }}
             onMouseOver={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 8px 25px rgba(255, 255, 255, 0.4)';
+              const target = e.target as HTMLElement;
+              target.style.transform = 'translateY(-2px)';
+              target.style.boxShadow = '0 8px 25px rgba(255, 255, 255, 0.4)';
             }}
             onMouseOut={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 14px rgba(255, 255, 255, 0.3)';
+              const target = e.target as HTMLElement;
+              target.style.transform = 'translateY(0)';
+              target.style.boxShadow = '0 4px 14px rgba(255, 255, 255, 0.3)';
             }}
           >
             Create First Agent
@@ -498,12 +607,14 @@ export function Dashboard() {
               fontFamily: 'system-ui, -apple-system, sans-serif'
             }}
             onMouseOver={(e) => {
-              e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+              const target = e.target as HTMLElement;
+              target.style.background = 'rgba(255, 255, 255, 0.1)';
+              target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
             }}
             onMouseOut={(e) => {
-              e.target.style.background = 'transparent';
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              const target = e.target as HTMLElement;
+              target.style.background = 'transparent';
+              target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
             }}
           >
             View Documentation
