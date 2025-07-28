@@ -1,13 +1,17 @@
 # Frontend Dockerfile
 FROM node:18-alpine as frontend
 
+# Railway-specific build arguments
+ARG RAILWAY_ENVIRONMENT
+ARG PORT=3000
+
 WORKDIR /app
 
 # Copy package files
 COPY frontend/package.json frontend/package-lock.json* ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY frontend/ .
@@ -18,13 +22,28 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Railway-specific build arguments  
+ARG RAILWAY_ENVIRONMENT
+ARG PORT=80
+
 # Copy built app to nginx
 COPY --from=frontend /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Set environment variables for Railway
+ENV HOST=0.0.0.0
+ENV PORT=${PORT}
+
 # Expose port
-EXPOSE 80
+EXPOSE ${PORT}
+
+# Health check for Railway
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/health || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
