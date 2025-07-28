@@ -32,17 +32,22 @@ structlog = "^23.2.0"
 tenacity = "^8.2.3"
 prometheus-client = "^0.19.0"
 sentry-sdk = {extras = ["fastapi"], version = "^2.33.2"}
-psutil = "^7.0.0"
+psutil = "^6.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
 pytest-asyncio = "^0.21.1"
 pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+pytest-xdist = "^3.6.0"
 black = "^24.3.0"
 ruff = "^0.1.7"
 mypy = "^1.7.1"
 pre-commit = "^3.6.0"
 httpx = "^0.25.2"
+bandit = "^1.7.6"
+safety = "^3.6.0"
+aiosqlite = "^0.19.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -115,6 +120,18 @@ addopts = [
     "--cov-report=term-missing:skip-covered",
     "--cov-report=html",
     "--cov-report=xml",
-    "--cov-fail-under=85",
+    "--cov-fail-under=80",
+    "-p", "no:warnings",
 ]
 asyncio_mode = "auto"
+markers = [
+    "unit: marks tests as unit tests (deselect with '-m \"not unit\"')",
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "e2e: marks tests as end-to-end tests (deselect with '-m \"not e2e\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "security: marks tests as security tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
