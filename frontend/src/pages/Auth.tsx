@@ -2,7 +2,7 @@
  * Authentication page with login and register forms
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import LoginForm from '../components/LoginForm';

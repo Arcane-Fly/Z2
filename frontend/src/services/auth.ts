@@ -6,7 +6,6 @@ import {
   LoginRequest, 
   RegisterRequest, 
   TokenResponse, 
-  RefreshTokenRequest,
   User as AuthUser 
 } from '../types/auth';
 
