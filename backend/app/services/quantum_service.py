@@ -394,6 +394,8 @@ class QuantumAgentManager:
                 "metadata": {
                     "agent_name": agent.name,
                     "agent_role": agent.role,
+                    # Add execution context if available
+                    "execution_context": parameters.get("context", {}),
                 }
             }
         except Exception as e:
@@ -410,6 +412,7 @@ class QuantumAgentManager:
                 "metadata": {
                     "agent_name": agent.name,
                     "agent_role": agent.role,
+                    "execution_context": parameters.get("context", {}),
                 }
             }
 
