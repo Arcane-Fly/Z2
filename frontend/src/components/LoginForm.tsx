@@ -60,7 +60,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <input type="hidden" name="remember" value={formData.remember_me.toString()} />
+          <input type="hidden" name="remember" value={formData.remember_me?.toString() || 'false'} />
           
           <div className="rounded-md shadow-sm -space-y-px">
             <div>

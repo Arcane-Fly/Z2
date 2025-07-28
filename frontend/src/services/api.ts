@@ -123,6 +123,41 @@ class ApiService {
     return response.data;
   }
 
+  // Dashboard metrics
+  async getDashboardStats(): Promise<{
+    activeAgents: number;
+    runningWorkflows: number;
+    totalCost: number;
+    tokensUsed: number;
+  }> {
+    // Aggregate data from multiple endpoints
+    const [agentsResponse, workflowsResponse] = await Promise.all([
+      this.getAgents(),
+      this.getWorkflows(),
+    ]);
+
+    // Calculate metrics
+    const activeAgents = agentsResponse.filter(agent => agent.status === 'active').length;
+    const runningWorkflows = workflowsResponse.filter(workflow => workflow.status === 'running').length;
+    
+    // TODO: Get real cost and token data from backend when available
+    const totalCost = 0;
+    const tokensUsed = 0;
+
+    return {
+      activeAgents,
+      runningWorkflows,
+      totalCost,
+      tokensUsed,
+    };
+  }
+
+  // Models
+  async getModels(): Promise<any[]> {
+    const response = await this.client.get<ApiResponse<any[]>>('/api/v1/models');
+    return response.data.data!;
+  }
+
   // A2A Agent discovery
   async getAgentInfo(): Promise<any> {
     const response = await this.client.get('/.well-known/agent.json');
