@@ -11,8 +11,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 from app.main import create_application
-from app.database.base import Base
-from app.database.session import get_db
+from app.database.session import Base, get_db
 
 
 # Test database URL
