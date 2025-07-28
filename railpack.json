@@ -18,8 +18,15 @@
         "PORT": "$PORT",
         "NODE_ENV": "production",
         "PYTHON_VERSION": "3.11",
-        "POETRY_VERSION": "1.6.1"
-      }
+        "POETRY_VERSION": "1.6.1",
+        "STORAGE_PATH": "/app/storage"
+      },
+      "volumes": [
+        {
+          "name": "app_storage",
+          "mountPath": "/app/storage"
+        }
+      ]
     },
     "frontend": {
       "rootDirectory": "./frontend", 
@@ -37,7 +44,13 @@
       "variables": {
         "PORT": "$PORT",
         "NODE_ENV": "production"
-      }
+      },
+      "volumes": [
+        {
+          "name": "app_storage",
+          "mountPath": "/app/storage"
+        }
+      ]
     }
   }
 }

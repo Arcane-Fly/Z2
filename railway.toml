@@ -17,6 +17,10 @@ restartPolicyType = "on_failure"
 PYTHON_VERSION = "3.11"
 POETRY_VERSION = "1.6.1"
 PORT = "${{PORT}}"
+STORAGE_PATH = "/app/storage"
+
+[services.backend.volumes]
+volumes = ["app_storage:/app/storage"]
 
 # Frontend Web App
 [services.frontend]
@@ -30,6 +34,9 @@ watchPaths = ["frontend/src/**"]
 
 [services.frontend.deploy]
 staticSite = true
+
+[services.frontend.volumes]
+volumes = ["app_storage:/app/storage"]
 
 # PostgreSQL Database
 [services.postgres]
@@ -53,6 +60,7 @@ volumes = ["redis_data:/data"]
 [volumes]
 postgres_data = {}
 redis_data = {}
+app_storage = {}
 
 # Environment variable templates
 [environments.production]
@@ -64,6 +72,7 @@ LOG_LEVEL = "INFO"
 DATABASE_URL = "${{Postgres.DATABASE_URL}}"
 REDIS_URL = "${{Redis.REDIS_URL}}"
 PORT = "${{PORT}}"
+STORAGE_PATH = "/app/storage"
 
 # Frontend
 VITE_API_BASE_URL = "https://${{backend.RAILWAY_PUBLIC_DOMAIN}}"

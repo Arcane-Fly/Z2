@@ -8,3 +8,4 @@ DATABASE_URL=${{database.DATABASE_URL}}
 REDIS_URL=${{redis.REDIS_URL}}
 DEBUG=false
 LOG_LEVEL=INFO
+STORAGE_PATH=/app/storage
