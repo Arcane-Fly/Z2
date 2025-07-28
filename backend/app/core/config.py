@@ -130,7 +130,7 @@ class Settings(BaseSettings):
 
     # File Storage
     storage_type: str = Field(default="local", description="Storage type")
-    storage_path: str = Field(default="./storage", description="Local storage path")
+    storage_path: str = Field(default="/app/storage", description="Local storage path")
     max_file_size_mb: int = Field(default=10, description="Maximum file size in MB")
 
     # MCP Protocol Configuration

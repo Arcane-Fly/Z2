@@ -26,6 +26,9 @@ RUN poetry config virtualenvs.create false \
 # Copy application code
 COPY backend/app ./app
 
+# Create storage directory with proper permissions
+RUN mkdir -p /app/storage && chmod 755 /app/storage
+
 # Set environment variable for port
 ENV PORT=${PORT}
 ENV HOST=0.0.0.0

@@ -32,6 +32,9 @@ ARG PORT=80
 # Copy built app to nginx
 COPY --from=frontend /app/dist /usr/share/nginx/html
 
+# Create storage directory for shared files
+RUN mkdir -p /app/storage && chmod 755 /app/storage
+
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
