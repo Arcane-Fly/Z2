@@ -3,17 +3,68 @@ Test configuration and fixtures for Z2 backend tests.
 """
 
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+import os
 
 from app.main import create_application
+from app.database.base import Base
+from app.database.session import get_db
+
+
+# Test database URL
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL", 
+    "sqlite+aiosqlite:///./test.db"
+)
+
+# Create test engine
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    echo=False,
+    future=True
+)
+
+# Create test session factory
+TestSessionLocal = sessionmaker(
+    bind=test_engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
+
+@pytest_asyncio.fixture
+async def test_db():
+    """Create test database and clean up after tests."""
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    async with TestSessionLocal() as session:
+        yield session
+    
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest.fixture
-def client():
+def client(test_db):
     """Create a test client for the FastAPI application."""
     app = create_application()
-    return TestClient(app)
+    
+    # Override the dependency to use test database
+    async def override_get_db():
+        yield test_db
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    # Clean up overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -24,6 +75,9 @@ def mock_db():
     mock.rollback = AsyncMock()
     mock.close = AsyncMock()
     mock.flush = AsyncMock()
+    mock.add = AsyncMock()
+    mock.delete = AsyncMock()
+    mock.refresh = AsyncMock()
     return mock
 
 
@@ -125,3 +179,91 @@ def mock_consent_service():
     mock.cleanup_expired_consents = AsyncMock(return_value=0)
     
     return mock
+
+
+@pytest.fixture
+def sample_user_data():
+    """Sample user data for testing."""
+    return {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "TestPassword123!",
+        "role": "operator",
+        "is_active": True
+    }
+
+
+@pytest.fixture
+def sample_agent_data():
+    """Sample agent data for testing."""
+    return {
+        "name": "Test Agent",
+        "description": "A test agent for unit testing",
+        "capabilities": ["reasoning", "analysis"],
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "temperature": 0.7,
+        "max_tokens": 2048
+    }
+
+
+@pytest.fixture
+def sample_workflow_data():
+    """Sample workflow data for testing."""
+    return {
+        "name": "Test Workflow",
+        "description": "A test workflow for unit testing",
+        "steps": [
+            {
+                "name": "Step 1",
+                "agent_id": "test-agent-1",
+                "input_schema": {"type": "string"},
+                "output_schema": {"type": "string"}
+            }
+        ],
+        "input_schema": {"type": "object"},
+        "output_schema": {"type": "object"}
+    }
+
+
+# Security test fixtures
+@pytest.fixture
+def security_headers():
+    """Expected security headers for testing."""
+    return {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "default-src 'self'",
+    }
+
+
+@pytest.fixture
+def malicious_payloads():
+    """Common malicious payloads for security testing."""
+    return {
+        "sql_injection": [
+            "'; DROP TABLE users; --",
+            "1' OR '1'='1",
+            "admin'--",
+            "admin'/*",
+        ],
+        "xss": [
+            "<script>alert('xss')</script>",
+            "javascript:alert('xss')",
+            "<img src=x onerror=alert('xss')>",
+            "'\"><script>alert('xss')</script>",
+        ],
+        "path_traversal": [
+            "../../../etc/passwd",
+            "..\\..\\..\\windows\\system32\\config\\sam",
+            "....//....//....//etc/passwd",
+        ],
+        "command_injection": [
+            "; cat /etc/passwd",
+            "| cat /etc/passwd",
+            "& cat /etc/passwd",
+            "`cat /etc/passwd`",
+        ]
+    }
