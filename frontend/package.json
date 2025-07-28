@@ -34,7 +34,7 @@
     "tailwind-merge": "^2.0.0"
   },
   "devDependencies": {
-    "@axe-core/react": "^4.10.3",
+    "@axe-core/react": "^4.8.2",
     "@playwright/test": "^1.50.3",
     "@taplo/cli": "^0.7.0",
     "@testing-library/jest-dom": "^6.6.3",
