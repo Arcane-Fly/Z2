@@ -1,0 +1,10 @@
+# Backend service environment variables for Railway
+PORT=$PORT
+NODE_ENV=production
+PYTHON_VERSION=3.11
+POETRY_VERSION=1.6.1
+FRONTEND_URL=${{z2-frontend.RAILWAY_PUBLIC_DOMAIN}}
+DATABASE_URL=${{database.DATABASE_URL}}
+REDIS_URL=${{redis.REDIS_URL}}
+DEBUG=false
+LOG_LEVEL=INFO
