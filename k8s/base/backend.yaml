@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: z2-backend
+  namespace: z2
+  labels:
+    app: z2-backend
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: z2-backend
+  template:
+    metadata:
+      labels:
+        app: z2-backend
+        component: api
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: z2-backend
+        image: z2-backend:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 8001
+          name: metrics
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8000"
+        - name: DEBUG
+          value: "false"
+        envFrom:
+        - configMapRef:
+            name: z2-config
+        - secretRef:
+            name: z2-secrets
+        volumeMounts:
+        - name: storage
+          mountPath: /app/storage
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: z2-storage-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: z2-backend
+  namespace: z2
+  labels:
+    app: z2-backend
+    component: api
+spec:
+  selector:
+    app: z2-backend
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  - name: metrics
+    port: 8001
+    targetPort: 8001
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: z2-storage-pvc
+  namespace: z2
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
