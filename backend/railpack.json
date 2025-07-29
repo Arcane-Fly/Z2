@@ -19,6 +19,19 @@
       "...",
       { "step": "install" }
     ],
-    "startCommand": "poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    "startCommand": "poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "variables": {
+      "PORT": "$PORT",
+      "NODE_ENV": "production",
+      "PYTHON_VERSION": "3.12",
+      "POETRY_VERSION": "1.6.1",
+      "STORAGE_PATH": "/app/storage",
+      "APP_NAME": "Z2 AI Workforce Platform",
+      "APP_VERSION": "0.1.0",
+      "DEBUG": "false",
+      "LOG_LEVEL": "INFO",
+      "CORS_ORIGINS": "[\"https://${{services.frontend.RAILWAY_PUBLIC_DOMAIN}}\"]",
+      "API_V1_PREFIX": "/api/v1"
+    }
   }
 }
