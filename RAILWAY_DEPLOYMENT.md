@@ -43,37 +43,13 @@ Added missing nginx configuration for frontend static file serving with:
 
 ## Environment Variables
 
-### Backend Environment Variables (`backend_env_vars.txt`)
-```
-PORT=$PORT
-NODE_ENV=production
-PYTHON_VERSION=3.11
-POETRY_VERSION=1.6.1
-FRONTEND_URL=${{z2-frontend.RAILWAY_PUBLIC_DOMAIN}}
-DATABASE_URL=${{database.DATABASE_URL}}
-REDIS_URL=${{redis.REDIS_URL}}
-DEBUG=false
-LOG_LEVEL=INFO
-```
-
-### Frontend Environment Variables (`frontend_env_vars.txt`)
-```
-VITE_API_URL=${{z2-backend.RAILWAY_PUBLIC_DOMAIN}}
-VITE_API_BASE_URL=https://${{z2-backend.RAILWAY_PUBLIC_DOMAIN}}/api
-VITE_WS_BASE_URL=wss://${{z2-backend.RAILWAY_PUBLIC_DOMAIN}}
-NODE_ENV=production
-VITE_ENABLE_DEBUG=false
-PORT=$PORT
-```
+### Environment Variables
+The necessary environment variables are now defined in the `railpack.json` file. Railway will automatically provision these variables for each service.
 
 ## Deployment Steps
 
-### Option 1: Using Railpack Configuration (Recommended)
-1. The `railpack.json` file should be automatically detected by Railway
-2. Create two separate services in Railway Dashboard:
-   - Backend service pointing to this repository
-   - Frontend service pointing to this repository
-3. Apply the environment variables from the respective `.txt` files
+### Using Railpack Configuration
+The `railpack.json` file will be automatically detected by Railway. When you create a new project from this repository, Railway will create the `backend`, `frontend`, `postgres`, and `redis` services, and configure them with the correct environment variables and settings.
 
 ### Option 2: Using Service-Specific Configuration
 1. Create backend service with root directory: `backend/`
