@@ -129,23 +129,9 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ### Railway Deployment
 
-1. **Set up Railway project:**
-```bash
-railway login
-railway init
-```
+This project is configured for deployment on Railway using `railpack.json`. When you create a project from this repository, Railway will automatically provision the `backend`, `frontend`, `postgres`, and `redis` services with the necessary environment variables.
 
-2. **Configure environment variables:**
-```bash
-railway variables set DATABASE_URL="your-staging-db-url"
-railway variables set SECRET_KEY="your-staging-secret"
-# ... set other variables
-```
-
-3. **Deploy:**
-```bash
-railway deploy
-```
+For more information, see the `RAILWAY_DEPLOYMENT.md` file in the root of the repository.
 
 ### Docker-based Staging
 
