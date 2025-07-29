@@ -2,15 +2,23 @@
   "$schema": "https://schema.railpack.com",
   "provider": "python",
   "packages": {
-    "python": "3.11"
+    "python": "3.12"
   },
-  "buildAptPackages": ["gcc", "g++"],
+  "buildAptPackages": ["libpq-dev", "gcc", "g++"],
   "steps": {
     "install": {
-      "commands": ["pip install poetry", "poetry install --no-root"]
+      "commands": [
+        "pip install --upgrade pip",
+        "pip install poetry",
+        "poetry install --no-root"
+      ]
     }
   },
   "deploy": {
+    "inputs": [
+      "...",
+      { "step": "install" }
+    ],
     "startCommand": "poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
   }
 }
