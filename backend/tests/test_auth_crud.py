@@ -49,7 +49,7 @@ def sample_agent_data():
         "timeout_seconds": 300,
         "tools": ["web_search", "document_analysis"],
         "skills": ["research", "analysis"],
-        "preferred_models": ["openai/gpt-4o-mini"]
+        "preferred_models": ["openai/gpt-4.1-mini"]
     }
 
 

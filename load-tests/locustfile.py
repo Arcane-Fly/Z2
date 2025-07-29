@@ -99,7 +99,7 @@ class AgentTasks(TaskSet):
                 "description": "Load test agent",
                 "role": "assistant",
                 "capabilities": ["text_processing", "data_analysis"],
-                "model": "openai/gpt-4o-mini",
+                "model": "openai/gpt-4.1-mini",
                 "config": {
                     "temperature": 0.7,
                     "max_tokens": 1000
@@ -168,7 +168,7 @@ class WorkflowTasks(TaskSet):
                         "name": "Step 1",
                         "agent_role": "assistant",
                         "task": "Analyze the input data",
-                        "model": "openai/gpt-4o-mini"
+                        "model": "openai/gpt-4.1-mini"
                     }
                 ],
                 "config": {

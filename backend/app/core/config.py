@@ -78,7 +78,7 @@ class Settings(BaseSettings):
 
     # LLM Configuration
     default_model: str = Field(
-        default="openai/gpt-4o-mini", description="Default LLM model"
+        default="openai/gpt-4.1-mini", description="Default LLM model"
     )
     reasoning_model: str = Field(
         default="openai/o3-mini",

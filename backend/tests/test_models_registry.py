@@ -89,11 +89,13 @@ class TestModelsRegistry:
         multimodal_models = get_models_by_capability(ModelCapability.MULTIMODAL)
         assert len(multimodal_models) > 0
         assert "gpt-4o" in multimodal_models
+        assert "gpt-4.1" in multimodal_models
 
         # Test vision models
         vision_models = get_models_by_capability(ModelCapability.VISION)
         assert len(vision_models) > 0
         assert "gpt-4o" in vision_models
+        assert "gpt-4.1" in vision_models
 
     def test_get_reasoning_models(self):
         """Test getting reasoning-optimized models."""
@@ -114,6 +116,7 @@ class TestModelsRegistry:
         multimodal_models = get_multimodal_models()
         assert len(multimodal_models) > 0
         assert "gpt-4o" in multimodal_models
+        assert "gpt-4.1" in multimodal_models
 
         # Verify they all have multimodal capability
         for model_id, spec in multimodal_models.items():

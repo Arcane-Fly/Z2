@@ -75,7 +75,7 @@ def test_metrics_collection():
     
     # Record some test metrics
     metrics_collector.record_request("/test", "GET", 200, 0.5)
-    metrics_collector.record_model_request("openai", "gpt-4o-mini", "success", 1.2)
+    metrics_collector.record_model_request("openai", "gpt-4.1-mini", "success", 1.2)
     
     # Check metrics are recorded
     metrics = metrics_collector.get_metrics()
