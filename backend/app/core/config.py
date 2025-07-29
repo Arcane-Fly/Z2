@@ -157,9 +157,16 @@ class Settings(BaseSettings):
         return not self.debug
 
     @property
+    def database_url_async(self) -> str:
+        """Get async database URL with asyncpg driver."""
+        if self.database_url.startswith("postgresql://"):
+            return self.database_url.replace("postgresql://", "postgresql+asyncpg://")
+        return self.database_url
+
+    @property
     def database_url_sync(self) -> str:
         """Get synchronous database URL for migrations."""
-        return self.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        return self.database_url_async.replace("postgresql+asyncpg://", "postgresql://")
 
 
 @lru_cache
