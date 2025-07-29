@@ -1,0 +1,106 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: z2-production
+
+bases:
+- ../../base
+
+namePrefix: prod-
+
+patchesStrategicMerge:
+- |-
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: z2-config
+    namespace: z2-production
+  data:
+    APP_NAME: "Z2 AI Workforce Platform"
+    DEBUG: "false"
+    LOG_LEVEL: "INFO"
+    RATE_LIMIT_REQUESTS_PER_MINUTE: "100"
+
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: z2-backend
+    namespace: z2-production
+  spec:
+    replicas: 3
+    template:
+      spec:
+        containers:
+        - name: z2-backend
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: z2-frontend
+    namespace: z2-production
+  spec:
+    replicas: 3
+    template:
+      spec:
+        containers:
+        - name: z2-frontend
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "400m"
+
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: postgres
+    namespace: z2-production
+  spec:
+    template:
+      spec:
+        containers:
+        - name: postgres
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+
+- |-
+  apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: postgres-pvc
+    namespace: z2-production
+  spec:
+    resources:
+      requests:
+        storage: 50Gi
+
+- |-
+  apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: z2-storage-pvc
+    namespace: z2-production
+  spec:
+    resources:
+      requests:
+        storage: 100Gi
+
+commonLabels:
+  environment: production

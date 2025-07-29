@@ -1,0 +1,9 @@
+[bandit]
+exclude_dirs = ["tests", "migrations", ".venv", "venv"]
+skips = ["B101"]  # Skip assert_used test
+
+[bandit.assert_used]
+skips = ["*_test.py", "*test*.py"]
+
+[bandit.hardcoded_password_string]
+word_list = ["password", "pass", "passwd", "pwd", "secret", "token"]

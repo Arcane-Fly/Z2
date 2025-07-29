@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: z2
+
+resources:
+- namespace.yaml
+- configmap.yaml
+- secrets.yaml
+- postgres.yaml
+- redis.yaml
+- backend.yaml
+- frontend.yaml
+- ingress.yaml
+
+images:
+- name: z2-backend
+  newTag: latest
+- name: z2-frontend
+  newTag: latest
+
+commonLabels:
+  app.kubernetes.io/name: z2
+  app.kubernetes.io/part-of: z2-platform
+  app.kubernetes.io/version: v0.1.0
+
+patchesStrategicMerge:
+- |-
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: z2-config
+    namespace: z2
+  data:
+    DEBUG: "false"

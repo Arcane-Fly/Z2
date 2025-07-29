@@ -1,0 +1,87 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: z2-staging
+
+bases:
+- ../../base
+
+namePrefix: staging-
+
+patchesStrategicMerge:
+- |-
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: z2-config
+    namespace: z2-staging
+  data:
+    APP_NAME: "Z2 AI Workforce Platform (Staging)"
+    DEBUG: "true"
+    LOG_LEVEL: "DEBUG"
+
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: z2-backend
+    namespace: z2-staging
+  spec:
+    replicas: 1
+    template:
+      spec:
+        containers:
+        - name: z2-backend
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "125m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: z2-frontend
+    namespace: z2-staging
+  spec:
+    replicas: 1
+
+- |-
+  apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    name: z2-ingress
+    namespace: z2-staging
+  spec:
+    tls:
+    - hosts:
+      - staging.z2.yourdomain.com
+      - api-staging.z2.yourdomain.com
+      secretName: z2-staging-tls
+    rules:
+    - host: staging.z2.yourdomain.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: staging-z2-frontend
+              port:
+                number: 80
+    - host: api-staging.z2.yourdomain.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: staging-z2-backend
+              port:
+                number: 8000
+
+commonLabels:
+  environment: staging

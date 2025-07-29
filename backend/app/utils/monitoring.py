@@ -14,6 +14,7 @@ from typing import Any, Optional
 import psutil
 import sentry_sdk
 import structlog
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
@@ -316,12 +317,66 @@ class MetricsCollector:
     """Collect and expose metrics for monitoring."""
 
     def __init__(self):
+        # Legacy collections for JSON endpoint
         self.request_counts = {}
         self.response_times = {}
         self.error_counts = {}
+        
+        # Prometheus metrics
+        self.http_requests_total = Counter(
+            'z2_http_requests_total',
+            'Total number of HTTP requests',
+            ['method', 'endpoint', 'status_code']
+        )
+        
+        self.http_request_duration = Histogram(
+            'z2_http_request_duration_seconds',
+            'HTTP request latency',
+            ['method', 'endpoint']
+        )
+        
+        self.http_requests_in_progress = Gauge(
+            'z2_http_requests_in_progress',
+            'Number of HTTP requests currently being processed'
+        )
+        
+        self.model_requests_total = Counter(
+            'z2_model_requests_total',
+            'Total number of LLM model requests',
+            ['provider', 'model', 'status']
+        )
+        
+        self.model_request_duration = Histogram(
+            'z2_model_request_duration_seconds',
+            'Model request latency',
+            ['provider', 'model']
+        )
+        
+        self.active_agents = Gauge(
+            'z2_active_agents',
+            'Number of currently active agents'
+        )
+        
+        self.workflow_executions_total = Counter(
+            'z2_workflow_executions_total',
+            'Total number of workflow executions',
+            ['status']
+        )
+        
+        self.database_connections = Gauge(
+            'z2_database_connections',
+            'Number of active database connections'
+        )
+        
+        self.redis_operations_total = Counter(
+            'z2_redis_operations_total',
+            'Total Redis operations',
+            ['operation', 'status']
+        )
 
     def record_request(self, endpoint: str, method: str, status_code: int, duration: float):
         """Record request metrics."""
+        # Legacy metrics
         key = f"{method}_{endpoint}"
 
         # Count requests
@@ -339,6 +394,51 @@ class MetricsCollector:
             if key not in self.error_counts:
                 self.error_counts[key] = 0
             self.error_counts[key] += 1
+        
+        # Prometheus metrics
+        self.http_requests_total.labels(
+            method=method,
+            endpoint=endpoint,
+            status_code=str(status_code)
+        ).inc()
+        
+        self.http_request_duration.labels(
+            method=method,
+            endpoint=endpoint
+        ).observe(duration)
+
+    def record_model_request(self, provider: str, model: str, status: str, duration: float):
+        """Record LLM model request metrics."""
+        self.model_requests_total.labels(
+            provider=provider,
+            model=model,
+            status=status
+        ).inc()
+        
+        if status == "success":
+            self.model_request_duration.labels(
+                provider=provider,
+                model=model
+            ).observe(duration)
+
+    def set_active_agents(self, count: int):
+        """Set the number of active agents."""
+        self.active_agents.set(count)
+
+    def record_workflow_execution(self, status: str):
+        """Record workflow execution."""
+        self.workflow_executions_total.labels(status=status).inc()
+
+    def set_database_connections(self, count: int):
+        """Set database connection count."""
+        self.database_connections.set(count)
+
+    def record_redis_operation(self, operation: str, status: str):
+        """Record Redis operation."""
+        self.redis_operations_total.labels(
+            operation=operation,
+            status=status
+        ).inc()
 
     def get_metrics(self) -> dict[str, Any]:
         """Get current metrics."""
@@ -355,6 +455,10 @@ class MetricsCollector:
             },
             "error_counts": self.error_counts.copy()
         }
+    
+    def get_prometheus_metrics(self) -> bytes:
+        """Get metrics in Prometheus format."""
+        return generate_latest()
 
 
 # Global instances

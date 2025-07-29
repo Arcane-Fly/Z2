@@ -14,6 +14,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import Response
 
 from app.api.v1 import api_router
 from app.core.config import settings
@@ -23,6 +24,7 @@ from app.utils.monitoring import (
     health_checker,
     initialize_monitoring,
     metrics_collector,
+    CONTENT_TYPE_LATEST,
 )
 
 logger = structlog.get_logger(__name__)
@@ -218,9 +220,58 @@ def create_application() -> FastAPI:
                 "error": str(e),
             }
 
+    @app.get("/health/live")
+    async def liveness_probe():
+        """Kubernetes liveness probe - checks if the application is running."""
+        try:
+            # Simple check that the application is responsive
+            # Don't check external dependencies for liveness
+            return {
+                "status": "alive",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "app": settings.app_name,
+                "version": settings.app_version,
+                "uptime_seconds": round(time.time() - health_checker.start_time, 2)
+            }
+        except Exception as e:
+            logger.error("Liveness probe failed", error=str(e))
+            return Response(status_code=503, content="Service not alive")
+
+    @app.get("/health/ready")
+    async def readiness_probe():
+        """Kubernetes readiness probe - checks if the application is ready to serve traffic."""
+        try:
+            # Check essential dependencies for readiness
+            health_status = await health_checker.comprehensive_health_check()
+            
+            # For readiness, we're more strict about dependencies
+            if health_status["status"] == "unhealthy":
+                return Response(status_code=503, content="Service not ready")
+            
+            return {
+                "status": "ready",
+                "timestamp": datetime.now(UTC).isoformat(),
+                "app": settings.app_name,
+                "version": settings.app_version,
+                "checks": health_status.get("checks", {})
+            }
+        except Exception as e:
+            logger.error("Readiness probe failed", error=str(e))
+            return Response(status_code=503, content="Service not ready")
+
     @app.get("/metrics")
-    async def get_metrics():
-        """Get application metrics for monitoring."""
+    async def get_prometheus_metrics():
+        """Get Prometheus metrics."""
+        try:
+            metrics_data = metrics_collector.get_prometheus_metrics()
+            return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
+        except Exception as e:
+            logger.error("Prometheus metrics collection failed", error=str(e))
+            return Response(content=b"", media_type=CONTENT_TYPE_LATEST, status_code=500)
+
+    @app.get("/metrics/json")
+    async def get_json_metrics():
+        """Get application metrics in JSON format for monitoring."""
         try:
             return {
                 "timestamp": datetime.now(UTC).isoformat(),
@@ -229,7 +280,7 @@ def create_application() -> FastAPI:
                 "metrics": metrics_collector.get_metrics()
             }
         except Exception as e:
-            logger.error("Metrics collection failed", error=str(e))
+            logger.error("JSON metrics collection failed", error=str(e))
             return {"error": str(e)}
 
     @app.get("/")
