@@ -88,18 +88,38 @@ services:
 
 ## Environment Configuration
 
+**IMPORTANT**: The following environment variables are now automatically configured in the railpack.json files for Railway deployment. Users deploying manually or on other platforms should set these variables via their platform's dashboard.
+
 ### Backend Environment Variables
 
 Set these in Railway Dashboard → Project → Backend Service → Variables:
 
-#### Required Variables
+#### Core Application Variables (Auto-configured in railpack.json)
+These variables are now automatically set by Railway when using railpack.json configuration:
+
 ```bash
-# Application
-DEBUG=false
-LOG_LEVEL=INFO
+# Application Identity
 APP_NAME="Z2 AI Workforce Platform"
 APP_VERSION="0.1.0"
 
+# Environment Configuration  
+DEBUG=false
+LOG_LEVEL=INFO
+
+# API Configuration
+API_V1_PREFIX=/api/v1
+CORS_ORIGINS=["https://${{services.frontend.RAILWAY_PUBLIC_DOMAIN}}"]
+
+# Infrastructure
+PORT=$PORT  # Automatically provided by Railway
+NODE_ENV=production
+PYTHON_VERSION=3.12
+POETRY_VERSION=1.6.1
+STORAGE_PATH=/app/storage
+```
+
+#### Required Variables
+```bash
 # Database (Railway provides these automatically)
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 REDIS_URL=${{Redis.REDIS_URL}}
@@ -116,15 +136,11 @@ GROQ_API_KEY=your-groq-production-key
 GOOGLE_API_KEY=your-google-production-key
 PERPLEXITY_API_KEY=your-perplexity-production-key
 
-# API Settings
-API_V1_PREFIX=/api/v1
-CORS_ORIGINS=["https://z2.railway.app"]
-
 # Agent Configuration
 MAX_AGENTS_PER_WORKFLOW=10
 AGENT_TIMEOUT_SECONDS=300
 MAX_WORKFLOW_DURATION_HOURS=24
-DEFAULT_MODEL=openai/gpt-4o-mini
+DEFAULT_MODEL=openai/gpt-4.1-mini
 MAX_TOKENS=4096
 TEMPERATURE=0.7
 
@@ -150,23 +166,66 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 openssl rand -base64 32
 ```
 
+### Model Configuration Updates
+
+#### GPT-4.1 Model Migration
+The platform has been updated to use GPT-4.1 models as the default instead of GPT-4o models for improved performance and capabilities:
+
+**Model Mapping:**
+- `gpt-4o` → `gpt-4.1` (flagship model)
+- `gpt-4o-mini` → `gpt-4.1-mini` (default cost-optimized model)
+- Multimodal/Vision tasks now use `gpt-4.1` by default
+
+**Benefits of GPT-4.1:**
+- Larger context window (1M tokens vs 128K)
+- Enhanced reasoning capabilities
+- Better code generation performance
+- Updated knowledge cutoff (April 2025)
+
+**Environment Variable Updates:**
+```bash
+# OLD
+DEFAULT_MODEL=openai/gpt-4o-mini
+
+# NEW
+DEFAULT_MODEL=openai/gpt-4.1-mini
+```
+
+**Backward Compatibility:**
+- GPT-4o models remain available for legacy configurations
+- Existing API calls using gpt-4o models will continue to work
+- Model registry supports both gpt-4o and gpt-4.1 families
+
 ### Frontend Environment Variables
 
+**IMPORTANT**: The core frontend variables are now automatically configured in the railpack.json file. Additional variables should be set in Railway Dashboard → Project → Frontend Service → Variables:
+
+#### Core Variables (Auto-configured in railpack.json)
+```bash
+# API Configuration
+VITE_API_BASE_URL=https://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}
+VITE_WS_BASE_URL=wss://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}
+
+# Application Identity
+VITE_APP_NAME="Z2 AI Workforce Platform"
+VITE_APP_VERSION="0.1.0"
+
+# Infrastructure
+PORT=$PORT  # Automatically provided by Railway
+NODE_ENV=production
+```
+
+#### Optional Additional Variables
 Set these in Railway Dashboard → Project → Frontend Service → Variables:
 
 ```bash
 # API Configuration
-VITE_API_BASE_URL=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}
 VITE_API_TIMEOUT=30000
 
 # Authentication
 VITE_AUTH_TOKEN_KEY=z2_auth_token
 VITE_REFRESH_TOKEN_KEY=z2_refresh_token
 VITE_AUTH_ENABLED=true
-
-# Application
-VITE_APP_NAME="Z2 AI Workforce Platform"
-VITE_APP_VERSION="0.1.0"
 
 # Feature Flags
 VITE_ENABLE_DEBUG=false
@@ -187,6 +246,35 @@ VITE_WS_BASE_URL=wss://${{backend.RAILWAY_PUBLIC_DOMAIN}}
 # Monitoring (optional)
 VITE_SENTRY_DSN=your-sentry-dsn-if-using
 ```
+
+### Important Notes About Environment Variables
+
+#### Why These Variables Are Critical
+The environment variables configured in railpack.json are essential for production deployment:
+
+1. **APP_NAME & APP_VERSION**: Used for service identification, logging, and monitoring
+2. **DEBUG & LOG_LEVEL**: Control application verbosity and debugging features
+3. **API_V1_PREFIX**: Defines API routing structure for proper endpoint resolution
+4. **CORS_ORIGINS**: Critical for security - prevents unauthorized cross-origin requests
+5. **VITE_API_BASE_URL & VITE_WS_BASE_URL**: Frontend must know backend endpoints for communication
+
+#### Manual Platform Deployment
+For deployments outside Railway, ensure these variables are set via your platform's environment variable interface:
+
+**Backend Required:**
+- All variables listed in "Core Application Variables" section
+- LLM Provider API keys
+- Database and Redis connection strings
+
+**Frontend Required:**
+- All variables listed in "Core Variables" section
+- Proper backend endpoint URLs
+
+#### Security Considerations
+- Never commit API keys or secrets to version control
+- Use your platform's secret management for sensitive variables
+- Regularly rotate API keys and secret keys
+- Validate CORS_ORIGINS match your actual domain names
 
 ## Database Setup
 
