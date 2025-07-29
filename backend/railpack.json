@@ -33,5 +33,11 @@
       "CORS_ORIGINS": "[\"https://${{services.frontend.RAILWAY_PUBLIC_DOMAIN}}\"]",
       "API_V1_PREFIX": "/api/v1"
     }
-  }
+  },
+  "volumes": [
+    {
+      "name": "app_storage",
+      "mountPath": "/app/storage"
+    }
+  ]
 }
