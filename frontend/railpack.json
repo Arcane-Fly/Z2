@@ -25,7 +25,14 @@
       "VITE_API_BASE_URL": "https://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
       "VITE_WS_BASE_URL": "wss://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
       "VITE_APP_NAME": "Z2 AI Workforce Platform",
-      "VITE_APP_VERSION": "0.1.0"
+      "VITE_APP_VERSION": "0.1.0",
+      "STORAGE_PATH": "/app/storage"
     }
-  }
+  },
+  "volumes": [
+    {
+      "name": "app_storage",
+      "mountPath": "/app/storage"
+    }
+  ]
 }
