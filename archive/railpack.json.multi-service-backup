@@ -1,0 +1,89 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "services": {
+    "backend": {
+      "provider": "python",
+      "packages": {
+        "python": "3.12"
+      },
+      "buildAptPackages": ["libpq-dev", "gcc", "g++"],
+      "rootDirectory": "./backend",
+      "steps": {
+        "install": {
+          "commands": [
+            "pip install --upgrade pip",
+            "pip install poetry",
+            "poetry install --no-root"
+          ]
+        }
+      },
+      "deploy": {
+        "inputs": [
+          "...",
+          { "step": "install" }
+        ],
+        "startCommand": "poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+        "variables": {
+          "PORT": "$PORT",
+          "NODE_ENV": "production",
+          "PYTHON_VERSION": "3.12",
+          "POETRY_VERSION": "1.6.1",
+          "STORAGE_PATH": "/app/storage",
+          "APP_NAME": "Z2 AI Workforce Platform",
+          "APP_VERSION": "0.1.0",
+          "DEBUG": "false",
+          "LOG_LEVEL": "INFO",
+          "CORS_ORIGINS": "[\"https://${{services.frontend.RAILWAY_PUBLIC_DOMAIN}}\"]",
+          "API_V1_PREFIX": "/api/v1"
+        }
+      },
+      "volumes": [
+        {
+          "name": "app_storage",
+          "mountPath": "/app/storage"
+        }
+      ],
+      "variables": {
+        "STORAGE_PATH": "/app/storage"
+      }
+    },
+    "frontend": {
+      "provider": "node",
+      "packages": {
+        "node": "20"
+      },
+      "rootDirectory": "./frontend",
+      "steps": {
+        "install": {
+          "commands": ["npm ci"]
+        },
+        "build": {
+          "inputs": [{ "step": "install" }],
+          "commands": ["npm run build"]
+        }
+      },
+      "deploy": {
+        "inputs": [
+          "...",
+          { "step": "build" }
+        ],
+        "startCommand": "npm run start",
+        "variables": {
+          "PORT": "$PORT",
+          "NODE_ENV": "production",
+          "VITE_API_BASE_URL": "https://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
+          "VITE_WS_BASE_URL": "wss://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
+          "VITE_APP_NAME": "Z2 AI Workforce Platform",
+          "VITE_APP_VERSION": "0.1.0",
+          "STORAGE_PATH": "/app/storage"
+        }
+      },
+      "volumes": [
+        {
+          "name": "app_storage",
+          "mountPath": "/app/storage"
+        }
+      ]
+    }
+  }
+}
