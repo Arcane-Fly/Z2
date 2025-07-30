@@ -67,7 +67,7 @@
           "...",
           { "step": "build" }
         ],
-        "startCommand": "npm run preview",
+        "startCommand": "npm run start",
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",
