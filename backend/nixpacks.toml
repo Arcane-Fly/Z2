@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python312", "postgresql_16.dev", "gcc", "g++"]
+nixPkgs = ["python312", "postgresql", "gcc", "g++"]
 
 [phases.install]
 dependsOn = ["setup"]
