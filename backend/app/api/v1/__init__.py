@@ -11,12 +11,14 @@ from app.api.v1.endpoints import (
     agents,
     auth,
     consent,
+    debug,
     mcp,
     models,
     quantum,
     users,
     workflows,
 )
+from app.core.config import settings
 
 api_router = APIRouter()
 
@@ -30,3 +32,7 @@ api_router.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
 api_router.include_router(consent.router, prefix="/consent", tags=["consent"])
 api_router.include_router(a2a.router, prefix="/a2a", tags=["a2a"])
 api_router.include_router(quantum.router, prefix="/multi-agent-system/quantum", tags=["quantum"])
+
+# Include debug endpoints only in development or when explicitly enabled
+if settings.debug or settings.log_level.lower() == "debug":
+    api_router.include_router(debug.router, prefix="/debug", tags=["debug"])
