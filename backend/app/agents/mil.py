@@ -480,6 +480,298 @@ class GroqProvider(LLMProvider):
         return input_cost + output_cost
 
 
+class GoogleAIProvider(LLMProvider):
+    """Google AI (Gemini) provider implementation."""
+
+    def __init__(self, api_key: str, **kwargs):
+        super().__init__(api_key, **kwargs)
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            self.genai = genai
+        except ImportError:
+            raise ImportError("google-generativeai package is required for Google AI provider")
+
+        self.models = {
+            "gemini-1.5-pro": ModelInfo(
+                id="gemini-1.5-pro",
+                provider="google",
+                name="Gemini 1.5 Pro",
+                description="Advanced reasoning and long context understanding",
+                capabilities=[
+                    ModelCapability.TEXT_GENERATION,
+                    ModelCapability.FUNCTION_CALLING,
+                    ModelCapability.STRUCTURED_OUTPUT,
+                    ModelCapability.IMAGE_INPUT,
+                    ModelCapability.CODE_GENERATION,
+                    ModelCapability.LONG_CONTEXT,
+                ],
+                context_window=2_000_000,
+                input_cost_per_million_tokens=1.25,
+                output_cost_per_million_tokens=5.0,
+                max_tokens_per_minute=180_000,
+                avg_latency_ms=800,
+                quality_score=0.92,
+            ),
+            "gemini-1.5-flash": ModelInfo(
+                id="gemini-1.5-flash",
+                provider="google",
+                name="Gemini 1.5 Flash",
+                description="Fast and efficient for most tasks",
+                capabilities=[
+                    ModelCapability.TEXT_GENERATION,
+                    ModelCapability.FUNCTION_CALLING,
+                    ModelCapability.STRUCTURED_OUTPUT,
+                    ModelCapability.IMAGE_INPUT,
+                    ModelCapability.CODE_GENERATION,
+                    ModelCapability.LONG_CONTEXT,
+                ],
+                context_window=1_048_576,
+                input_cost_per_million_tokens=0.075,
+                output_cost_per_million_tokens=0.3,
+                max_tokens_per_minute=400_000,
+                avg_latency_ms=300,
+                quality_score=0.85,
+            ),
+            "gemini-2.0-flash-exp": ModelInfo(
+                id="gemini-2.0-flash-exp",
+                provider="google",
+                name="Gemini 2.0 Flash (Experimental)",
+                description="Latest experimental model with enhanced capabilities",
+                capabilities=[
+                    ModelCapability.TEXT_GENERATION,
+                    ModelCapability.FUNCTION_CALLING,
+                    ModelCapability.STRUCTURED_OUTPUT,
+                    ModelCapability.IMAGE_INPUT,
+                    ModelCapability.CODE_GENERATION,
+                    ModelCapability.LONG_CONTEXT,
+                ],
+                context_window=1_048_576,
+                input_cost_per_million_tokens=0.0,  # Free during experimental phase
+                output_cost_per_million_tokens=0.0,
+                max_tokens_per_minute=200_000,
+                avg_latency_ms=400,
+                quality_score=0.90,
+            ),
+        }
+
+    async def generate(self, request: LLMRequest) -> LLMResponse:
+        """Generate response using Google AI (Gemini)."""
+        try:
+            start_time = time.time()
+            
+            # Configure model
+            model = self.genai.GenerativeModel(request.model)
+            
+            # Prepare messages
+            messages = []
+            for msg in request.messages:
+                messages.append({
+                    "role": msg.role,
+                    "parts": [msg.content]
+                })
+            
+            # Generate response
+            response = await model.generate_content_async(
+                messages,
+                generation_config={
+                    "temperature": request.temperature,
+                    "max_output_tokens": request.max_tokens,
+                    "top_p": getattr(request, 'top_p', 0.9),
+                    "top_k": getattr(request, 'top_k', 40),
+                }
+            )
+
+            latency_ms = (time.time() - start_time) * 1000
+
+            # Calculate cost
+            usage = response.usage_metadata
+            input_tokens = usage.prompt_token_count if usage else 0
+            output_tokens = usage.candidates_token_count if usage else 0
+            cost = self.calculate_cost(input_tokens, output_tokens, request.model)
+
+            return LLMResponse(
+                content=response.text,
+                model_used=request.model,
+                provider="google",
+                tokens_used=input_tokens + output_tokens,
+                cost_usd=cost,
+                latency_ms=latency_ms,
+                finish_reason="stop" if response.candidates[0].finish_reason.name == "STOP" else "length",
+                metadata={
+                    "usage": {
+                        "prompt_tokens": input_tokens,
+                        "completion_tokens": output_tokens,
+                        "total_tokens": input_tokens + output_tokens,
+                    }
+                },
+            )
+
+        except Exception as e:
+            logger.error("Google AI API error", error=str(e), model=request.model)
+            raise
+
+    def get_available_models(self) -> list[ModelInfo]:
+        """Get available Google AI models."""
+        return list(self.models.values())
+
+    def calculate_cost(
+        self, input_tokens: int, output_tokens: int, model_id: str
+    ) -> float:
+        """Calculate cost for Google AI usage."""
+        if model_id not in self.models:
+            logger.warning("Unknown model for cost calculation", model=model_id)
+            return 0.0
+
+        model_info = self.models[model_id]
+        input_cost = (
+            input_tokens / 1_000_000
+        ) * model_info.input_cost_per_million_tokens
+        output_cost = (
+            output_tokens / 1_000_000
+        ) * model_info.output_cost_per_million_tokens
+
+        return input_cost + output_cost
+
+
+class PerplexityProvider(LLMProvider):
+    """Perplexity provider implementation for web-enabled AI."""
+
+    def __init__(self, api_key: str, **kwargs):
+        super().__init__(api_key, **kwargs)
+        # Perplexity uses OpenAI-compatible API
+        try:
+            import openai
+            self.client = openai.AsyncOpenAI(
+                api_key=api_key,
+                base_url="https://api.perplexity.ai"
+            )
+        except ImportError:
+            raise ImportError("openai package is required for Perplexity provider")
+
+        self.models = {
+            "llama-3.1-sonar-large-128k-online": ModelInfo(
+                id="llama-3.1-sonar-large-128k-online",
+                provider="perplexity",
+                name="Llama 3.1 Sonar Large 128K Online",
+                description="High-performance model with real-time web search",
+                capabilities=[
+                    ModelCapability.TEXT_GENERATION,
+                    ModelCapability.WEB_SEARCH,
+                    ModelCapability.LONG_CONTEXT,
+                    ModelCapability.CODE_GENERATION,
+                ],
+                context_window=127_072,
+                input_cost_per_million_tokens=1.0,
+                output_cost_per_million_tokens=1.0,
+                max_tokens_per_minute=100_000,
+                avg_latency_ms=2000,  # Higher latency due to web search
+                quality_score=0.88,
+            ),
+            "llama-3.1-sonar-small-128k-online": ModelInfo(
+                id="llama-3.1-sonar-small-128k-online",
+                provider="perplexity",
+                name="Llama 3.1 Sonar Small 128K Online",
+                description="Fast model with real-time web search",
+                capabilities=[
+                    ModelCapability.TEXT_GENERATION,
+                    ModelCapability.WEB_SEARCH,
+                    ModelCapability.LONG_CONTEXT,
+                ],
+                context_window=127_072,
+                input_cost_per_million_tokens=0.2,
+                output_cost_per_million_tokens=0.2,
+                max_tokens_per_minute=200_000,
+                avg_latency_ms=1500,
+                quality_score=0.82,
+            ),
+            "llama-3.1-sonar-huge-128k-online": ModelInfo(
+                id="llama-3.1-sonar-huge-128k-online",
+                provider="perplexity",
+                name="Llama 3.1 Sonar Huge 128K Online",
+                description="Most capable model with comprehensive web search",
+                capabilities=[
+                    ModelCapability.TEXT_GENERATION,
+                    ModelCapability.WEB_SEARCH,
+                    ModelCapability.LONG_CONTEXT,
+                    ModelCapability.CODE_GENERATION,
+                    ModelCapability.STRUCTURED_OUTPUT,
+                ],
+                context_window=127_072,
+                input_cost_per_million_tokens=5.0,
+                output_cost_per_million_tokens=5.0,
+                max_tokens_per_minute=50_000,
+                avg_latency_ms=3000,
+                quality_score=0.94,
+            ),
+        }
+
+    async def generate(self, request: LLMRequest) -> LLMResponse:
+        """Generate response using Perplexity API."""
+        try:
+            start_time = time.time()
+
+            # Convert messages to OpenAI format
+            messages = [
+                {"role": msg.role, "content": msg.content} for msg in request.messages
+            ]
+
+            # Generate response
+            response = await self.client.chat.completions.create(
+                model=request.model,
+                messages=messages,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+                top_p=getattr(request, 'top_p', 0.9),
+                stream=False,
+            )
+
+            latency_ms = (time.time() - start_time) * 1000
+
+            # Calculate cost
+            usage = response.usage
+            input_tokens = usage.prompt_tokens if usage else 0
+            output_tokens = usage.completion_tokens if usage else 0
+            cost = self.calculate_cost(input_tokens, output_tokens, request.model)
+
+            return LLMResponse(
+                content=response.choices[0].message.content,
+                model_used=request.model,
+                provider="perplexity",
+                tokens_used=input_tokens + output_tokens,
+                cost_usd=cost,
+                latency_ms=latency_ms,
+                finish_reason=response.choices[0].finish_reason,
+                metadata={"usage": usage.model_dump() if usage else {}},
+            )
+
+        except Exception as e:
+            logger.error("Perplexity API error", error=str(e), model=request.model)
+            raise
+
+    def get_available_models(self) -> list[ModelInfo]:
+        """Get available Perplexity models."""
+        return list(self.models.values())
+
+    def calculate_cost(
+        self, input_tokens: int, output_tokens: int, model_id: str
+    ) -> float:
+        """Calculate cost for Perplexity usage."""
+        if model_id not in self.models:
+            logger.warning("Unknown model for cost calculation", model=model_id)
+            return 0.0
+
+        model_info = self.models[model_id]
+        input_cost = (
+            input_tokens / 1_000_000
+        ) * model_info.input_cost_per_million_tokens
+        output_cost = (
+            output_tokens / 1_000_000
+        ) * model_info.output_cost_per_million_tokens
+
+        return input_cost + output_cost
+
+
 @dataclass
 class RoutingPolicy:
     """Configuration for dynamic model routing."""
@@ -764,7 +1056,15 @@ class ModelIntegrationLayer:
             provider = GroqProvider(settings.groq_api_key)
             self.router.register_provider("groq", provider)
 
-        # TODO: Add Google and Perplexity providers
+        # Google AI
+        if settings.google_api_key:
+            provider = GoogleAIProvider(settings.google_api_key)
+            self.router.register_provider("google", provider)
+
+        # Perplexity
+        if settings.perplexity_api_key:
+            provider = PerplexityProvider(settings.perplexity_api_key)
+            self.router.register_provider("perplexity", provider)
 
         logger.info("Initialized MIL providers", count=len(self.router.providers))
 
