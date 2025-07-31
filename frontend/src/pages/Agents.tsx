@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAgents } from '../hooks/useApi';
 import { useMCPAgents, useMCPAgentExecution } from '../hooks/useMCP';
+import { CreateAgentModal } from '../components/modals';
 import { Agent } from '../types';
 import { PlusIcon, PencilIcon, TrashIcon, PlayIcon } from '@heroicons/react/24/outline';
 
@@ -221,24 +222,11 @@ export function Agents() {
         </div>
       )}
 
-      {/* TODO: Create Agent Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Create Agent</h3>
-            <p className="text-sm text-gray-500 mb-4">Agent creation form coming soon...</p>
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create Agent Modal */}
+      <CreateAgentModal 
+        isOpen={showCreateModal} 
+        onClose={() => setShowCreateModal(false)} 
+      />
     </div>
   )
 }
