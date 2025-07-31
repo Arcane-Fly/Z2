@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth_dependencies import get_current_active_user, RequireWorkflowWrite, RequireWorkflowRead
 from app.database.session import get_db
 from app.models.user import User
 from app.models.workflow import Workflow, WorkflowExecution
@@ -36,6 +37,7 @@ async def list_workflows(
     is_template: Optional[bool] = Query(None, description="Filter by template status"),
     template_category: Optional[str] = Query(None, description="Filter by template category"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """List all workflows with filtering and pagination."""
 
@@ -139,21 +141,10 @@ async def list_workflows(
 async def create_workflow(
     workflow_data: WorkflowCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Create a new multi-agent workflow."""
-    # TODO: Get current user from authentication
-    # For now, we'll need a valid user ID - use the first user as placeholder
-    stmt = select(User).limit(1)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No users found. Create a user first."
-        )
-
-    # Create workflow
+    # Create workflow with authenticated user
     new_workflow = Workflow(
         name=workflow_data.name,
         description=workflow_data.description,
@@ -165,7 +156,7 @@ async def create_workflow(
             "max_cost_usd": workflow_data.max_cost_usd,
             "require_human_approval": workflow_data.require_human_approval
         },
-        created_by=user.id
+        created_by=current_user.id
     )
 
     db.add(new_workflow)
@@ -198,6 +189,7 @@ async def create_workflow(
 async def get_workflow(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get workflow by ID with full configuration and state."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -248,6 +240,7 @@ async def update_workflow(
     workflow_id: UUID,
     workflow_data: WorkflowUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Update workflow configuration."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -258,6 +251,13 @@ async def update_workflow(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workflow not found"
+        )
+
+    # Check if user owns the workflow or is superuser
+    if workflow.created_by != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to modify this workflow"
         )
 
     # Check if workflow can be updated (not running)
@@ -305,6 +305,7 @@ async def update_workflow(
 async def delete_workflow(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Delete workflow by ID."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -315,6 +316,13 @@ async def delete_workflow(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workflow not found"
+        )
+
+    # Check if user owns the workflow or is superuser
+    if workflow.created_by != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this workflow"
         )
 
     # Check if workflow can be deleted (not running)
@@ -338,6 +346,7 @@ async def start_workflow(
     workflow_id: UUID,
     execution_request: WorkflowExecutionRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Start workflow execution."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -380,6 +389,7 @@ async def start_workflow(
 async def stop_workflow(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Stop workflow execution."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -412,6 +422,7 @@ async def stop_workflow(
 async def pause_workflow(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Pause workflow execution."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -444,6 +455,7 @@ async def pause_workflow(
 async def resume_workflow(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Resume paused workflow execution."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -476,6 +488,7 @@ async def resume_workflow(
 async def get_workflow_status(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get current workflow status and execution metrics."""
     stmt = select(Workflow).where(Workflow.id == workflow_id)
@@ -506,6 +519,7 @@ async def get_workflow_status(
 async def get_workflow_logs(
     workflow_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get workflow execution logs and agent traces."""
     # Get workflow executions

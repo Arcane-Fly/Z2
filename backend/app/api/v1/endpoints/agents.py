@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth_dependencies import get_current_active_user, RequireAgentWrite, RequireAgentRead
 from app.database.session import get_db
 from app.models.agent import Agent
 from app.models.user import User
@@ -34,6 +35,7 @@ async def list_agents(
     status: Optional[str] = Query(None, description="Filter by agent status"),
     created_by: Optional[UUID] = Query(None, description="Filter by creator"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """List all agents with filtering and pagination."""
 
@@ -118,21 +120,10 @@ async def list_agents(
 async def create_agent(
     agent_data: AgentCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Create a new agent."""
-    # TODO: Get current user from authentication
-    # For now, we'll need a valid user ID - use the first user as placeholder
-    stmt = select(User).limit(1)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No users found. Create a user first."
-        )
-
-    # Create agent
+    # Create agent with authenticated user
     new_agent = Agent(
         name=agent_data.name,
         description=agent_data.description,
@@ -144,7 +135,7 @@ async def create_agent(
         tools={"tools": agent_data.tools},
         skills={"skills": agent_data.skills},
         model_preferences={"preferred_models": agent_data.preferred_models},
-        created_by=user.id
+        created_by=current_user.id
     )
 
     db.add(new_agent)
@@ -175,6 +166,7 @@ async def create_agent(
 async def get_agent(
     agent_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get agent by ID."""
     stmt = select(Agent).where(Agent.id == agent_id)
@@ -212,6 +204,7 @@ async def update_agent(
     agent_id: UUID,
     agent_data: AgentUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Update agent configuration."""
     stmt = select(Agent).where(Agent.id == agent_id)
@@ -222,6 +215,13 @@ async def update_agent(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Agent not found"
+        )
+
+    # Check if user owns the agent or is superuser
+    if agent.created_by != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to modify this agent"
         )
 
     # Update fields if provided
@@ -256,6 +256,7 @@ async def update_agent(
 async def delete_agent(
     agent_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Delete agent by ID."""
     stmt = select(Agent).where(Agent.id == agent_id)
@@ -266,6 +267,13 @@ async def delete_agent(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Agent not found"
+        )
+
+    # Check if user owns the agent or is superuser
+    if agent.created_by != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this agent"
         )
 
     await db.delete(agent)
@@ -282,6 +290,7 @@ async def execute_agent_task(
     agent_id: UUID,
     execution_request: AgentExecutionRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Execute a task with the specified agent."""
     stmt = select(Agent).where(Agent.id == agent_id)
@@ -313,6 +322,7 @@ async def execute_agent_task(
 async def get_agent_status(
     agent_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get current agent status and performance metrics."""
     stmt = select(Agent).where(Agent.id == agent_id)
