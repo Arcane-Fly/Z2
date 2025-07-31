@@ -17,12 +17,12 @@ This document tracks all outstanding tasks and TODO items across the Z2 codebase
 
 ### Model Provider Completion
 **Location**: `backend/app/agents/mil.py`  
-**Status**: 🔄 In Progress  
+**Status**: ✅ COMPLETED  
 **Priority**: HIGH
 
-- [ ] Add Google AI provider implementation
-- [ ] Add Perplexity provider implementation
-- [ ] Complete provider adapter testing
+- [x] Add Google AI provider implementation
+- [x] Add Perplexity provider implementation
+- [x] Complete provider adapter testing
 
 ### Frontend UI Completion
 **Location**: Frontend components  
