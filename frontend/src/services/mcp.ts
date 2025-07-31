@@ -396,7 +396,7 @@ class MCPService {
       agents: [agentResource.content],
       workflows: workflowResource.content?.workflows || [],
       metrics: metricsResource.content,
-      activity: [] // TODO: Get from activity resource
+      activity: await this.getActivity(20) // Get real activity data
     };
   }
 
@@ -416,6 +416,80 @@ class MCPService {
         console.warn('Error closing MCP session:', error);
       }
       this.sessionId = undefined;
+    }
+  }
+
+  /**
+   * Get recent system activity
+   */
+  async getActivity(limit: number = 50, since?: string): Promise<any[]> {
+    try {
+      const params = new URLSearchParams({ limit: limit.toString() });
+      if (since) {
+        params.append('since', since);
+      }
+      
+      const response = await this.client.get(`/activity?${params}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Failed to get activity:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Connect to real-time activity stream
+   */
+  connectActivityStream(userId: string, onActivity: (activity: any) => void): EventSource | null {
+    try {
+      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      
+      // Use EventSource for WebSocket-like functionality with authentication
+      const eventSource = new EventSource(`${baseURL}/api/v1/activity/stream?user_id=${userId}`);
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          onActivity(data);
+        } catch (error) {
+          console.error('Failed to parse activity stream data:', error);
+        }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error('Activity stream error:', error);
+      };
+      
+      return eventSource;
+    } catch (error) {
+      console.error('Failed to connect activity stream:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get system status and performance metrics
+   */
+  async getSystemStatus(): Promise<any> {
+    try {
+      const response = await this.client.get('/activity/system-status');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get system status:', error);
+      return { success: false, error: 'Failed to fetch system status' };
+    }
+  }
+
+  /**
+   * Get performance metrics for specified timespan
+   */
+  async getPerformanceMetrics(timespan: string = '1h'): Promise<any> {
+    try {
+      const response = await this.client.get(`/activity/performance?timespan=${timespan}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get performance metrics:', error);
+      return { success: false, error: 'Failed to fetch performance metrics' };
     }
   }
 }

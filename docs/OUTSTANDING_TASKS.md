@@ -65,12 +65,12 @@ This document tracks all outstanding tasks and TODO items across the Z2 codebase
 
 ### Frontend Service Integration
 **Location**: `frontend/src/services/mcp.ts`  
-**Status**: 📋 Pending  
+**Status**: ✅ COMPLETED  
 **Priority**: MEDIUM
 
-- [ ] Get activity data from activity resource (currently returns empty array)
-- [ ] Implement real-time session monitoring
-- [ ] Add WebSocket integration for live updates
+- [x] Get activity data from activity resource (now returns real activity)
+- [x] Implement real-time session monitoring
+- [x] Add WebSocket integration for live updates
 
 ## Low Priority Tasks
 
