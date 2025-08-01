@@ -4,6 +4,7 @@ Model Integration Layer endpoints for Z2 API.
 
 from typing import Optional
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +20,8 @@ from app.core.models_registry import (
     validate_model_support,
 )
 from app.database.session import get_db
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -106,10 +109,28 @@ async def list_providers(
     db: AsyncSession = Depends(get_db),
 ):
     """List all configured LLM providers and their status."""
+    from app.agents.mil import ModelIntegrationLayer
+    
     providers_info = {}
+    
+    # Try to get real provider status from MIL
+    try:
+        mil = ModelIntegrationLayer()
+        provider_status = mil.get_provider_status()
+    except Exception as e:
+        logger.warning("Could not get MIL provider status", error=str(e))
+        provider_status = {}
 
     for provider in ProviderType:
         provider_models = get_models_by_provider(provider)
+        
+        # Get real status from MIL if available
+        status = "unknown"
+        if provider.value in provider_status:
+            status = provider_status[provider.value].get("status", "unknown")
+        elif provider_models:  # If we have models defined, assume configured
+            status = "configured"
+            
         providers_info[provider.value] = {
             "name": provider.value.title(),
             "model_count": len(provider_models),
@@ -117,7 +138,7 @@ async def list_providers(
             "capabilities": list(
                 set().union(*[model.capabilities for model in provider_models.values()])
             ),
-            "status": "available",  # TODO: Add actual health check
+            "status": status,
         }
 
     return {

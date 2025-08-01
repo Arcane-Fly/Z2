@@ -262,8 +262,14 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                   className="font-medium text-blue-600 hover:text-blue-500 transition-colors disabled:opacity-50"
                   disabled={isLoading}
                   onClick={() => {
-                    // TODO: Implement forgot password
-                    alert('Forgot password functionality coming soon!');
+                    // Create a mailto link for password reset requests
+                    const subject = encodeURIComponent('Z2 Password Reset Request');
+                    const body = encodeURIComponent(
+                      'Please reset my password for my Z2 account.\n\n' +
+                      'Account email: ' + (formData.email || '[Enter your email]') + '\n\n' +
+                      'Please send password reset instructions to this email address.'
+                    );
+                    window.location.href = `mailto:support@z2.ai?subject=${subject}&body=${body}`;
                   }}
                 >
                   Forgot password?
