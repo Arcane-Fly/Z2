@@ -25,12 +25,13 @@ class TestBasicAIAgent:
 
     @pytest.mark.asyncio
     async def test_process_message_without_provider(self):
-        """Test processing message without LLM provider (mock mode)."""
+        """Test processing message without LLM provider (fallback mode)."""
         agent = BasicAIAgent("TestBot", "assistant")
 
         response = await agent.process_message("Hello there!")
 
-        assert "Mock Response" in response
+        # Updated to match actual fallback behavior
+        assert "no LLM providers are currently configured" in response
         assert "TestBot" in response
         assert "Hello there!" in response
 
@@ -49,7 +50,7 @@ class TestBasicAIAgent:
         )
 
         assert "AnalyzerBot" in response
-        assert "Mock Response" in response  # Since no provider is configured
+        assert "no LLM providers are currently configured" in response  # Updated fallback message
 
         # Check template was used
         assert agent.memory.short_term["template_used"] == "analysis"
