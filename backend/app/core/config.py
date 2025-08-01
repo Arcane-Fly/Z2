@@ -54,11 +54,16 @@ class Settings(BaseSettings):
     secret_key: str = Field(
         default="your-secret-key-change-this-in-production",
         description="JWT secret key",
+        alias="JWT_SECRET_KEY"
     )
     access_token_expire_minutes: int = Field(
         default=30, description="Access token expiration in minutes"
     )
-    algorithm: str = Field(default="HS256", description="JWT algorithm")
+    algorithm: str = Field(
+        default="HS256", 
+        description="JWT algorithm",
+        alias="JWT_ALGORITHM"
+    )
 
     # LLM Provider API Keys
     openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
