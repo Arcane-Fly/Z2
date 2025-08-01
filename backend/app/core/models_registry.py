@@ -649,58 +649,40 @@ ANTHROPIC_MODELS = {
 
 # xAI Models
 XAI_MODELS = {
-    "grok-4-8789": ModelSpec(
+    "grok-3": ModelSpec(
         provider=ProviderType.XAI,
-        model_id="grok-4-8789",
-        name="Grok 4 8789",
-        description="Language model",
+        model_id="grok-3",
+        name="Grok 3",
+        description="Latest generation Grok model with enhanced reasoning",
         capabilities={
             ModelCapability.TEXT_GENERATION,
             ModelCapability.REAL_TIME_SEARCH,
             ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
         },
         input_token_limit=200000,
         output_token_limit=32000,
-        cost_per_input_token=3.00,
-        cost_per_output_token=15.00,
+        cost_per_input_token=2.50,
+        cost_per_output_token=12.50,
         context_window=200000,
         knowledge_cutoff="2024",
     ),
-    "grok-beta": ModelSpec(
+    "grok-4": ModelSpec(
         provider=ProviderType.XAI,
-        model_id="grok-beta",
-        name="Grok Beta",
-        description="Beta version of Grok with enhanced capabilities",
+        model_id="grok-4",
+        name="Grok 4",
+        description="Most advanced Grok model with superior reasoning capabilities",
         capabilities={
             ModelCapability.TEXT_GENERATION,
             ModelCapability.REAL_TIME_SEARCH,
             ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
         },
         input_token_limit=200000,
         output_token_limit=32000,
         cost_per_input_token=3.00,
         cost_per_output_token=15.00,
         context_window=200000,
-        knowledge_cutoff="2024",
-    ),
-    "grok-vision-beta": ModelSpec(
-        provider=ProviderType.XAI,
-        model_id="grok-vision-beta",
-        name="Grok Vision Beta",
-        description="Grok model with vision capabilities",
-        capabilities={
-            ModelCapability.TEXT_GENERATION,
-            ModelCapability.VISION,
-            ModelCapability.REAL_TIME_SEARCH,
-            ModelCapability.CODE_GENERATION,
-            ModelCapability.MULTIMODAL,
-        },
-        input_token_limit=200000,
-        output_token_limit=32000,
-        cost_per_input_token=3.00,
-        cost_per_output_token=15.00,
-        context_window=200000,
-        is_multimodal=True,
         knowledge_cutoff="2024",
     ),
 }
@@ -753,70 +735,6 @@ GOOGLE_MODELS = {
         is_multimodal=True,
         knowledge_cutoff="November 2024",
         model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-2.5-pro",
-    ),
-    "gemini-1.5-flash": ModelSpec(
-        provider=ProviderType.GOOGLE,
-        model_id="gemini-1.5-flash",
-        name="Gemini 1.5 Flash",
-        description="Multimodal model optimized for speed and efficiency",
-        capabilities={
-            ModelCapability.TEXT_GENERATION,
-            ModelCapability.VISION,
-            ModelCapability.AUDIO,
-            ModelCapability.VIDEO,
-            ModelCapability.CODE_GENERATION,
-            ModelCapability.FUNCTION_CALLING,
-            ModelCapability.MULTIMODAL,
-        },
-        input_token_limit=1000000,
-        output_token_limit=8192,
-        cost_per_input_token=0.075,  # USD per 1M tokens
-        cost_per_output_token=0.30,  # USD per 1M tokens
-        context_window=1000000,
-        is_multimodal=True,
-        knowledge_cutoff="April 2024",
-        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-1.5-flash",
-    ),
-    "gemini-1.5-pro": ModelSpec(
-        provider=ProviderType.GOOGLE,
-        model_id="gemini-1.5-pro",
-        name="Gemini 1.5 Pro",
-        description="Mid-size multimodal model for complex reasoning",
-        capabilities={
-            ModelCapability.TEXT_GENERATION,
-            ModelCapability.VISION,
-            ModelCapability.AUDIO,
-            ModelCapability.VIDEO,
-            ModelCapability.CODE_GENERATION,
-            ModelCapability.FUNCTION_CALLING,
-            ModelCapability.MULTIMODAL,
-        },
-        input_token_limit=2000000,
-        output_token_limit=8192,
-        cost_per_input_token=1.25,  # USD per 1M tokens
-        cost_per_output_token=5.00,  # USD per 1M tokens
-        context_window=2000000,
-        is_multimodal=True,
-        knowledge_cutoff="April 2024",
-        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-1.5-pro",
-    ),
-    "gemini-1.0-pro": ModelSpec(
-        provider=ProviderType.GOOGLE,
-        model_id="gemini-1.0-pro",
-        name="Gemini 1.0 Pro",
-        description="Best for text-only queries",
-        capabilities={
-            ModelCapability.TEXT_GENERATION,
-            ModelCapability.CODE_GENERATION,
-            ModelCapability.FUNCTION_CALLING,
-        },
-        input_token_limit=30720,
-        output_token_limit=2048,
-        cost_per_input_token=0.50,  # USD per 1M tokens
-        cost_per_output_token=1.50,  # USD per 1M tokens
-        context_window=30720,
-        knowledge_cutoff="April 2024",
-        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-1.0-pro",
     ),
 }
 
@@ -893,28 +811,11 @@ GROQ_MODELS = {
         knowledge_cutoff="July 2024",
         model_card_url="https://console.groq.com/docs/models",
     ),
-    "mixtral-8x7b-32768": ModelSpec(
+    "gemma3-9b-it": ModelSpec(
         provider=ProviderType.GROQ,
-        model_id="mixtral-8x7b-32768",
-        name="Mixtral 8x7B",
-        description="Mistral AI's mixture of experts model",
-        capabilities={
-            ModelCapability.TEXT_GENERATION,
-            ModelCapability.CODE_GENERATION,
-        },
-        input_token_limit=32768,
-        output_token_limit=32768,
-        cost_per_input_token=0.24,  # USD per 1M tokens
-        cost_per_output_token=0.24,  # USD per 1M tokens
-        context_window=32768,
-        knowledge_cutoff="2024",
-        model_card_url="https://console.groq.com/docs/models",
-    ),
-    "gemma2-9b-it": ModelSpec(
-        provider=ProviderType.GROQ,
-        model_id="gemma2-9b-it",
-        name="Gemma2 9B IT",
-        description="Google's Gemma 2 model optimized for instruction following",
+        model_id="gemma3-9b-it",
+        name="Gemma 3 9B IT",
+        description="Google's Gemma 3 model optimized for instruction following",
         capabilities={
             ModelCapability.TEXT_GENERATION,
             ModelCapability.CODE_GENERATION,
@@ -923,6 +824,24 @@ GROQ_MODELS = {
         output_token_limit=8192,
         cost_per_input_token=0.20,  # USD per 1M tokens
         cost_per_output_token=0.20,  # USD per 1M tokens
+        context_window=8192,
+        knowledge_cutoff="2024",
+        model_card_url="https://console.groq.com/docs/models",
+    ),
+    "gemma3-27b-it": ModelSpec(
+        provider=ProviderType.GROQ,
+        model_id="gemma3-27b-it",
+        name="Gemma 3 27B IT",
+        description="Google's larger Gemma 3 model for enhanced performance",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
+        },
+        input_token_limit=8192,
+        output_token_limit=8192,
+        cost_per_input_token=0.35,  # USD per 1M tokens
+        cost_per_output_token=0.35,  # USD per 1M tokens
         context_window=8192,
         knowledge_cutoff="2024",
         model_card_url="https://console.groq.com/docs/models",
@@ -1046,10 +965,10 @@ MOONSHOT_MODELS = {
 
 # Qwen Models - Alibaba Cloud's AI models
 QWEN_MODELS = {
-    "qwen2.5-72b-instruct": ModelSpec(
+    "qwen3-72b-instruct": ModelSpec(
         provider=ProviderType.QWEN,
-        model_id="qwen2.5-72b-instruct",
-        name="Qwen2.5 72B Instruct",
+        model_id="qwen3-72b-instruct",
+        name="Qwen3 72B Instruct",
         description="Large language model optimized for instruction following",
         capabilities={
             ModelCapability.TEXT_GENERATION,
@@ -1063,14 +982,15 @@ QWEN_MODELS = {
         context_window=32768,
         knowledge_cutoff="2024",
     ),
-    "qwen2.5-32b-instruct": ModelSpec(
+    "qwen3-32b-instruct": ModelSpec(
         provider=ProviderType.QWEN,
-        model_id="qwen2.5-32b-instruct",
-        name="Qwen2.5 32B Instruct",
+        model_id="qwen3-32b-instruct",
+        name="Qwen3 32B Instruct",
         description="Mid-size model balancing performance and efficiency",
         capabilities={
             ModelCapability.TEXT_GENERATION,
             ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
         },
         input_token_limit=32768,
         output_token_limit=32768,
@@ -1079,10 +999,10 @@ QWEN_MODELS = {
         context_window=32768,
         knowledge_cutoff="2024",
     ),
-    "qwen2.5-14b-instruct": ModelSpec(
+    "qwen3-14b-instruct": ModelSpec(
         provider=ProviderType.QWEN,
-        model_id="qwen2.5-14b-instruct",
-        name="Qwen2.5 14B Instruct",
+        model_id="qwen3-14b-instruct",
+        name="Qwen3 14B Instruct",
         description="Efficient model for general-purpose tasks",
         capabilities={
             ModelCapability.TEXT_GENERATION,
@@ -1095,10 +1015,10 @@ QWEN_MODELS = {
         context_window=32768,
         knowledge_cutoff="2024",
     ),
-    "qwen2.5-7b-instruct": ModelSpec(
+    "qwen3-7b-instruct": ModelSpec(
         provider=ProviderType.QWEN,
-        model_id="qwen2.5-7b-instruct",
-        name="Qwen2.5 7B Instruct",
+        model_id="qwen3-7b-instruct",
+        name="Qwen3 7B Instruct",
         description="Fast and cost-effective model for basic tasks",
         capabilities={
             ModelCapability.TEXT_GENERATION,
@@ -1111,10 +1031,10 @@ QWEN_MODELS = {
         context_window=32768,
         knowledge_cutoff="2024",
     ),
-    "qwq-32b-preview": ModelSpec(
+    "qwen3-reasoning-preview": ModelSpec(
         provider=ProviderType.QWEN,
-        model_id="qwq-32b-preview",
-        name="QwQ 32B Preview",
+        model_id="qwen3-reasoning-preview",
+        name="Qwen3 Reasoning Preview",
         description="Reasoning model with step-by-step thinking capabilities",
         capabilities={
             ModelCapability.TEXT_GENERATION,
@@ -1129,10 +1049,10 @@ QWEN_MODELS = {
         is_reasoning_model=True,
         knowledge_cutoff="2024",
     ),
-    "qwen2-vl-72b-instruct": ModelSpec(
+    "qwen3-vl-72b-instruct": ModelSpec(
         provider=ProviderType.QWEN,
-        model_id="qwen2-vl-72b-instruct",
-        name="Qwen2 VL 72B Instruct",
+        model_id="qwen3-vl-72b-instruct",
+        name="Qwen3 VL 72B Instruct",
         description="Large vision-language model",
         capabilities={
             ModelCapability.TEXT_GENERATION,
@@ -1238,8 +1158,8 @@ DEFAULT_MODEL_ROUTING = {
     "text_to_speech": "tts-1",
     "real_time_search": "llama-3.1-sonar-large-128k-online",
     "fast_model": "llama-3.1-8b-instant",
-    "cost_efficient": "qwen2.5-7b-instruct",
-    "multilingual": "qwen2.5-72b-instruct",
+    "cost_efficient": "qwen3-7b-instruct",
+    "multilingual": "qwen3-72b-instruct",
     "chinese": "moonshot-v1-32k",
 }
 
@@ -1256,12 +1176,12 @@ MINIMUM_SUPPORTED_MODELS = {
         "o4-mini-deep-research-2025-06-26",
     ],
     "anthropic": ["claude-sonnet-4-20250514", "claude-3-7-sonnet-20250219"],
-    "xai": ["grok-4-8789", "grok-beta"],
+    "xai": ["grok-3", "grok-4"],
     "google": ["gemini-2.5-flash", "gemini-2.5-pro"],
     "groq": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
     "perplexity": ["llama-3.1-sonar-large-128k-online"],
     "moonshot": ["moonshot-v1-32k"],
-    "qwen": ["qwen2.5-72b-instruct", "qwq-32b-preview"],
+    "qwen": ["qwen3-72b-instruct", "qwen3-reasoning-preview"],
 }
 
 
