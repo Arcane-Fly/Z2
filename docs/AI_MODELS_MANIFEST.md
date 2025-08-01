@@ -17,7 +17,7 @@
 
 ## Overview
 
-Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**, providing comprehensive coverage for all AI workload requirements. This manifest documents all supported models with their capabilities, specifications, and recommended use cases.
+Z2 AI Workforce Platform supports **58 AI models** across **8 major providers**, providing comprehensive coverage for all AI workload requirements. This manifest documents all supported models with their capabilities, specifications, and recommended use cases.
 
 ## OpenAI Models
 
@@ -163,43 +163,7 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Cost**: $1.25 input / $5.00 output per 1M tokens
 - **Model Card**: https://ai.google.dev/gemini-api/docs/models/gemini#gemini-2.5-pro
 
-### Gemini 1.5 Flash
-- **Model Code**: `gemini-1.5-flash`
-- **Last Updated**: April 2024
-- **Description**: Multimodal model optimized for speed and efficiency
-- **Status**: Active
-- **Inputs**: text, image, audio, video
-- **Outputs**: text
-- **Input Token Limit**: 1,000,000 tokens
-- **Output Token Limit**: 8,192 tokens
-- **Key Features**: Speed optimization, Multimodal capabilities, Cost-effective
-- **Cost**: $0.075 input / $0.30 output per 1M tokens
-
-### Gemini 1.5 Pro
-- **Model Code**: `gemini-1.5-pro`
-- **Last Updated**: April 2024
-- **Description**: Mid-size multimodal model for complex reasoning
-- **Status**: Active
-- **Inputs**: text, image, audio, video
-- **Outputs**: text
-- **Input Token Limit**: 2,000,000 tokens
-- **Output Token Limit**: 8,192 tokens
-- **Key Features**: Balanced performance, Multimodal processing, Large context
-- **Cost**: $1.25 input / $5.00 output per 1M tokens
-
-### Gemini 1.0 Pro
-- **Model Code**: `gemini-1.0-pro`
-- **Last Updated**: April 2024
-- **Description**: Best for text-only queries
-- **Status**: Active
-- **Inputs**: text
-- **Outputs**: text
-- **Input Token Limit**: 30,720 tokens
-- **Output Token Limit**: 2,048 tokens
-- **Key Features**: Text specialization, Function calling, Cost-effective
-- **Cost**: $0.50 input / $1.50 output per 1M tokens
-
-**Total Google Models**: 5
+**Total Google Models**: 2
 
 ---
 
@@ -271,43 +235,31 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 
 ## xAI Grok Models
 
-### Grok 4 8789
-- **Model Code**: `grok-4-8789`
+### Grok 3
+- **Model Code**: `grok-3`
 - **Last Updated**: 2024
-- **Description**: Advanced language model with real-time search capabilities
+- **Description**: Latest generation Grok model with enhanced reasoning
 - **Status**: Active
 - **Inputs**: text
 - **Outputs**: text
 - **Input Token Limit**: 200,000 tokens
 - **Output Token Limit**: 32,000 tokens
-- **Key Features**: Real-time search, Current information, Code generation
-- **Cost**: $3.00 input / $15.00 output per 1M tokens
+- **Key Features**: Enhanced reasoning, Real-time search, Code generation
+- **Cost**: $2.50 input / $12.50 output per 1M tokens
 
-### Grok Beta
-- **Model Code**: `grok-beta`
+### Grok 4
+- **Model Code**: `grok-4`
 - **Last Updated**: 2024
-- **Description**: Beta version of Grok with enhanced capabilities
+- **Description**: Most advanced Grok model with superior reasoning capabilities
 - **Status**: Active
 - **Inputs**: text
 - **Outputs**: text
 - **Input Token Limit**: 200,000 tokens
 - **Output Token Limit**: 32,000 tokens
-- **Key Features**: Latest features, Enhanced performance, Real-time search
+- **Key Features**: Superior reasoning, Real-time search, Advanced problem solving
 - **Cost**: $3.00 input / $15.00 output per 1M tokens
 
-### Grok Vision Beta
-- **Model Code**: `grok-vision-beta`
-- **Last Updated**: 2024
-- **Description**: Grok model with vision capabilities
-- **Status**: Active
-- **Inputs**: text, image
-- **Outputs**: text
-- **Input Token Limit**: 200,000 tokens
-- **Output Token Limit**: 32,000 tokens
-- **Key Features**: Vision processing, Real-time search, Multimodal analysis
-- **Cost**: $3.00 input / $15.00 output per 1M tokens
-
-**Total xAI Models**: 3
+**Total xAI Models**: 2
 
 ---
 
@@ -361,29 +313,29 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Key Features**: Ultra-fast responses, Maximum cost efficiency, Instant inference
 - **Cost**: $0.05 input / $0.08 output per 1M tokens
 
-### Mixtral 8x7B
-- **Model Code**: `mixtral-8x7b-32768`
+### Gemma 3 9B IT
+- **Model Code**: `gemma3-9b-it`
 - **Last Updated**: 2024
-- **Description**: Mistral AI's mixture of experts model
-- **Status**: Active
-- **Inputs**: text
-- **Outputs**: text
-- **Input Token Limit**: 32,768 tokens
-- **Output Token Limit**: 32,768 tokens
-- **Key Features**: Mixture of experts, Fast inference, Code generation
-- **Cost**: $0.24 input / $0.24 output per 1M tokens
-
-### Gemma2 9B IT
-- **Model Code**: `gemma2-9b-it`
-- **Last Updated**: 2024
-- **Description**: Google's Gemma 2 model optimized for instruction following
+- **Description**: Google's Gemma 3 model optimized for instruction following
 - **Status**: Active
 - **Inputs**: text
 - **Outputs**: text
 - **Input Token Limit**: 8,192 tokens
 - **Output Token Limit**: 8,192 tokens
-- **Key Features**: Instruction following, Fast inference, Cost-effective
+- **Key Features**: Latest Gemma generation, Fast inference, Cost-effective
 - **Cost**: $0.20 input / $0.20 output per 1M tokens
+
+### Gemma 3 27B IT
+- **Model Code**: `gemma3-27b-it`
+- **Last Updated**: 2024
+- **Description**: Google's larger Gemma 3 model for enhanced performance
+- **Status**: Active
+- **Inputs**: text
+- **Outputs**: text
+- **Input Token Limit**: 8,192 tokens
+- **Output Token Limit**: 8,192 tokens
+- **Key Features**: Enhanced reasoning, Fast inference, Improved capabilities
+- **Cost**: $0.35 input / $0.35 output per 1M tokens
 
 **Total Groq Models**: 6
 
@@ -475,8 +427,8 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 
 ## Qwen Models
 
-### Qwen2.5 72B Instruct
-- **Model Code**: `qwen2.5-72b-instruct`
+### Qwen3 72B Instruct
+- **Model Code**: `qwen3-72b-instruct`
 - **Last Updated**: 2024
 - **Description**: Large language model optimized for instruction following
 - **Status**: Active
@@ -484,11 +436,11 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Outputs**: text
 - **Input Token Limit**: 32,768 tokens
 - **Output Token Limit**: 32,768 tokens
-- **Key Features**: Instruction following, Multilingual support, Advanced reasoning
+- **Key Features**: Latest Qwen generation, Advanced reasoning, Multilingual support
 - **Cost**: $0.50 input / $1.50 output per 1M tokens
 
-### Qwen2.5 32B Instruct
-- **Model Code**: `qwen2.5-32b-instruct`
+### Qwen3 32B Instruct
+- **Model Code**: `qwen3-32b-instruct`
 - **Last Updated**: 2024
 - **Description**: Mid-size model balancing performance and efficiency
 - **Status**: Active
@@ -496,11 +448,11 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Outputs**: text
 - **Input Token Limit**: 32,768 tokens
 - **Output Token Limit**: 32,768 tokens
-- **Key Features**: Balanced performance, Cost efficiency, Multilingual
+- **Key Features**: Enhanced reasoning, Cost efficiency, Improved capabilities
 - **Cost**: $0.30 input / $1.00 output per 1M tokens
 
-### Qwen2.5 14B Instruct
-- **Model Code**: `qwen2.5-14b-instruct`
+### Qwen3 14B Instruct
+- **Model Code**: `qwen3-14b-instruct`
 - **Last Updated**: 2024
 - **Description**: Efficient model for general-purpose tasks
 - **Status**: Active
@@ -511,8 +463,8 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Key Features**: General purpose, Fast inference, Cost-effective
 - **Cost**: $0.20 input / $0.60 output per 1M tokens
 
-### Qwen2.5 7B Instruct
-- **Model Code**: `qwen2.5-7b-instruct`
+### Qwen3 7B Instruct
+- **Model Code**: `qwen3-7b-instruct`
 - **Last Updated**: 2024
 - **Description**: Fast and cost-effective model for basic tasks
 - **Status**: Active
@@ -520,11 +472,11 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Outputs**: text
 - **Input Token Limit**: 32,768 tokens
 - **Output Token Limit**: 32,768 tokens
-- **Key Features**: Maximum cost efficiency, Fast responses, Basic tasks
+- **Key Features**: Ultra cost efficiency, Fast responses, Enhanced performance
 - **Cost**: $0.07 input / $0.07 output per 1M tokens
 
-### QwQ 32B Preview
-- **Model Code**: `qwq-32b-preview`
+### Qwen3 Reasoning Preview
+- **Model Code**: `qwen3-reasoning-preview`
 - **Last Updated**: 2024
 - **Description**: Reasoning model with step-by-step thinking capabilities
 - **Status**: Active
@@ -532,11 +484,11 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Outputs**: text
 - **Input Token Limit**: 32,768 tokens
 - **Output Token Limit**: 32,768 tokens
-- **Key Features**: Advanced reasoning, Step-by-step thinking, Mathematical problem solving
+- **Key Features**: Advanced reasoning, Step-by-step thinking, Problem solving
 - **Cost**: $1.00 input / $1.00 output per 1M tokens
 
-### Qwen2 VL 72B Instruct
-- **Model Code**: `qwen2-vl-72b-instruct`
+### Qwen3 VL 72B Instruct
+- **Model Code**: `qwen3-vl-72b-instruct`
 - **Last Updated**: 2024
 - **Description**: Large vision-language model
 - **Status**: Active
@@ -544,7 +496,7 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Outputs**: text
 - **Input Token Limit**: 32,768 tokens
 - **Output Token Limit**: 32,768 tokens
-- **Key Features**: Vision processing, Multimodal capabilities, Large scale
+- **Key Features**: Latest VL capabilities, Multimodal processing, Enhanced vision
 - **Cost**: $1.00 input / $1.00 output per 1M tokens
 
 **Total Qwen Models**: 6
@@ -553,15 +505,15 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 
 ## Model Registry Statistics
 
-### Total Model Count: 62
-- **OpenAI**: 31 models (50.0%)
-- **Google**: 5 models (8.1%)
-- **Anthropic**: 5 models (8.1%)
-- **Groq**: 6 models (9.7%)
-- **Perplexity**: 3 models (4.8%)
-- **xAI**: 3 models (4.8%)
-- **Moonshot**: 3 models (4.8%)
-- **Qwen**: 6 models (9.7%)
+### Total Model Count: 58
+- **OpenAI**: 31 models (53.4%)
+- **Google**: 2 models (3.4%)
+- **Anthropic**: 5 models (8.6%)
+- **Groq**: 6 models (10.3%)
+- **Perplexity**: 3 models (5.2%)
+- **xAI**: 2 models (3.4%)
+- **Moonshot**: 3 models (5.2%)
+- **Qwen**: 6 models (10.3%)
 
 ### Capability Distribution
 - **Text Generation**: 62 models (100%)
@@ -595,8 +547,8 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 - **Code Generation**: `llama-3.3-70b-versatile`
 - **Real-time Search**: `llama-3.1-sonar-large-128k-online`
 - **Fast Model**: `llama-3.1-8b-instant`
-- **Cost Efficient**: `qwen2.5-7b-instruct`
-- **Multilingual**: `qwen2.5-72b-instruct`
+- **Cost Efficient**: `qwen3-7b-instruct`
+- **Multilingual**: `qwen3-72b-instruct`
 - **Chinese**: `moonshot-v1-32k`
 
 ### Use Case Recommendations
@@ -604,25 +556,25 @@ Z2 AI Workforce Platform supports **62 AI models** across **8 major providers**,
 #### For Code Generation
 1. **High Performance**: `o4-mini`, `claude-sonnet-4-20250514`
 2. **Fast & Efficient**: `llama-3.3-70b-versatile`, `llama-3.1-70b-versatile`
-3. **Cost Optimized**: `llama-3.1-8b-instant`, `qwen2.5-7b-instruct`
+3. **Cost Optimized**: `llama-3.1-8b-instant`, `qwen3-7b-instruct`
 
 #### For Reasoning Tasks
 1. **Maximum Capability**: `o3`, `claude-opus-4-20250514`
 2. **Balanced**: `o4-mini`, `claude-sonnet-4-20250514`
-3. **Fast**: `llama-3.1-405b-reasoning`, `qwq-32b-preview`
+3. **Fast**: `llama-3.1-405b-reasoning`, `qwen3-reasoning-preview`
 
 #### For Multimodal Tasks
 1. **Best Overall**: `gemini-2.5-pro`, `gpt-4.1`
 2. **Fast & Efficient**: `gemini-2.5-flash`, `gpt-4o`
-3. **Vision Specialized**: `grok-vision-beta`, `qwen2-vl-72b-instruct`
+3. **Vision Specialized**: `qwen3-vl-72b-instruct`
 
 #### For Real-time Information
 1. **Best Search**: `llama-3.1-sonar-huge-128k-online`
-2. **Balanced**: `llama-3.1-sonar-large-128k-online`, `grok-4-8789`
-3. **Fast**: `llama-3.1-sonar-small-128k-online`, `grok-beta`
+2. **Balanced**: `llama-3.1-sonar-large-128k-online`, `grok-4`
+3. **Fast**: `llama-3.1-sonar-small-128k-online`, `grok-3`
 
 #### For Cost Optimization
-1. **Ultra Low Cost**: `qwen2.5-7b-instruct` ($0.07/$0.07)
+1. **Ultra Low Cost**: `qwen3-7b-instruct` ($0.07/$0.07)
 2. **Low Cost**: `llama-3.1-8b-instant` ($0.05/$0.08)
 3. **Budget Friendly**: `gemini-2.5-flash` ($0.075/$0.30)
 
