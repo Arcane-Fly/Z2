@@ -83,18 +83,18 @@ class Settings(BaseSettings):
 
     # LLM Configuration
     default_model: str = Field(
-        default="openai/gpt-4.1-mini", description="Default LLM model"
+        default="groq/llama-3.3-70b-versatile", description="Default LLM model"
     )
     reasoning_model: str = Field(
-        default="openai/o3-mini",
+        default="openai/o4-mini",
         description="Default reasoning model for complex tasks",
     )
     advanced_model: str = Field(
-        default="anthropic/claude-sonnet-4",
+        default="anthropic/claude-sonnet-4-20250514",
         description="Advanced model for complex analysis",
     )
     fast_model: str = Field(
-        default="groq/llama-3.1-70b", description="Fast model for quick responses"
+        default="groq/llama-3.1-8b-instant", description="Fast model for quick responses"
     )
     multimodal_model: str = Field(
         default="google/gemini-2.5-flash",
@@ -103,6 +103,14 @@ class Settings(BaseSettings):
     embedding_model: str = Field(
         default="openai/text-embedding-3-small",
         description="Embedding model for vector operations",
+    )
+    search_model: str = Field(
+        default="perplexity/llama-3.1-sonar-large-128k-online",
+        description="Model with real-time search capabilities",
+    )
+    cost_efficient_model: str = Field(
+        default="qwen/qwen2.5-7b-instruct",
+        description="Most cost-efficient model for basic tasks",
     )
     max_tokens: int = Field(default=4096, description="Maximum tokens per request")
     temperature: float = Field(default=0.7, description="Default temperature")

@@ -40,6 +40,11 @@ class ProviderType(Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     XAI = "xai"
+    GOOGLE = "google"
+    GROQ = "groq"
+    PERPLEXITY = "perplexity"
+    MOONSHOT = "moonshot"
+    QWEN = "qwen"
 
 
 @dataclass
@@ -661,6 +666,488 @@ XAI_MODELS = {
         context_window=200000,
         knowledge_cutoff="2024",
     ),
+    "grok-beta": ModelSpec(
+        provider=ProviderType.XAI,
+        model_id="grok-beta",
+        name="Grok Beta",
+        description="Beta version of Grok with enhanced capabilities",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.REAL_TIME_SEARCH,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=200000,
+        output_token_limit=32000,
+        cost_per_input_token=3.00,
+        cost_per_output_token=15.00,
+        context_window=200000,
+        knowledge_cutoff="2024",
+    ),
+    "grok-vision-beta": ModelSpec(
+        provider=ProviderType.XAI,
+        model_id="grok-vision-beta",
+        name="Grok Vision Beta",
+        description="Grok model with vision capabilities",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.VISION,
+            ModelCapability.REAL_TIME_SEARCH,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.MULTIMODAL,
+        },
+        input_token_limit=200000,
+        output_token_limit=32000,
+        cost_per_input_token=3.00,
+        cost_per_output_token=15.00,
+        context_window=200000,
+        is_multimodal=True,
+        knowledge_cutoff="2024",
+    ),
+}
+
+# Google AI Models - Gemini Series
+GOOGLE_MODELS = {
+    "gemini-2.5-flash": ModelSpec(
+        provider=ProviderType.GOOGLE,
+        model_id="gemini-2.5-flash",
+        name="Gemini 2.5 Flash",
+        description="Fast, versatile performance across a broad range of tasks",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.VISION,
+            ModelCapability.AUDIO,
+            ModelCapability.VIDEO,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.FUNCTION_CALLING,
+            ModelCapability.MULTIMODAL,
+        },
+        input_token_limit=1000000,
+        output_token_limit=8192,
+        cost_per_input_token=0.075,  # USD per 1M tokens
+        cost_per_output_token=0.30,  # USD per 1M tokens
+        context_window=1000000,
+        is_multimodal=True,
+        knowledge_cutoff="November 2024",
+        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-2.5-flash",
+    ),
+    "gemini-2.5-pro": ModelSpec(
+        provider=ProviderType.GOOGLE,
+        model_id="gemini-2.5-pro",
+        name="Gemini 2.5 Pro",
+        description="Most capable model for complex reasoning tasks",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.VISION,
+            ModelCapability.AUDIO,
+            ModelCapability.VIDEO,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.FUNCTION_CALLING,
+            ModelCapability.REASONING,
+            ModelCapability.MULTIMODAL,
+        },
+        input_token_limit=2000000,
+        output_token_limit=8192,
+        cost_per_input_token=1.25,  # USD per 1M tokens
+        cost_per_output_token=5.00,  # USD per 1M tokens
+        context_window=2000000,
+        is_multimodal=True,
+        knowledge_cutoff="November 2024",
+        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-2.5-pro",
+    ),
+    "gemini-1.5-flash": ModelSpec(
+        provider=ProviderType.GOOGLE,
+        model_id="gemini-1.5-flash",
+        name="Gemini 1.5 Flash",
+        description="Multimodal model optimized for speed and efficiency",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.VISION,
+            ModelCapability.AUDIO,
+            ModelCapability.VIDEO,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.FUNCTION_CALLING,
+            ModelCapability.MULTIMODAL,
+        },
+        input_token_limit=1000000,
+        output_token_limit=8192,
+        cost_per_input_token=0.075,  # USD per 1M tokens
+        cost_per_output_token=0.30,  # USD per 1M tokens
+        context_window=1000000,
+        is_multimodal=True,
+        knowledge_cutoff="April 2024",
+        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-1.5-flash",
+    ),
+    "gemini-1.5-pro": ModelSpec(
+        provider=ProviderType.GOOGLE,
+        model_id="gemini-1.5-pro",
+        name="Gemini 1.5 Pro",
+        description="Mid-size multimodal model for complex reasoning",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.VISION,
+            ModelCapability.AUDIO,
+            ModelCapability.VIDEO,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.FUNCTION_CALLING,
+            ModelCapability.MULTIMODAL,
+        },
+        input_token_limit=2000000,
+        output_token_limit=8192,
+        cost_per_input_token=1.25,  # USD per 1M tokens
+        cost_per_output_token=5.00,  # USD per 1M tokens
+        context_window=2000000,
+        is_multimodal=True,
+        knowledge_cutoff="April 2024",
+        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-1.5-pro",
+    ),
+    "gemini-1.0-pro": ModelSpec(
+        provider=ProviderType.GOOGLE,
+        model_id="gemini-1.0-pro",
+        name="Gemini 1.0 Pro",
+        description="Best for text-only queries",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.FUNCTION_CALLING,
+        },
+        input_token_limit=30720,
+        output_token_limit=2048,
+        cost_per_input_token=0.50,  # USD per 1M tokens
+        cost_per_output_token=1.50,  # USD per 1M tokens
+        context_window=30720,
+        knowledge_cutoff="April 2024",
+        model_card_url="https://ai.google.dev/gemini-api/docs/models/gemini#gemini-1.0-pro",
+    ),
+}
+
+# Groq Models - High-speed inference
+GROQ_MODELS = {
+    "llama-3.3-70b-versatile": ModelSpec(
+        provider=ProviderType.GROQ,
+        model_id="llama-3.3-70b-versatile",
+        name="Llama 3.3 70B Versatile",
+        description="Meta's flagship model optimized for versatile use cases",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.59,  # USD per 1M tokens
+        cost_per_output_token=0.79,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="December 2024",
+        model_card_url="https://console.groq.com/docs/models",
+    ),
+    "llama-3.1-405b-reasoning": ModelSpec(
+        provider=ProviderType.GROQ,
+        model_id="llama-3.1-405b-reasoning",
+        name="Llama 3.1 405B Reasoning",
+        description="Meta's largest model optimized for complex reasoning",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=2.38,  # USD per 1M tokens
+        cost_per_output_token=2.38,  # USD per 1M tokens
+        context_window=32768,
+        is_reasoning_model=True,
+        knowledge_cutoff="July 2024",
+        model_card_url="https://console.groq.com/docs/models",
+    ),
+    "llama-3.1-70b-versatile": ModelSpec(
+        provider=ProviderType.GROQ,
+        model_id="llama-3.1-70b-versatile",
+        name="Llama 3.1 70B Versatile",
+        description="Versatile model balancing capability and speed",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.59,  # USD per 1M tokens
+        cost_per_output_token=0.79,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="July 2024",
+        model_card_url="https://console.groq.com/docs/models",
+    ),
+    "llama-3.1-8b-instant": ModelSpec(
+        provider=ProviderType.GROQ,
+        model_id="llama-3.1-8b-instant",
+        name="Llama 3.1 8B Instant",
+        description="Fast and efficient model for quick responses",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.05,  # USD per 1M tokens
+        cost_per_output_token=0.08,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="July 2024",
+        model_card_url="https://console.groq.com/docs/models",
+    ),
+    "mixtral-8x7b-32768": ModelSpec(
+        provider=ProviderType.GROQ,
+        model_id="mixtral-8x7b-32768",
+        name="Mixtral 8x7B",
+        description="Mistral AI's mixture of experts model",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.24,  # USD per 1M tokens
+        cost_per_output_token=0.24,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="2024",
+        model_card_url="https://console.groq.com/docs/models",
+    ),
+    "gemma2-9b-it": ModelSpec(
+        provider=ProviderType.GROQ,
+        model_id="gemma2-9b-it",
+        name="Gemma2 9B IT",
+        description="Google's Gemma 2 model optimized for instruction following",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=8192,
+        output_token_limit=8192,
+        cost_per_input_token=0.20,  # USD per 1M tokens
+        cost_per_output_token=0.20,  # USD per 1M tokens
+        context_window=8192,
+        knowledge_cutoff="2024",
+        model_card_url="https://console.groq.com/docs/models",
+    ),
+}
+
+# Perplexity AI Models - Search-augmented models
+PERPLEXITY_MODELS = {
+    "llama-3.1-sonar-large-128k-online": ModelSpec(
+        provider=ProviderType.PERPLEXITY,
+        model_id="llama-3.1-sonar-large-128k-online",
+        name="Llama 3.1 Sonar Large 128K Online",
+        description="Large model with real-time search capabilities",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.REAL_TIME_SEARCH,
+            ModelCapability.WEB_BROWSING,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=127072,
+        output_token_limit=4096,
+        cost_per_input_token=1.00,  # USD per 1M tokens
+        cost_per_output_token=1.00,  # USD per 1M tokens
+        context_window=127072,
+        knowledge_cutoff="Real-time",
+        model_card_url="https://docs.perplexity.ai/docs/model-cards",
+    ),
+    "llama-3.1-sonar-small-128k-online": ModelSpec(
+        provider=ProviderType.PERPLEXITY,
+        model_id="llama-3.1-sonar-small-128k-online",
+        name="Llama 3.1 Sonar Small 128K Online",
+        description="Smaller, faster model with real-time search",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.REAL_TIME_SEARCH,
+            ModelCapability.WEB_BROWSING,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=127072,
+        output_token_limit=4096,
+        cost_per_input_token=0.20,  # USD per 1M tokens
+        cost_per_output_token=0.20,  # USD per 1M tokens
+        context_window=127072,
+        knowledge_cutoff="Real-time",
+        model_card_url="https://docs.perplexity.ai/docs/model-cards",
+    ),
+    "llama-3.1-sonar-huge-128k-online": ModelSpec(
+        provider=ProviderType.PERPLEXITY,
+        model_id="llama-3.1-sonar-huge-128k-online",
+        name="Llama 3.1 Sonar Huge 128K Online",
+        description="Most capable search-augmented model",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.REAL_TIME_SEARCH,
+            ModelCapability.WEB_BROWSING,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
+        },
+        input_token_limit=127072,
+        output_token_limit=4096,
+        cost_per_input_token=5.00,  # USD per 1M tokens
+        cost_per_output_token=5.00,  # USD per 1M tokens
+        context_window=127072,
+        is_reasoning_model=True,
+        knowledge_cutoff="Real-time",
+        model_card_url="https://docs.perplexity.ai/docs/model-cards",
+    ),
+}
+
+# Moonshot AI Models - Chinese AI company models
+MOONSHOT_MODELS = {
+    "moonshot-v1-8k": ModelSpec(
+        provider=ProviderType.MOONSHOT,
+        model_id="moonshot-v1-8k",
+        name="Moonshot v1 8K",
+        description="Moonshot's base model with 8K context",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=8000,
+        output_token_limit=8000,
+        cost_per_input_token=1.00,  # USD per 1M tokens
+        cost_per_output_token=1.00,  # USD per 1M tokens
+        context_window=8000,
+        knowledge_cutoff="2024",
+    ),
+    "moonshot-v1-32k": ModelSpec(
+        provider=ProviderType.MOONSHOT,
+        model_id="moonshot-v1-32k",
+        name="Moonshot v1 32K",
+        description="Moonshot's model with extended 32K context",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32000,
+        output_token_limit=32000,
+        cost_per_input_token=2.00,  # USD per 1M tokens
+        cost_per_output_token=2.00,  # USD per 1M tokens
+        context_window=32000,
+        knowledge_cutoff="2024",
+    ),
+    "moonshot-v1-128k": ModelSpec(
+        provider=ProviderType.MOONSHOT,
+        model_id="moonshot-v1-128k",
+        name="Moonshot v1 128K",
+        description="Moonshot's model with large 128K context window",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=128000,
+        output_token_limit=128000,
+        cost_per_input_token=5.00,  # USD per 1M tokens
+        cost_per_output_token=5.00,  # USD per 1M tokens
+        context_window=128000,
+        knowledge_cutoff="2024",
+    ),
+}
+
+# Qwen Models - Alibaba Cloud's AI models
+QWEN_MODELS = {
+    "qwen2.5-72b-instruct": ModelSpec(
+        provider=ProviderType.QWEN,
+        model_id="qwen2.5-72b-instruct",
+        name="Qwen2.5 72B Instruct",
+        description="Large language model optimized for instruction following",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.REASONING,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.50,  # USD per 1M tokens
+        cost_per_output_token=1.50,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="2024",
+    ),
+    "qwen2.5-32b-instruct": ModelSpec(
+        provider=ProviderType.QWEN,
+        model_id="qwen2.5-32b-instruct",
+        name="Qwen2.5 32B Instruct",
+        description="Mid-size model balancing performance and efficiency",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.30,  # USD per 1M tokens
+        cost_per_output_token=1.00,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="2024",
+    ),
+    "qwen2.5-14b-instruct": ModelSpec(
+        provider=ProviderType.QWEN,
+        model_id="qwen2.5-14b-instruct",
+        name="Qwen2.5 14B Instruct",
+        description="Efficient model for general-purpose tasks",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.20,  # USD per 1M tokens
+        cost_per_output_token=0.60,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="2024",
+    ),
+    "qwen2.5-7b-instruct": ModelSpec(
+        provider=ProviderType.QWEN,
+        model_id="qwen2.5-7b-instruct",
+        name="Qwen2.5 7B Instruct",
+        description="Fast and cost-effective model for basic tasks",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=0.07,  # USD per 1M tokens
+        cost_per_output_token=0.07,  # USD per 1M tokens
+        context_window=32768,
+        knowledge_cutoff="2024",
+    ),
+    "qwq-32b-preview": ModelSpec(
+        provider=ProviderType.QWEN,
+        model_id="qwq-32b-preview",
+        name="QwQ 32B Preview",
+        description="Reasoning model with step-by-step thinking capabilities",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.REASONING,
+            ModelCapability.CODE_GENERATION,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=1.00,  # USD per 1M tokens
+        cost_per_output_token=1.00,  # USD per 1M tokens
+        context_window=32768,
+        is_reasoning_model=True,
+        knowledge_cutoff="2024",
+    ),
+    "qwen2-vl-72b-instruct": ModelSpec(
+        provider=ProviderType.QWEN,
+        model_id="qwen2-vl-72b-instruct",
+        name="Qwen2 VL 72B Instruct",
+        description="Large vision-language model",
+        capabilities={
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.VISION,
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.MULTIMODAL,
+        },
+        input_token_limit=32768,
+        output_token_limit=32768,
+        cost_per_input_token=1.00,  # USD per 1M tokens
+        cost_per_output_token=1.00,  # USD per 1M tokens
+        context_window=32768,
+        is_multimodal=True,
+        knowledge_cutoff="2024",
+    ),
 }
 
 # Combined model registry
@@ -668,6 +1155,11 @@ ALL_MODELS: dict[str, ModelSpec] = {
     **OPENAI_MODELS,
     **ANTHROPIC_MODELS,
     **XAI_MODELS,
+    **GOOGLE_MODELS,
+    **GROQ_MODELS,
+    **PERPLEXITY_MODELS,
+    **MOONSHOT_MODELS,
+    **QWEN_MODELS,
 }
 
 
@@ -737,16 +1229,18 @@ DEFAULT_MODEL_ROUTING = {
     "reasoning": "o4-mini",
     "advanced_reasoning": "claude-sonnet-4-20250514",
     "flagship": "gpt-4.1",
-    "multimodal": "gpt-4.1",
-    "vision": "gpt-4.1",
-    "code_generation": "o4-mini",
+    "multimodal": "gemini-2.5-flash",
+    "vision": "gemini-2.5-flash",
+    "code_generation": "llama-3.3-70b-versatile",
     "embeddings": "text-embedding-3-small",
     "image_generation": "gpt-image-1",
     "speech_to_text": "whisper-1",
     "text_to_speech": "tts-1",
-    "real_time_search": "grok-4-8789",
-    "fast_model": "gpt-4.1-nano",
-    "cost_efficient": "gpt-4.1-nano",
+    "real_time_search": "llama-3.1-sonar-large-128k-online",
+    "fast_model": "llama-3.1-8b-instant",
+    "cost_efficient": "qwen2.5-7b-instruct",
+    "multilingual": "qwen2.5-72b-instruct",
+    "chinese": "moonshot-v1-32k",
 }
 
 
@@ -762,7 +1256,12 @@ MINIMUM_SUPPORTED_MODELS = {
         "o4-mini-deep-research-2025-06-26",
     ],
     "anthropic": ["claude-sonnet-4-20250514", "claude-3-7-sonnet-20250219"],
-    "xai": ["grok-4-8789"],
+    "xai": ["grok-4-8789", "grok-beta"],
+    "google": ["gemini-2.5-flash", "gemini-2.5-pro"],
+    "groq": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+    "perplexity": ["llama-3.1-sonar-large-128k-online"],
+    "moonshot": ["moonshot-v1-32k"],
+    "qwen": ["qwen2.5-72b-instruct", "qwq-32b-preview"],
 }
 
 
