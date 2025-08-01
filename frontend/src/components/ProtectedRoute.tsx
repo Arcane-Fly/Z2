@@ -32,6 +32,12 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps):
   // Check role-based access if required
   if (requiredRole && authState.user) {
     const userRole = authState.user.user_type;
+    const isSuperuser = authState.user.is_superuser;
+    
+    // Superusers have access to everything
+    if (isSuperuser) {
+      return <>{children}</>;
+    }
     
     // Define role hierarchy
     const roleHierarchy: Record<string, number> = {

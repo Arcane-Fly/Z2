@@ -266,7 +266,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                     const subject = encodeURIComponent('Z2 Password Reset Request');
                     const body = encodeURIComponent(
                       'Please reset my password for my Z2 account.\n\n' +
-                      'Account email: ' + (formData.email || '[Enter your email]') + '\n\n' +
+                      'Account username: ' + (formData.username || '[Enter your username]') + '\n\n' +
                       'Please send password reset instructions to this email address.'
                     );
                     window.location.href = `mailto:support@z2.ai?subject=${subject}&body=${body}`;

@@ -5,6 +5,7 @@ export interface User {
   full_name?: string;
   user_type: 'admin' | 'manager' | 'developer' | 'operator' | 'viewer';
   is_active: boolean;
+  is_superuser: boolean;
   created_at: string;
   last_login?: string;
 }

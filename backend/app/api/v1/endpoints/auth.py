@@ -336,6 +336,7 @@ async def get_current_user_profile(
         full_name=current_user.full_name,
         user_type=current_user.user_type,
         is_active=current_user.is_active,
+        is_superuser=current_user.is_superuser,
         created_at=current_user.created_at,
         last_login=current_user.last_login
     )
