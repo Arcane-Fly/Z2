@@ -2,10 +2,11 @@
 Workflow orchestration endpoints for Z2 API.
 """
 
-from datetime import UTC
+from datetime import UTC, datetime
 from typing import Optional
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +25,7 @@ from app.schemas import (
     WorkflowUpdate,
 )
 
+logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
@@ -365,24 +367,99 @@ async def start_workflow(
             detail="Workflow is already running or paused"
         )
 
-    # TODO: Implement actual workflow execution
-    # For now, return a mock response
-    from datetime import datetime
-    from uuid import uuid4
-
-    # Update workflow status
-    workflow.status = "running"
-    workflow.started_at = datetime.now(UTC)
-    await db.commit()
-
-    return WorkflowExecutionResponse(
-        execution_id=uuid4(),
-        workflow_id=workflow_id,
-        status="running",
-        started_at=workflow.started_at,
-        estimated_completion=None,
-        progress={"current_step": "initialization", "completion_percentage": 0}
-    )
+    # Create and execute workflow using MAOF
+    from app.agents.maof import WorkflowOrchestrator, WorkflowDefinition, Task as MAOFTask, AgentDefinition, AgentRole
+    from app.agents.die import DynamicIntelligenceEngine
+    from app.agents.mil import ModelIntegrationLayer
+    import time
+    
+    try:
+        # Initialize the orchestration components
+        die = DynamicIntelligenceEngine()
+        mil = ModelIntegrationLayer()
+        orchestrator = WorkflowOrchestrator(die, mil)
+        
+        # Convert database workflow to MAOF WorkflowDefinition
+        workflow_def = WorkflowDefinition(
+            id=workflow.id,
+            name=workflow.name,
+            description=workflow.description or "",
+            goal=workflow.goal,
+            max_duration_seconds=workflow.max_duration_seconds,
+            max_cost_usd=workflow.max_cost_usd,
+            tasks=[]  # Will be populated from database or auto-generated
+        )
+        
+        # Auto-generate basic tasks if none exist
+        if not workflow_def.tasks:
+            # Create a simple task structure for the workflow goal
+            task = MAOFTask(
+                name=f"Execute {workflow.name}",
+                description=f"Complete the workflow goal: {workflow.goal}",
+                agent_id=None,  # Will be auto-assigned
+                required_capabilities=[],
+                expected_output=execution_request.input_data
+            )
+            workflow_def.tasks.append(task)
+        
+        # Update workflow status
+        workflow.status = "running"
+        workflow.started_at = datetime.now(UTC)
+        await db.commit()
+        
+        # Execute workflow in background (simplified for now)
+        # In production, this would be handled by a task queue
+        start_time = time.time()
+        execution_result = await orchestrator.execute_workflow(workflow_def)
+        execution_time = time.time() - start_time
+        
+        # Update workflow with results
+        workflow.status = "completed"
+        workflow.completed_at = datetime.now(UTC)
+        workflow.total_tokens_used = execution_result.get("total_tokens", 0)
+        workflow.total_cost_usd = execution_result.get("total_cost", 0.0)
+        await db.commit()
+        
+        from uuid import uuid4
+        return WorkflowExecutionResponse(
+            execution_id=uuid4(),
+            workflow_id=workflow_id,
+            status="completed",
+            started_at=workflow.started_at,
+            estimated_completion=workflow.completed_at,
+            progress={
+                "current_step": "completed",
+                "completion_percentage": 100,
+                "steps_completed": len(workflow_def.tasks),
+                "total_steps": len(workflow_def.tasks),
+                "execution_time_seconds": execution_time,
+                "result": execution_result
+            }
+        )
+        
+    except Exception as e:
+        # Handle execution failure
+        workflow.status = "failed"
+        workflow.completed_at = datetime.now(UTC)
+        await db.commit()
+        
+        logger.error("Workflow execution failed", workflow_id=workflow_id, error=str(e))
+        
+        from uuid import uuid4
+        return WorkflowExecutionResponse(
+            execution_id=uuid4(),
+            workflow_id=workflow_id,
+            status="failed",
+            started_at=workflow.started_at,
+            estimated_completion=None,
+            progress={
+                "current_step": "failed", 
+                "completion_percentage": 0,
+                "error": str(e),
+                "steps_completed": 0,
+                "total_steps": 1
+            }
+        )
 
 
 @router.post("/{workflow_id}/stop", response_model=BaseResponse)
