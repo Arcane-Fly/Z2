@@ -18,7 +18,7 @@ from app.core.auth_dependencies import (
 )
 from app.database.session import get_db
 from app.models.user import User
-from app.schemas import BaseResponse, PaginatedResponse, UserProfile
+from app.schemas import BaseResponse, PaginatedResponse, UserProfile, UserUpdate
 
 router = APIRouter()
 
@@ -146,15 +146,69 @@ async def get_user(
 @router.put("/{user_id}", response_model=UserProfile)
 async def update_user(
     user_id: UUID,
+    user_update: UserUpdate,
     current_user: User = Depends(RequireUserWrite),
     db: AsyncSession = Depends(get_db),
 ):
     """Update user by ID."""
-    # TODO: Implement user update with validation and authorization
-    # For now, return not implemented
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="User update not yet implemented"
+    # Get the user to update
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Authorization check: users can only update themselves unless they're admin
+    if user.id != current_user.id and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this user"
+        )
+
+    # Apply updates
+    update_data = user_update.model_dump(exclude_unset=True)
+    
+    # Restrict certain fields for non-admin users
+    if not current_user.is_superuser:
+        # Remove admin-only fields
+        update_data.pop("user_type", None)
+        update_data.pop("is_active", None)
+
+    # Check email uniqueness if email is being updated
+    if "email" in update_data and update_data["email"] != user.email:
+        stmt_email = select(User).where(
+            and_(User.email == update_data["email"], User.id != user_id)
+        )
+        result_email = await db.execute(stmt_email)
+        existing_user = result_email.scalar_one_or_none()
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+
+    # Update user fields
+    for field, value in update_data.items():
+        setattr(user, field, value)
+
+    await db.commit()
+    await db.refresh(user)
+
+    return UserProfile(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
+        user_type=user.user_type,
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+        created_at=user.created_at,
+        last_login=user.last_login
     )
 
 

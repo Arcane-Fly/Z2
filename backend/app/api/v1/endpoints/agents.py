@@ -5,6 +5,7 @@ Agent management endpoints for Z2 API.
 from typing import Optional
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +24,7 @@ from app.schemas import (
     PaginatedResponse,
 )
 
+logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 
@@ -303,19 +305,74 @@ async def execute_agent_task(
             detail="Agent not found"
         )
 
-    # TODO: Implement actual agent task execution
-    # For now, return a mock response
-    from uuid import uuid4
-
-    return AgentExecutionResponse(
-        task_id=uuid4(),
-        status="completed",
-        output={"result": "Mock execution result", "input": execution_request.input_data},
-        tokens_used=100,
-        cost_usd=0.01,
-        execution_time_ms=500.0,
-        model_used="mock-model"
+    # Create a BasicAIAgent instance from the database agent
+    from app.agents.basic_agent import BasicAIAgent
+    import time
+    from datetime import UTC, datetime
+    
+    basic_agent = BasicAIAgent(
+        name=agent.name,
+        role=agent.role
     )
+    
+    # Configure agent with database settings
+    basic_agent.temperature = execution_request.temperature or agent.temperature
+    basic_agent.max_tokens = execution_request.max_tokens or agent.max_tokens
+    
+    # Execute the task
+    start_time = time.time()
+    
+    try:
+        # Create task prompt from request
+        task_prompt = f"Task: {execution_request.task_description}\n"
+        if execution_request.input_data:
+            task_prompt += f"Input Data: {execution_request.input_data}\n"
+        task_prompt += f"Expected Output Format: {execution_request.expected_output_format}"
+        
+        # Process the task
+        response = await basic_agent.process_message(task_prompt)
+        
+        execution_time_ms = (time.time() - start_time) * 1000
+        
+        # Update agent statistics in database
+        agent.total_executions += 1
+        agent.last_used = datetime.now(UTC)
+        
+        # Estimate token usage and cost (basic estimation)
+        estimated_tokens = len(task_prompt.split()) + len(response.split())
+        estimated_cost = estimated_tokens * 0.00001  # Rough estimate
+        
+        agent.total_tokens_used += estimated_tokens
+        
+        # Update average response time
+        if agent.average_response_time:
+            agent.average_response_time = (agent.average_response_time + execution_time_ms) / 2
+        else:
+            agent.average_response_time = execution_time_ms
+            
+        await db.commit()
+        
+        from uuid import uuid4
+        return AgentExecutionResponse(
+            task_id=uuid4(),
+            status="completed",
+            output={
+                "result": response,
+                "input": execution_request.input_data,
+                "task": execution_request.task_description
+            },
+            tokens_used=estimated_tokens,
+            cost_usd=estimated_cost,
+            execution_time_ms=execution_time_ms,
+            model_used="dynamic"  # Would be set by actual MIL integration
+        )
+        
+    except Exception as e:
+        logger.error("Agent execution failed", agent_id=agent_id, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Agent execution failed: {str(e)}"
+        )
 
 
 @router.get("/{agent_id}/status")

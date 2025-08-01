@@ -83,6 +83,16 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+# User update schema  
+class UserUpdate(BaseModel):
+    """User update request."""
+    
+    full_name: Optional[str] = Field(None, max_length=255)
+    email: Optional[str] = Field(None, pattern=r"^[^@]+@[^@]+\.[^@]+$")
+    user_type: Optional[str] = Field(None, pattern="^(developer|operator)$")
+    is_active: Optional[bool] = None
+
+
 class UserProfile(BaseModel):
     """User profile response."""
 
