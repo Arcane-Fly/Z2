@@ -54,11 +54,11 @@ This roadmap reflects the current implementation status and outlines the path to
 
 ### ✅ Completed Tasks (Core Implementation):
 - ✅ Model Integration Layer (MIL) architecture with provider abstractions
-- ✅ OpenAI provider client implemented (31 models: GPT-4.1, GPT-4.1 mini/nano, GPT-4o, GPT-4o-mini, o3, o3-mini, o4-mini, TTS, Whisper, embeddings)
-- ✅ Anthropic provider implementation (5 models: Claude Opus 4, Sonnet 4, Sonnet 3.7, Sonnet 3.5, Haiku 3.5)
-- ✅ Google AI provider implementation (2 models: Gemini 2.5 Flash, Gemini 2.5 Pro)
-- ✅ Groq provider implementation with hardware-accelerated inference (6 models: Llama 3.3 70B, Llama 3.1 405B/70B/8B, Gemma 3 9B/27B)
-- ✅ Perplexity provider implementation (3 models: Llama 3.1 Sonar Large/Small/Huge 128K Online with real-time search)
+- ✅ OpenAI provider client implemented (31 models: `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `gpt-4o`, `gpt-4o-mini`, `o3`, `o3-mini`, `o4-mini`, TTS, Whisper, embeddings)
+- ✅ Anthropic provider implementation (5 models: `claude-opus-4-20250514`, `claude-sonnet-4-20250514`, `claude-3-7-sonnet-20250219`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`)
+- ✅ Google AI provider implementation (2 models: `gemini-2.5-flash`, `gemini-2.5-pro`)
+- ✅ Groq provider implementation with hardware-accelerated inference (6 models: `llama-3.3-70b-versatile`, `llama-3.1-405b-reasoning`, `llama-3.1-70b-versatile`, `llama-3.1-8b-instant`, `gemma3-9b-it`, `gemma3-27b-it`)
+- ✅ Perplexity provider implementation (3 models: `llama-3.1-sonar-large-128k-online`, `llama-3.1-sonar-small-128k-online`, `llama-3.1-sonar-huge-128k-online` with real-time search)
 - ✅ Dynamic model routing and recommendation system
 - ✅ Cost optimization and capability-based model selection
 - ✅ Model health checks and status monitoring endpoints
@@ -79,17 +79,17 @@ This roadmap reflects the current implementation status and outlines the path to
 **Goal**: Expand to comprehensive model ecosystem as defined in AI_MODELS_MANIFEST.md
 
 ### 📋 Planned Provider Implementations:
-- 📋 **xAI Provider Implementation** (2 models: Grok 3, Grok 4)
+- 📋 **xAI Provider Implementation** (2 models: `grok-3`, `grok-4`)
   - xAI API integration with authentication  
   - Real-time search and current information access
   - Enhanced reasoning and problem-solving capabilities
   
-- 📋 **Moonshot AI Provider Implementation** (3 models: Moonshot-v1-8k, v1-32k, v1-128k)
+- 📋 **Moonshot AI Provider Implementation** (3 models: `moonshot-v1-8k`, `moonshot-v1-32k`, `moonshot-v1-128k`)
   - Moonshot API client and authentication
   - Long context window optimization (up to 128K tokens)
   - Chinese language model excellence and document processing
   
-- 📋 **Qwen Provider Implementation** (6 models: Qwen3 72B/32B/14B/7B Instruct, Reasoning Preview, VL 72B)
+- 📋 **Qwen Provider Implementation** (6 models: `qwen3-72b-instruct`, `qwen3-32b-instruct`, `qwen3-14b-instruct`, `qwen3-7b-instruct`, `qwen3-reasoning-preview`, `qwen3-vl-72b-instruct`)
   - Alibaba Cloud integration for Qwen models
   - Multi-language support and optimization  
   - Code generation, reasoning, and vision capabilities
@@ -325,17 +325,17 @@ The Z2 platform has a solid foundation with significant functionality already im
 **Goal**: Complete the vision outlined in AI_MODELS_MANIFEST.md with comprehensive model coverage.
 
 #### 11.1 xAI Integration
-- 📋 Implement xAI provider with Grok 3 and Grok 4
+- 📋 Implement xAI provider with `grok-3` and `grok-4`
 - 📋 Real-time information access and search capabilities
 - 📋 Enhanced reasoning and unfiltered conversational AI
 
 #### 11.2 Moonshot AI Integration  
-- 📋 Moonshot provider implementation (v1-8k, v1-32k, v1-128k)
+- 📋 Moonshot provider implementation (`moonshot-v1-8k`, `moonshot-v1-32k`, `moonshot-v1-128k`)
 - 📋 Extended context window utilization (up to 128k tokens)
 - 📋 Chinese language processing optimization
 
 #### 11.3 Qwen Model Integration
-- 📋 Alibaba Cloud Qwen provider (6 models: Qwen3 72B/32B/14B/7B Instruct, Reasoning Preview, VL 72B)
+- 📋 Alibaba Cloud Qwen provider (6 models: `qwen3-72b-instruct`, `qwen3-32b-instruct`, `qwen3-14b-instruct`, `qwen3-7b-instruct`, `qwen3-reasoning-preview`, `qwen3-vl-72b-instruct`)
 - 📋 Multi-language support enhancement with advanced reasoning
 - 📋 Code generation, mathematical reasoning, and vision capabilities
 
@@ -351,12 +351,12 @@ The Z2 platform has a solid foundation with significant functionality already im
 - 📋 Cost-performance optimization across all 8 providers
 
 #### 12.2 Specialized Model Routing
-- 📋 Vision tasks → Gemini 2.5 Pro/Flash, GPT-4.1, Qwen3 VL 72B
-- 📋 Code generation → o4-mini, Claude Sonnet 4, Llama 3.3 70B, Qwen3 72B
-- 📋 Reasoning → o3, Claude Opus 4, Qwen3 Reasoning Preview
-- 📋 Real-time search → Perplexity Sonar models, Grok 3/4
-- 📋 Long context → Gemini 2.5 Pro (2M), GPT-4.1 (1M), Moonshot v1-128k
-- 📋 Cost optimization → Qwen3 7B, Llama 3.1 8B, Gemini 2.5 Flash
+- 📋 **Vision tasks** → `gemini-2.5-pro`, `gemini-2.5-flash`, `gpt-4.1`, `qwen3-vl-72b-instruct`
+- 📋 **Code generation** → `o4-mini`, `claude-sonnet-4-20250514`, `llama-3.3-70b-versatile`, `qwen3-72b-instruct`
+- 📋 **Reasoning** → `o3`, `claude-opus-4-20250514`, `qwen3-reasoning-preview`
+- 📋 **Real-time search** → `llama-3.1-sonar-huge-128k-online`, `grok-4`, `grok-3`
+- 📋 **Long context** → `gemini-2.5-pro` (2M), `gpt-4.1` (1M), `moonshot-v1-128k` (128K)
+- 📋 **Cost optimization** → `qwen3-7b-instruct`, `llama-3.1-8b-instant`, `gemini-2.5-flash`
 
 #### 12.3 Performance Analytics
 - 📋 Real-time model performance tracking across all providers
@@ -371,7 +371,7 @@ The Z2 platform has a solid foundation with significant functionality already im
 - ✅ Testing and documentation completion
 
 #### 2025 Q2-Q3 (Platform Expansion)  
-- 📋 Add 3 additional providers (xAI: 2 models, Moonshot AI: 3 models, Qwen: 6 models)
+- 📋 Add 3 additional providers (xAI: `grok-3`/`grok-4`, Moonshot AI: `moonshot-v1-8k`/`moonshot-v1-32k`/`moonshot-v1-128k`, Qwen: 6 models)
 - 📋 Reach 58-model ecosystem goal (47 → 58 models)
 - 📋 Advanced routing and orchestration capabilities
 
