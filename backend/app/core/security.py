@@ -85,7 +85,7 @@ class SecurityConfig:
     MAX_CONCURRENT_SESSIONS = 3
 
     # CORS
-    ALLOWED_ORIGINS = settings.cors_origins
+    ALLOWED_ORIGINS = settings.cors_origins_list
     ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     ALLOWED_HEADERS = ["*"]
     ALLOW_CREDENTIALS = True

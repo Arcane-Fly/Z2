@@ -5,10 +5,10 @@ This module contains all configuration settings for the Z2 backend API,
 including environment variables, database settings, and service configurations.
 """
 
+import json
 from functools import lru_cache
-from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,8 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        # Custom env parsing for complex types
+        env_parse_none_str="None",
     )
 
     # Application Settings
@@ -33,10 +35,48 @@ class Settings(BaseSettings):
     # API Settings
     api_v1_prefix: str = "/api/v1"
     allowed_hosts: list[str] = Field(default=["*"], description="Allowed hosts")
-    cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
-        description="CORS allowed origins",
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://localhost:5173",
+        description="CORS allowed origins (comma-separated or JSON array)",
     )
+
+    @field_validator("cors_origins", mode="after")
+    @classmethod
+    def parse_cors_origins(cls, value: str) -> list[str]:
+        """Parse CORS origins from string to list.
+
+        Handles multiple input formats:
+        - JSON array format: '["http://localhost:3000","https://app.com"]'
+        - Comma-separated string: 'http://localhost:3000,https://app.com'
+        - Comma-separated with spaces: 'http://localhost:3000, https://app.com'
+        """
+        if isinstance(value, list):
+            # Already processed - check if empty and return defaults if so
+            return value if value else ["http://localhost:3000", "http://localhost:5173"]
+
+        if not isinstance(value, str) or not value.strip():
+            return ["http://localhost:3000", "http://localhost:5173"]
+
+        # Try to parse as JSON first
+        if value.strip().startswith("[") and value.strip().endswith("]"):
+            try:
+                parsed = json.loads(value)
+                if isinstance(parsed, list):
+                    result = [str(origin).strip() for origin in parsed if origin]
+                    return result if result else ["http://localhost:3000", "http://localhost:5173"]
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+        # Handle comma-separated string format
+        origins = [origin.strip() for origin in value.split(",") if origin.strip()]
+        return origins if origins else ["http://localhost:3000", "http://localhost:5173"]
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Get CORS origins as a list."""
+        if isinstance(self.cors_origins, list):
+            return self.cors_origins
+        return self.parse_cors_origins(self.cors_origins)
 
     # Database Settings
     database_url: str = Field(
@@ -60,26 +100,26 @@ class Settings(BaseSettings):
         default=30, description="Access token expiration in minutes"
     )
     algorithm: str = Field(
-        default="HS256", 
+        default="HS256",
         description="JWT algorithm",
         alias="JWT_ALGORITHM"
     )
 
     # LLM Provider API Keys
-    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key")
-    anthropic_api_key: Optional[str] = Field(
+    openai_api_key: str | None = Field(default=None, description="OpenAI API key")
+    anthropic_api_key: str | None = Field(
         default=None, description="Anthropic API key"
     )
-    groq_api_key: Optional[str] = Field(default=None, description="Groq API key")
-    google_api_key: Optional[str] = Field(default=None, description="Google API key")
-    perplexity_api_key: Optional[str] = Field(
+    groq_api_key: str | None = Field(default=None, description="Groq API key")
+    google_api_key: str | None = Field(default=None, description="Google API key")
+    perplexity_api_key: str | None = Field(
         default=None, description="Perplexity API key"
     )
-    xai_api_key: Optional[str] = Field(default=None, description="xAI API key")
-    moonshot_api_key: Optional[str] = Field(
+    xai_api_key: str | None = Field(default=None, description="xAI API key")
+    moonshot_api_key: str | None = Field(
         default=None, description="Moonshot AI API key"
     )
-    qwen_api_key: Optional[str] = Field(default=None, description="Qwen API key")
+    qwen_api_key: str | None = Field(default=None, description="Qwen API key")
 
     # LLM Configuration
     default_model: str = Field(
