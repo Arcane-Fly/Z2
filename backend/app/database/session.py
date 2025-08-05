@@ -59,7 +59,8 @@ async def init_db() -> None:
                 workflow, 
                 consent, 
                 session,
-                model_routing
+                model_routing,
+                api_key
             )
 
             # Create all tables
