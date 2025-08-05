@@ -7,12 +7,12 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from app.database.session import Base
+from app.database.types import UniversalJSON
 
 
 class Agent(Base):
@@ -31,9 +31,9 @@ class Agent(Base):
         String(50)
     )  # e.g., "researcher", "writer", "coder"
     system_prompt: Mapped[str] = mapped_column(Text)
-    model_preferences: Mapped[dict] = mapped_column(JSONB, default=dict)
-    tools: Mapped[dict] = mapped_column(JSONB, default=dict)
-    skills: Mapped[dict] = mapped_column(JSONB, default=dict)
+    model_preferences: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
+    tools: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
+    skills: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
 
     # Performance and behavior settings
     temperature: Mapped[float] = mapped_column(default=0.7)

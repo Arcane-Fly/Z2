@@ -2,6 +2,7 @@
 Model Integration Layer endpoints for Z2 API.
 """
 
+from datetime import datetime
 from typing import Optional
 
 import structlog
@@ -20,6 +21,7 @@ from app.core.models_registry import (
     validate_model_support,
 )
 from app.database.session import get_db
+from app.services.model_routing import ModelRoutingService
 
 logger = structlog.get_logger(__name__)
 
@@ -221,9 +223,33 @@ async def get_routing_policy(
     db: AsyncSession = Depends(get_db),
 ):
     """Get current model routing policy configuration."""
+    routing_service = ModelRoutingService(db)
+    policies = await routing_service.list_routing_policies(active_only=True)
+    
+    # Convert to the expected format
+    routing_config = {}
+    for policy in policies:
+        routing_config[policy.task_type] = policy.model_id
+    
+    # Merge with defaults for any missing task types
+    merged_routing = {**DEFAULT_MODEL_ROUTING, **routing_config}
+    
     return {
-        "routing_policy": DEFAULT_MODEL_ROUTING,
-        "description": "Default model routing configuration for automatic model selection",
+        "routing_policy": merged_routing,
+        "active_policies": [
+            {
+                "id": str(policy.id),
+                "name": policy.name,
+                "task_type": policy.task_type,
+                "model_id": policy.model_id,
+                "fallback_models": policy.fallback_models,
+                "priority": policy.priority,
+                "created_at": policy.created_at.isoformat(),
+                "updated_at": policy.updated_at.isoformat(),
+            }
+            for policy in policies
+        ],
+        "description": "Current model routing configuration with persistent policies",
         "registry_version": MODEL_REGISTRY_VERSION,
     }
 
@@ -234,6 +260,8 @@ async def update_routing_policy(
     db: AsyncSession = Depends(get_db),
 ):
     """Update model routing policy configuration."""
+    routing_service = ModelRoutingService(db)
+    
     # Validate that all specified models exist
     for task_type, model_id in new_routing.items():
         if not get_model_by_id(model_id):
@@ -242,10 +270,42 @@ async def update_routing_policy(
                 detail=f"Model '{model_id}' not found for task type '{task_type}'",
             )
 
-    # TODO: Implement persistent routing policy storage
+    # Update or create routing policies
+    updated_policies = []
+    for task_type, model_id in new_routing.items():
+        # Check if policy exists for this task type
+        existing_policy = await routing_service.get_routing_policy_for_task(task_type)
+        
+        if existing_policy:
+            # Update existing policy
+            updated_policy = await routing_service.update_routing_policy(
+                existing_policy.id,
+                model_id=model_id,
+                updated_at=datetime.utcnow(),
+            )
+            updated_policies.append(updated_policy)
+        else:
+            # Create new policy
+            new_policy = await routing_service.create_routing_policy(
+                name=f"Auto-generated policy for {task_type}",
+                task_type=task_type,
+                model_id=model_id,
+                description=f"Automatically created routing policy for {task_type} tasks",
+                created_by="api_update",
+            )
+            updated_policies.append(new_policy)
+
     return {
         "message": "Routing policy updated successfully",
         "new_routing": new_routing,
+        "updated_policies": [
+            {
+                "id": str(policy.id),
+                "task_type": policy.task_type,
+                "model_id": policy.model_id,
+            }
+            for policy in updated_policies
+        ],
         "registry_version": MODEL_REGISTRY_VERSION,
     }
 
@@ -303,27 +363,44 @@ async def get_usage_statistics(
     db: AsyncSession = Depends(get_db),
 ):
     """Get usage statistics and cost tracking."""
-    # TODO: Implement actual usage tracking from Redis/database
-    # For now, return a mock response showing the expected structure
+    routing_service = ModelRoutingService(db)
     
-    return {
-        "message": "Usage statistics endpoint - Implementation pending",
-        "filters": {
-            "provider": provider,
-            "model_id": model_id,
-            "hours_back": hours_back,
-        },
-        "expected_structure": {
-            "total_requests": 0,
-            "total_cost_usd": 0.0,
-            "total_tokens": 0,
-            "average_latency_ms": 0.0,
-            "cost_by_model": {},
-            "requests_by_hour": [],
-            "cache_hit_rate": 0.0,
-        },
-        "registry_version": MODEL_REGISTRY_VERSION,
-    }
+    try:
+        stats = await routing_service.get_usage_statistics(
+            provider=provider,
+            model_id=model_id,
+            hours_back=hours_back,
+        )
+        
+        # Add registry version and additional metadata
+        stats["registry_version"] = MODEL_REGISTRY_VERSION
+        stats["data_source"] = "persistent_database"
+        
+        return stats
+        
+    except Exception as e:
+        logger.error("Failed to get usage statistics", error=str(e))
+        
+        # Fallback to mock response if there's an error
+        return {
+            "message": "Usage statistics - using fallback data due to error",
+            "error": str(e),
+            "filters": {
+                "provider": provider,
+                "model_id": model_id,
+                "hours_back": hours_back,
+            },
+            "fallback_structure": {
+                "total_requests": 0,
+                "total_cost_usd": 0.0,
+                "total_tokens": 0,
+                "average_latency_ms": 0.0,
+                "cost_by_model": {},
+                "cache_hit_rate": 0.0,
+                "success_rate": 0.0,
+            },
+            "registry_version": MODEL_REGISTRY_VERSION,
+        }
 
 
 @router.post("/recommend")
@@ -395,3 +472,89 @@ async def recommend_optimal_model(
         "task_type": task_type,
         "required_capabilities": required_capabilities,
     }
+
+
+@router.post("/routing/policy")
+async def create_routing_policy(
+    name: str,
+    task_type: str,
+    model_id: str,
+    description: Optional[str] = None,
+    fallback_models: Optional[list[str]] = None,
+    max_cost_per_request: Optional[float] = None,
+    max_latency_ms: Optional[int] = None,
+    required_capabilities: Optional[list[str]] = None,
+    priority: int = 100,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new routing policy."""
+    routing_service = ModelRoutingService(db)
+    
+    # Validate model exists
+    if not get_model_by_id(model_id):
+        raise HTTPException(status_code=400, detail=f"Model '{model_id}' not found")
+    
+    # Validate fallback models if provided
+    if fallback_models:
+        for fallback_model in fallback_models:
+            if not get_model_by_id(fallback_model):
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Fallback model '{fallback_model}' not found"
+                )
+    
+    policy = await routing_service.create_routing_policy(
+        name=name,
+        task_type=task_type,
+        model_id=model_id,
+        description=description,
+        fallback_models=fallback_models,
+        max_cost_per_request=max_cost_per_request,
+        max_latency_ms=max_latency_ms,
+        required_capabilities=required_capabilities,
+        priority=priority,
+        created_by="api_user",
+    )
+    
+    return {
+        "id": str(policy.id),
+        "name": policy.name,
+        "task_type": policy.task_type,
+        "model_id": policy.model_id,
+        "fallback_models": policy.fallback_models,
+        "priority": policy.priority,
+        "created_at": policy.created_at.isoformat(),
+        "message": "Routing policy created successfully",
+    }
+
+
+@router.get("/optimization/recommendations")
+async def get_cost_optimization_recommendations(
+    hours_back: int = 168,  # 1 week default
+    db: AsyncSession = Depends(get_db),
+):
+    """Get cost optimization recommendations based on usage patterns."""
+    routing_service = ModelRoutingService(db)
+    
+    try:
+        recommendations = await routing_service.get_cost_optimization_recommendations(
+            hours_back=hours_back
+        )
+        
+        recommendations["registry_version"] = MODEL_REGISTRY_VERSION
+        recommendations["generated_at"] = datetime.utcnow().isoformat()
+        
+        return recommendations
+        
+    except Exception as e:
+        logger.error("Failed to generate optimization recommendations", error=str(e))
+        
+        return {
+            "message": "Cost optimization recommendations - analysis failed",
+            "error": str(e),
+            "recommendations": [],
+            "analysis_period_hours": hours_back,
+            "total_cost_analyzed": 0.0,
+            "total_requests_analyzed": 0,
+            "registry_version": MODEL_REGISTRY_VERSION,
+        }

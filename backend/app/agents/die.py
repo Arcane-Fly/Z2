@@ -235,29 +235,263 @@ class DynamicPromptGenerator:
         return prompt
 
     def _optimize_for_cost(self, prompt: str) -> str:
-        """Apply cost optimization techniques like token reduction."""
-        # TODO: Implement intelligent token reduction while preserving meaning
-        # For now, just basic cleanup
-
-        # Remove excessive whitespace
+        """Apply intelligent token reduction while preserving meaning."""
+        # Enhanced cost optimization techniques following agent-os best practices
+        
+        # Remove excessive whitespace and empty lines
         lines = [line.strip() for line in prompt.split("\n") if line.strip()]
         optimized = "\n".join(lines)
-
-        # Log optimization if significant reduction
+        
+        # Intelligent abbreviation of common words/phrases
+        abbreviations = {
+            "please provide": "provide",
+            "could you please": "please",
+            "I would like you to": "please",
+            "it is important to": "ensure to",
+            "make sure to": "ensure",
+            "in order to": "to",
+            "with regard to": "regarding",
+            "take into consideration": "consider",
+            "as a result of": "due to",
+            "at this point in time": "now",
+            "for the purpose of": "for",
+        }
+        
+        for verbose, concise in abbreviations.items():
+            optimized = optimized.replace(verbose, concise)
+        
+        # Remove redundant filler words while preserving meaning
+        filler_patterns = [
+            r'\b(actually|basically|essentially|literally)\b',
+            r'\b(really|quite|very|extremely) (\w+)',  # Replace with just the word
+            r'\b(please note that|it should be noted that|it is worth noting that)\b',
+        ]
+        
+        import re
+        for pattern in filler_patterns:
+            if r'(\w+)' in pattern:
+                # Special handling for intensity words - replace with just the main word
+                optimized = re.sub(pattern, r'\2', optimized, flags=re.IGNORECASE)
+            else:
+                optimized = re.sub(pattern, '', optimized, flags=re.IGNORECASE)
+        
+        # Clean up any double spaces created by removals
+        optimized = re.sub(r'\s+', ' ', optimized).strip()
+        
+        # Log optimization results
         original_length = len(prompt)
         optimized_length = len(optimized)
-
-        if original_length - optimized_length > 50:
+        token_savings = original_length - optimized_length
+        
+        if token_savings > 50:
             logger.debug(
                 "Applied cost optimization",
-                original_tokens=original_length // 4,  # Rough token estimate
+                original_tokens=original_length // 4,  # Rough estimate
                 optimized_tokens=optimized_length // 4,
-                reduction_percent=(original_length - optimized_length)
-                / original_length
-                * 100,
+                savings_tokens=(token_savings // 4),
+                savings_percent=f"{(token_savings/original_length)*100:.1f}%"
             )
-
+        
         return optimized
+
+    def enhance_context_compression(self, context: ContextualMemory, max_tokens: int = 500) -> None:
+        """Enhanced context compression with semantic preservation."""
+        # Estimate current context size (rough: 1 token ≈ 4 characters)
+        current_size = 0
+        
+        # Calculate size of all context components
+        if context.short_term:
+            current_size += sum(len(str(v)) for v in context.short_term.values())
+        if context.long_term:
+            current_size += sum(len(str(v)) for v in context.long_term.values())
+        if context.summary:
+            current_size += sum(len(str(v)) for v in context.summary.values())
+        
+        estimated_tokens = current_size // 4
+        
+        if estimated_tokens <= max_tokens:
+            return  # No compression needed
+        
+        logger.info(
+            "Starting enhanced context compression",
+            current_tokens=estimated_tokens,
+            target_tokens=max_tokens
+        )
+        
+        # 1. Compress short-term memory using semantic clustering
+        if context.short_term:
+            context.short_term = self._compress_short_term_semantically(
+                context.short_term, max_items=5
+            )
+        
+        # 2. Create intelligent summary from historical data
+        if context.long_term:
+            summary_text = self._create_intelligent_summary(context.long_term)
+            if summary_text:
+                context.summary["intelligent_summary"] = summary_text
+        
+        # 3. Prioritize and compress summary
+        if context.summary:
+            context.summary = self._compress_summary(context.summary, max_tokens // 4)
+        
+        # 4. Calculate final compression ratio
+        final_size = 0
+        if context.short_term:
+            final_size += sum(len(str(v)) for v in context.short_term.values())
+        if context.summary:
+            final_size += sum(len(str(v)) for v in context.summary.values())
+        
+        final_tokens = final_size // 4
+        compression_ratio = 1 - (final_tokens / estimated_tokens) if estimated_tokens > 0 else 0
+        
+        logger.info(
+            "Context compression completed",
+            original_tokens=estimated_tokens,
+            compressed_tokens=final_tokens,
+            compression_ratio=f"{compression_ratio*100:.1f}%"
+        )
+
+    def _compress_short_term_semantically(
+        self, short_term: dict[str, Any], max_items: int = 5
+    ) -> dict[str, Any]:
+        """Compress short-term memory using semantic clustering."""
+        # Group related items together to preserve relationships
+        
+        # Define semantic categories
+        categories = {
+            "actions": ["action", "execute", "run", "perform", "do"],
+            "results": ["result", "output", "response", "answer", "outcome"],
+            "errors": ["error", "fail", "exception", "problem", "issue"],
+            "context": ["context", "background", "setting", "environment"],
+            "goals": ["goal", "objective", "target", "aim", "purpose"],
+        }
+        
+        categorized = {}
+        uncategorized = {}
+        
+        # Categorize items
+        for key, value in short_term.items():
+            categorized_item = False
+            key_lower = key.lower()
+            value_str = str(value).lower()
+            
+            for category, keywords in categories.items():
+                if any(keyword in key_lower or keyword in value_str for keyword in keywords):
+                    if category not in categorized:
+                        categorized[category] = []
+                    categorized[category].append((key, value))
+                    categorized_item = True
+                    break
+            
+            if not categorized_item:
+                uncategorized[key] = value
+        
+        # Compress within categories
+        compressed = {}
+        
+        for category, items in categorized.items():
+            if len(items) == 1:
+                # Single item, keep as-is
+                key, value = items[0]
+                compressed[key] = value
+            else:
+                # Multiple items, create compressed summary
+                summary_parts = []
+                for key, value in items:
+                    # Keep only essential information
+                    if len(str(value)) < 50:
+                        summary_parts.append(f"{key}: {value}")
+                    else:
+                        # Truncate long values
+                        summary_parts.append(f"{key}: {str(value)[:47]}...")
+                
+                compressed[f"{category}_summary"] = " | ".join(summary_parts)
+        
+        # Add most important uncategorized items
+        remaining_slots = max_items - len(compressed)
+        if remaining_slots > 0:
+            # Sort uncategorized by importance (length as proxy for detail)
+            sorted_uncategorized = sorted(
+                uncategorized.items(),
+                key=lambda x: len(str(x[1])),
+                reverse=True
+            )
+            
+            for key, value in sorted_uncategorized[:remaining_slots]:
+                compressed[key] = value
+        
+        return compressed
+
+    def _create_intelligent_summary(self, long_term: dict[str, Any]) -> str:
+        """Create an intelligent summary of long-term context."""
+        summary_parts = []
+        
+        # Extract key patterns and frequently mentioned items
+        key_patterns = {}
+        for key, value in long_term.items():
+            # Look for patterns in keys (e.g., user_preference_*, setting_*)
+            if "_" in key:
+                pattern = key.split("_")[0]
+                if pattern not in key_patterns:
+                    key_patterns[pattern] = []
+                key_patterns[pattern].append((key, value))
+            else:
+                summary_parts.append(f"{key}: {value}")
+        
+        # Summarize patterns
+        for pattern, items in key_patterns.items():
+            if len(items) > 1:
+                # Multiple items with same pattern, create summary
+                values = [str(item[1]) for item in items]
+                summary_parts.append(f"{pattern}_settings: {', '.join(values[:3])}")
+            else:
+                # Single item
+                key, value = items[0]
+                summary_parts.append(f"{key}: {value}")
+        
+        return " | ".join(summary_parts[:5])  # Limit to 5 most important items
+
+    def _compress_summary(self, summary: dict[str, Any], max_tokens: int) -> dict[str, Any]:
+        """Compress summary while preserving most important information."""
+        # Priority order for summary components
+        priority_keys = [
+            "intelligent_summary",
+            "main_points", 
+            "current_objective",
+            "recent_context",
+            "user_preferences",
+            "constraints"
+        ]
+        
+        compressed = {}
+        token_budget = max_tokens
+        
+        for key in priority_keys:
+            if key in summary and token_budget > 0:
+                value = str(summary[key])
+                value_tokens = len(value) // 4
+                
+                if value_tokens <= token_budget:
+                    compressed[key] = value
+                    token_budget -= value_tokens
+                else:
+                    # Truncate to fit budget
+                    max_chars = token_budget * 4
+                    if max_chars > 20:  # Only include if meaningful
+                        compressed[key] = value[:max_chars-3] + "..."
+                    break
+        
+        # Add any remaining important keys if budget allows
+        for key, value in summary.items():
+            if key not in compressed and token_budget > 10:
+                value_str = str(value)
+                value_tokens = len(value_str) // 4
+                
+                if value_tokens <= token_budget:
+                    compressed[key] = value_str
+                    token_budget -= value_tokens
+        
+        return compressed
 
 
 class AdaptiveContextualFlow:
