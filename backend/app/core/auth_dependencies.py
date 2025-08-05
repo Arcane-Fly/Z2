@@ -2,12 +2,12 @@
 Authorization dependencies for FastAPI route protection.
 """
 
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Union
 from functools import wraps
 import inspect
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,6 +16,11 @@ from app.core.security import jwt_manager
 from app.database.session import get_db
 from app.models.user import User
 from app.models.role import Role, Permission
+from app.models.api_key import APIKey
+
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 security = HTTPBearer()
@@ -256,3 +261,139 @@ RequireAdminRole = RequireRole("admin")
 RequireManagerRole = RequireRole("manager", "admin")
 RequireDeveloperRole = RequireRole("developer", "manager", "admin")
 RequireOperatorRole = RequireRole("operator", "developer", "manager", "admin")
+
+
+# API Key Authentication Support
+async def authenticate_api_key(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> APIKey:
+    """Authenticate using API key instead of JWT token."""
+    
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key required"
+        )
+    
+    # Check if it looks like an API key
+    if not credentials.credentials.startswith("z2_"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key format"
+        )
+    
+    # Import here to avoid circular imports
+    from app.services.api_key import APIKeyService
+    
+    service = APIKeyService(db)
+    api_key = await service.validate_api_key(credentials.credentials)
+    
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired API key"
+        )
+    
+    # Check rate limits
+    rate_limit_info = await service.check_rate_limit(api_key)
+    if not rate_limit_info["allowed"]:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit exceeded. Limit: {rate_limit_info['limit']}/hour, "
+                   f"Usage: {rate_limit_info['usage']}, "
+                   f"Remaining: {rate_limit_info['remaining']}"
+        )
+    
+    # Check endpoint permissions
+    endpoint = request.url.path
+    if not api_key.can_access_endpoint(endpoint):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"API key does not have access to endpoint: {endpoint}"
+        )
+    
+    return api_key
+
+
+async def get_current_user_from_api_key(
+    api_key: APIKey = Depends(authenticate_api_key),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Get the user associated with an API key."""
+    
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.roles).selectinload(Role.permissions))
+        .where(User.id == api_key.user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account associated with API key is inactive"
+        )
+    
+    return user
+
+
+async def get_current_user_or_api_key(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """
+    Authenticate using either JWT token or API key.
+    This allows endpoints to accept both authentication methods.
+    """
+    
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+    
+    token = credentials.credentials
+    
+    # Check if it's an API key
+    if token.startswith("z2_"):
+        try:
+            api_key = await authenticate_api_key(request, credentials, db)
+            return await get_current_user_from_api_key(api_key, db)
+        except HTTPException:
+            raise
+    else:
+        # Try JWT authentication
+        try:
+            return await get_current_user(credentials, db)
+        except HTTPException:
+            raise
+    
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid authentication credentials"
+    )
+
+
+# API Key Permission Checks
+def require_api_key_permissions(*required_permissions: str):
+    """
+    Dependency that requires API key to have specific permissions.
+    
+    Usage:
+        @router.get("/data", dependencies=[Depends(require_api_key_permissions("data:read"))])
+        async def get_data(api_key: APIKey = Depends(authenticate_api_key)):
+            pass
+    """
+    def check_permissions(api_key: APIKey = Depends(authenticate_api_key)):
+        for permission in required_permissions:
+            if not api_key.has_permission(permission):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"API key missing required permission: {permission}"
+                )
+        return api_key
+    
+    return check_permissions

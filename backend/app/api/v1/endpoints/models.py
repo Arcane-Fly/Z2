@@ -9,6 +9,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth_dependencies import get_current_active_user
 from app.core.models_registry import (
     ALL_MODELS,
     DEFAULT_MODEL_ROUTING,
@@ -21,6 +22,7 @@ from app.core.models_registry import (
     validate_model_support,
 )
 from app.database.session import get_db
+from app.models.user import User
 from app.services.model_routing import ModelRoutingService
 
 logger = structlog.get_logger(__name__)
@@ -221,6 +223,7 @@ async def validate_model_configuration(
 @router.get("/routing/policy")
 async def get_routing_policy(
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get current model routing policy configuration."""
     routing_service = ModelRoutingService(db)
@@ -258,6 +261,7 @@ async def get_routing_policy(
 async def update_routing_policy(
     new_routing: dict[str, str],
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Update model routing policy configuration."""
     routing_service = ModelRoutingService(db)
@@ -286,14 +290,14 @@ async def update_routing_policy(
             updated_policies.append(updated_policy)
         else:
             # Create new policy
-            new_policy = await routing_service.create_routing_policy(
+            policy = await routing_service.create_routing_policy(
                 name=f"Auto-generated policy for {task_type}",
                 task_type=task_type,
                 model_id=model_id,
                 description=f"Automatically created routing policy for {task_type} tasks",
-                created_by="api_update",
+                created_by=current_user.username,
             )
-            updated_policies.append(new_policy)
+            updated_policies.append(policy)
 
     return {
         "message": "Routing policy updated successfully",
@@ -361,6 +365,7 @@ async def get_usage_statistics(
     model_id: Optional[str] = None,
     hours_back: int = 24,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get usage statistics and cost tracking."""
     routing_service = ModelRoutingService(db)
@@ -486,6 +491,7 @@ async def create_routing_policy(
     required_capabilities: Optional[list[str]] = None,
     priority: int = 100,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Create a new routing policy."""
     routing_service = ModelRoutingService(db)
@@ -513,7 +519,7 @@ async def create_routing_policy(
         max_latency_ms=max_latency_ms,
         required_capabilities=required_capabilities,
         priority=priority,
-        created_by="api_user",
+        created_by=current_user.username,
     )
     
     return {
@@ -532,6 +538,7 @@ async def create_routing_policy(
 async def get_cost_optimization_recommendations(
     hours_back: int = 168,  # 1 week default
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get cost optimization recommendations based on usage patterns."""
     routing_service = ModelRoutingService(db)
