@@ -8,12 +8,12 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, Integer, Float
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database.session import Base
+from app.database.types import UniversalJSON
 
 
 class CollapseStrategy(str, Enum):
@@ -59,7 +59,7 @@ class QuantumTask(Base):
     collapse_strategy: Mapped[CollapseStrategy] = mapped_column(
         String(20), default=CollapseStrategy.BEST_SCORE
     )
-    metrics_config: Mapped[dict] = mapped_column(JSONB, default=dict)
+    metrics_config: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
     max_parallel_executions: Mapped[int] = mapped_column(Integer, default=5)
     timeout_seconds: Mapped[int] = mapped_column(Integer, default=300)
     
@@ -70,9 +70,9 @@ class QuantumTask(Base):
     progress: Mapped[float] = mapped_column(Float, default=0.0)
     
     # Results
-    collapsed_result: Mapped[Optional[dict]] = mapped_column(JSONB)
-    final_metrics: Mapped[Optional[dict]] = mapped_column(JSONB)
-    execution_summary: Mapped[Optional[dict]] = mapped_column(JSONB)
+    collapsed_result: Mapped[Optional[dict]] = mapped_column(UniversalJSON)
+    final_metrics: Mapped[Optional[dict]] = mapped_column(UniversalJSON)
+    execution_summary: Mapped[Optional[dict]] = mapped_column(UniversalJSON)
     
     # Metadata
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
@@ -111,8 +111,8 @@ class Variation(Base):
     agent_type: Mapped[str] = mapped_column(String(50))  # Agent type to use
     provider: Mapped[Optional[str]] = mapped_column(String(50))  # LLM provider
     model: Mapped[Optional[str]] = mapped_column(String(100))  # Specific model
-    prompt_modifications: Mapped[dict] = mapped_column(JSONB, default=dict)
-    parameters: Mapped[dict] = mapped_column(JSONB, default=dict)
+    prompt_modifications: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
+    parameters: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
     weight: Mapped[float] = mapped_column(Float, default=1.0)  # For weighted strategies
     
     # Relationships
@@ -145,7 +145,7 @@ class QuantumThreadResult(Base):
     )
     
     # Results
-    result: Mapped[Optional[dict]] = mapped_column(JSONB)
+    result: Mapped[Optional[dict]] = mapped_column(UniversalJSON)
     error_message: Mapped[Optional[str]] = mapped_column(Text)
     
     # Metrics
@@ -154,7 +154,7 @@ class QuantumThreadResult(Base):
     completeness: Mapped[Optional[float]] = mapped_column(Float)
     accuracy: Mapped[Optional[float]] = mapped_column(Float)
     total_score: Mapped[Optional[float]] = mapped_column(Float)
-    detailed_metrics: Mapped[dict] = mapped_column(JSONB, default=dict)
+    detailed_metrics: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
     
     # Execution metadata
     tokens_used: Mapped[Optional[int]] = mapped_column(Integer)

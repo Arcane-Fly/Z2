@@ -1368,3 +1368,575 @@ class MultiAgentOrchestrationFramework:
             max_duration_seconds=1800,
             max_cost_usd=10.0,
         )
+
+
+class IntelligentWorkflowCreator:
+    """
+    Enhanced workflow creation system that analyzes goals and creates 
+    optimized multi-agent workflows following agent-os specifications.
+    """
+
+    def __init__(self, die: DynamicIntelligenceEngine, mil: ModelIntegrationLayer):
+        self.die = die
+        self.mil = mil
+        self.goal_patterns = self._initialize_goal_patterns()
+        self.workflow_templates = self._initialize_workflow_templates()
+
+    def _initialize_goal_patterns(self) -> dict[str, dict[str, Any]]:
+        """Initialize patterns for different types of goals."""
+        return {
+            "research": {
+                "keywords": ["research", "analyze", "investigate", "study", "explore", "find"],
+                "agents": [AgentRole.RESEARCHER, AgentRole.ANALYST, AgentRole.WRITER],
+                "complexity": "medium",
+                "estimated_duration": 1200,  # 20 minutes
+            },
+            "coding": {
+                "keywords": ["code", "develop", "program", "implement", "build", "create app"],
+                "agents": [AgentRole.PLANNER, AgentRole.CODER, AgentRole.REVIEWER],
+                "complexity": "high",
+                "estimated_duration": 2400,  # 40 minutes
+            },
+            "writing": {
+                "keywords": ["write", "compose", "draft", "create content", "generate text"],
+                "agents": [AgentRole.PLANNER, AgentRole.WRITER, AgentRole.REVIEWER],
+                "complexity": "low",
+                "estimated_duration": 900,  # 15 minutes
+            },
+            "analysis": {
+                "keywords": ["analyze", "evaluate", "assess", "compare", "examine"],
+                "agents": [AgentRole.RESEARCHER, AgentRole.ANALYST, AgentRole.VALIDATOR],
+                "complexity": "medium",
+                "estimated_duration": 1500,  # 25 minutes
+            },
+            "planning": {
+                "keywords": ["plan", "strategy", "design", "organize", "structure"],
+                "agents": [AgentRole.PLANNER, AgentRole.ANALYST, AgentRole.VALIDATOR],
+                "complexity": "medium",
+                "estimated_duration": 1200,  # 20 minutes
+            },
+            "review": {
+                "keywords": ["review", "check", "validate", "verify", "audit"],
+                "agents": [AgentRole.REVIEWER, AgentRole.VALIDATOR, AgentRole.ANALYST],
+                "complexity": "low",
+                "estimated_duration": 600,  # 10 minutes
+            },
+        }
+
+    def _initialize_workflow_templates(self) -> dict[str, dict[str, Any]]:
+        """Initialize workflow templates for different goal types."""
+        return {
+            "research": {
+                "tasks": [
+                    {
+                        "name": "Initial Research",
+                        "description": "Conduct initial research on the topic",
+                        "role": AgentRole.RESEARCHER,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Deep Analysis",
+                        "description": "Perform detailed analysis of findings",
+                        "role": AgentRole.ANALYST,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Report Writing",
+                        "description": "Compile findings into a comprehensive report",
+                        "role": AgentRole.WRITER,
+                        "parallel": False,
+                    },
+                ]
+            },
+            "coding": {
+                "tasks": [
+                    {
+                        "name": "Requirements Analysis",
+                        "description": "Analyze and break down coding requirements",
+                        "role": AgentRole.PLANNER,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Code Implementation",
+                        "description": "Implement the required functionality",
+                        "role": AgentRole.CODER,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Code Review",
+                        "description": "Review code for quality and correctness",
+                        "role": AgentRole.REVIEWER,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Testing & Validation",
+                        "description": "Test the implementation and validate it works",
+                        "role": AgentRole.VALIDATOR,
+                        "parallel": False,
+                    },
+                ]
+            },
+            "complex": {
+                "tasks": [
+                    {
+                        "name": "Goal Decomposition",
+                        "description": "Break down complex goal into manageable parts",
+                        "role": AgentRole.PLANNER,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Research Phase",
+                        "description": "Research relevant information",
+                        "role": AgentRole.RESEARCHER,
+                        "parallel": True,
+                    },
+                    {
+                        "name": "Analysis Phase",
+                        "description": "Analyze gathered information",
+                        "role": AgentRole.ANALYST,
+                        "parallel": True,
+                    },
+                    {
+                        "name": "Implementation Phase",
+                        "description": "Implement solution based on analysis",
+                        "role": AgentRole.EXECUTOR,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Coordination & Integration",
+                        "description": "Coordinate results and create final output",
+                        "role": AgentRole.COORDINATOR,
+                        "parallel": False,
+                    },
+                    {
+                        "name": "Final Validation",
+                        "description": "Validate the complete solution",
+                        "role": AgentRole.VALIDATOR,
+                        "parallel": False,
+                    },
+                ]
+            },
+        }
+
+    async def create_intelligent_workflow(
+        self,
+        goal: str,
+        input_data: Optional[dict[str, Any]] = None,
+        constraints: Optional[dict[str, Any]] = None,
+        user_preferences: Optional[dict[str, Any]] = None,
+    ) -> WorkflowDefinition:
+        """
+        Create an intelligent workflow based on comprehensive goal analysis.
+        """
+        logger.info("Starting intelligent workflow creation", goal=goal)
+
+        # 1. Analyze the goal to understand its nature and complexity
+        goal_analysis = await self._analyze_goal_comprehensive(goal, input_data, constraints)
+        
+        # 2. Select optimal workflow pattern based on analysis
+        workflow_pattern = self._select_workflow_pattern(goal_analysis)
+        
+        # 3. Create agents based on determined requirements
+        agents = self._create_optimized_agents(workflow_pattern, goal_analysis)
+        
+        # 4. Generate intelligent task structure
+        tasks = await self._generate_intelligent_tasks(
+            goal, goal_analysis, workflow_pattern, agents
+        )
+        
+        # 5. Optimize task dependencies and execution flow
+        optimized_tasks = self._optimize_task_dependencies(tasks, workflow_pattern)
+        
+        # 6. Apply constraints and preferences
+        final_workflow = self._apply_constraints_and_preferences(
+            goal, agents, optimized_tasks, goal_analysis, constraints, user_preferences
+        )
+        
+        logger.info(
+            "Intelligent workflow created",
+            workflow_name=final_workflow.name,
+            num_agents=len(final_workflow.agents),
+            num_tasks=len(final_workflow.tasks),
+            estimated_duration=final_workflow.max_duration_seconds,
+            complexity=goal_analysis.get("complexity", "unknown"),
+        )
+        
+        return final_workflow
+
+    async def _analyze_goal_comprehensive(
+        self,
+        goal: str,
+        input_data: Optional[dict[str, Any]] = None,
+        constraints: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        """Perform comprehensive analysis of the goal."""
+        
+        # Create analysis prompt
+        analysis_prompt = f"""
+        Analyze the following goal for intelligent workflow creation:
+        
+        Goal: {goal}
+        Input Data: {json.dumps(input_data or {}, indent=2)}
+        Constraints: {json.dumps(constraints or {}, indent=2)}
+        
+        Provide analysis in the following JSON format:
+        {{
+            "goal_type": "research|coding|writing|analysis|planning|review|complex",
+            "complexity": "low|medium|high",
+            "estimated_time_hours": <number>,
+            "required_skills": ["skill1", "skill2"],
+            "key_requirements": ["req1", "req2"],
+            "success_criteria": ["criteria1", "criteria2"],
+            "potential_challenges": ["challenge1", "challenge2"],
+            "resource_requirements": {{"tokens": <estimate>, "cost": <estimate>}},
+            "parallel_opportunities": ["task1", "task2"],
+            "critical_dependencies": ["dep1", "dep2"]
+        }}
+        """
+        
+        # Get analysis from LLM
+        request = LLMRequest(
+            prompt=analysis_prompt,
+            max_tokens=1000,
+            temperature=0.1,  # Low temperature for analytical accuracy
+        )
+        
+        # Use a reasoning model for complex analysis
+        routing_policy = RoutingPolicy(
+            task_type="analysis",
+            preferred_models=["openai/gpt-4.1", "anthropic/claude-3.5-sonnet"],
+            fallback_models=["openai/gpt-4.1-mini"],
+        )
+        
+        try:
+            response = await self.mil.generate_response(request, routing_policy)
+            analysis = json.loads(response.content)
+            
+            # Add pattern matching results
+            pattern_match = self._match_goal_patterns(goal)
+            analysis["pattern_match"] = pattern_match
+            
+            return analysis
+            
+        except Exception as e:
+            logger.warning("Goal analysis failed, using fallback", error=str(e))
+            
+            # Fallback to pattern-based analysis
+            pattern_match = self._match_goal_patterns(goal)
+            return {
+                "goal_type": pattern_match["type"],
+                "complexity": pattern_match["complexity"],
+                "estimated_time_hours": pattern_match["estimated_duration"] / 3600,
+                "required_skills": ["general"],
+                "key_requirements": ["achieve goal"],
+                "success_criteria": ["goal completed"],
+                "potential_challenges": ["complexity"],
+                "resource_requirements": {"tokens": 5000, "cost": 0.50},
+                "parallel_opportunities": [],
+                "critical_dependencies": [],
+                "pattern_match": pattern_match,
+            }
+
+    def _match_goal_patterns(self, goal: str) -> dict[str, Any]:
+        """Match goal against known patterns."""
+        goal_lower = goal.lower()
+        
+        for pattern_type, pattern_data in self.goal_patterns.items():
+            for keyword in pattern_data["keywords"]:
+                if keyword in goal_lower:
+                    return {
+                        "type": pattern_type,
+                        "confidence": 0.8,
+                        "complexity": pattern_data["complexity"],
+                        "estimated_duration": pattern_data["estimated_duration"],
+                        "agents": pattern_data["agents"],
+                    }
+        
+        # Default to complex pattern
+        return {
+            "type": "complex",
+            "confidence": 0.3,
+            "complexity": "medium",
+            "estimated_duration": 1800,
+            "agents": [AgentRole.PLANNER, AgentRole.EXECUTOR, AgentRole.VALIDATOR],
+        }
+
+    def _select_workflow_pattern(self, goal_analysis: dict[str, Any]) -> dict[str, Any]:
+        """Select the optimal workflow pattern based on analysis."""
+        goal_type = goal_analysis.get("goal_type", "complex")
+        complexity = goal_analysis.get("complexity", "medium")
+        
+        # Get base template
+        if goal_type in self.workflow_templates:
+            pattern = self.workflow_templates[goal_type].copy()
+        else:
+            pattern = self.workflow_templates["complex"].copy()
+        
+        # Adjust pattern based on complexity
+        if complexity == "low":
+            # Simplify pattern - remove some tasks
+            pattern["tasks"] = pattern["tasks"][:3]
+        elif complexity == "high":
+            # Use complex pattern regardless of goal type
+            pattern = self.workflow_templates["complex"].copy()
+        
+        pattern["goal_analysis"] = goal_analysis
+        return pattern
+
+    def _create_optimized_agents(
+        self, workflow_pattern: dict[str, Any], goal_analysis: dict[str, Any]
+    ) -> list[AgentDefinition]:
+        """Create optimized agents based on workflow requirements."""
+        required_roles = set()
+        
+        # Extract roles from workflow pattern
+        for task in workflow_pattern["tasks"]:
+            required_roles.add(task["role"])
+        
+        # Add pattern-based roles if available
+        pattern_match = goal_analysis.get("pattern_match", {})
+        if "agents" in pattern_match:
+            required_roles.update(pattern_match["agents"])
+        
+        agents = []
+        
+        for role in required_roles:
+            # Create customized agent for each role
+            agent = AgentDefinition(
+                name=f"{role.value.title()} Agent",
+                role=role,
+                description=f"Specialized {role.value} for goal achievement",
+                preferred_models=self._get_optimal_models_for_role(role, goal_analysis),
+                timeout_seconds=600,  # 10 minutes per task
+                max_tokens=4096,
+                temperature=self._get_optimal_temperature_for_role(role),
+            )
+            agents.append(agent)
+        
+        return agents
+
+    def _get_optimal_models_for_role(
+        self, role: AgentRole, goal_analysis: dict[str, Any]
+    ) -> list[str]:
+        """Get optimal model selection for each agent role."""
+        complexity = goal_analysis.get("complexity", "medium")
+        
+        # High-performance models for complex tasks
+        if complexity == "high":
+            role_models = {
+                AgentRole.RESEARCHER: ["openai/gpt-4.1", "perplexity/llama-3.1-sonar-large-128k-online"],
+                AgentRole.CODER: ["openai/gpt-4.1", "anthropic/claude-3.5-sonnet"],
+                AgentRole.ANALYST: ["anthropic/claude-3.5-sonnet", "openai/gpt-4.1"],
+                AgentRole.PLANNER: ["openai/gpt-4.1", "anthropic/claude-3.5-sonnet"],
+                AgentRole.COORDINATOR: ["openai/gpt-4.1"],
+                AgentRole.VALIDATOR: ["anthropic/claude-3.5-sonnet"],
+            }
+        else:
+            # Cost-optimized models for simpler tasks
+            role_models = {
+                AgentRole.RESEARCHER: ["openai/gpt-4.1-mini", "groq/llama-3.3-70b-versatile"],
+                AgentRole.CODER: ["openai/gpt-4.1", "groq/llama-3.3-70b-versatile"],
+                AgentRole.ANALYST: ["openai/gpt-4.1-mini", "groq/llama-3.3-70b-versatile"],
+                AgentRole.WRITER: ["openai/gpt-4.1-mini", "groq/llama-3.3-70b-versatile"],
+                AgentRole.REVIEWER: ["anthropic/claude-3.5-sonnet"],
+                AgentRole.VALIDATOR: ["openai/gpt-4.1-mini"],
+            }
+        
+        return role_models.get(role, ["openai/gpt-4.1-mini"])
+
+    def _get_optimal_temperature_for_role(self, role: AgentRole) -> float:
+        """Get optimal temperature setting for each role."""
+        role_temperatures = {
+            AgentRole.RESEARCHER: 0.3,  # Factual, less creative
+            AgentRole.ANALYST: 0.2,    # Very analytical
+            AgentRole.CODER: 0.1,      # Precise code generation
+            AgentRole.WRITER: 0.7,     # More creative
+            AgentRole.REVIEWER: 0.2,   # Critical evaluation
+            AgentRole.PLANNER: 0.4,    # Balanced planning
+            AgentRole.EXECUTOR: 0.3,   # Focused execution
+            AgentRole.COORDINATOR: 0.4, # Balanced coordination
+            AgentRole.VALIDATOR: 0.1,  # Strict validation
+        }
+        
+        return role_temperatures.get(role, 0.5)
+
+    async def _generate_intelligent_tasks(
+        self,
+        goal: str,
+        goal_analysis: dict[str, Any],
+        workflow_pattern: dict[str, Any],
+        agents: list[AgentDefinition],
+    ) -> list[Task]:
+        """Generate intelligent task structure based on goal analysis."""
+        
+        # Create agent lookup
+        agent_by_role = {agent.role: agent for agent in agents}
+        
+        tasks = []
+        
+        for i, task_template in enumerate(workflow_pattern["tasks"]):
+            # Find appropriate agent
+            agent = agent_by_role.get(task_template["role"])
+            if not agent:
+                logger.warning(f"No agent found for role {task_template['role']}")
+                continue
+            
+            # Create enhanced task description
+            enhanced_description = await self._enhance_task_description(
+                task_template["description"], goal, goal_analysis
+            )
+            
+            # Create success criteria based on goal analysis
+            success_criteria = goal_analysis.get("success_criteria", ["Task completed successfully"])
+            
+            task = Task(
+                name=task_template["name"],
+                description=enhanced_description,
+                assigned_agent=agent.id,
+                input_data={"goal": goal, "task_index": i},
+                expected_output={"result": "Task completion result"},
+                success_criteria=success_criteria,
+                timeout_seconds=600,  # 10 minutes per task
+            )
+            
+            tasks.append(task)
+        
+        return tasks
+
+    async def _enhance_task_description(
+        self, base_description: str, goal: str, goal_analysis: dict[str, Any]
+    ) -> str:
+        """Enhance task descriptions with goal-specific context."""
+        
+        enhancement_prompt = f"""
+        Enhance this task description for better clarity and goal alignment:
+        
+        Base Description: {base_description}
+        Overall Goal: {goal}
+        Goal Type: {goal_analysis.get('goal_type', 'general')}
+        Requirements: {goal_analysis.get('key_requirements', [])}
+        
+        Provide an enhanced, specific description that:
+        1. Clearly connects to the overall goal
+        2. Specifies what exactly needs to be done
+        3. Includes success criteria
+        4. Is concise but comprehensive
+        
+        Enhanced Description:
+        """
+        
+        try:
+            request = LLMRequest(
+                prompt=enhancement_prompt,
+                max_tokens=300,
+                temperature=0.3,
+            )
+            
+            response = await self.mil.generate_response(request)
+            enhanced = response.content.strip()
+            
+            # Ensure we have a reasonable enhancement
+            if len(enhanced) > 20 and "Enhanced Description:" in enhancement_prompt:
+                return enhanced
+            
+        except Exception as e:
+            logger.debug("Task enhancement failed, using base description", error=str(e))
+        
+        # Fallback to enhanced base description
+        return f"{base_description} for goal: {goal}"
+
+    def _optimize_task_dependencies(
+        self, tasks: list[Task], workflow_pattern: dict[str, Any]
+    ) -> list[Task]:
+        """Optimize task dependencies for efficient execution."""
+        
+        # Set up basic sequential dependencies unless marked as parallel
+        for i, task in enumerate(tasks):
+            if i > 0:
+                task_template = workflow_pattern["tasks"][i]
+                parallel_allowed = task_template.get("parallel", False)
+                
+                if not parallel_allowed:
+                    # Sequential dependency on previous task
+                    task.dependencies = [tasks[i-1].id]
+                else:
+                    # Parallel task - might depend on earlier sequential tasks
+                    for j in range(i):
+                        prev_template = workflow_pattern["tasks"][j]
+                        if not prev_template.get("parallel", False):
+                            # Depends on the last sequential task
+                            task.dependencies = [tasks[j].id]
+                            break
+        
+        return tasks
+
+    def _apply_constraints_and_preferences(
+        self,
+        goal: str,
+        agents: list[AgentDefinition],
+        tasks: list[Task],
+        goal_analysis: dict[str, Any],
+        constraints: Optional[dict[str, Any]] = None,
+        user_preferences: Optional[dict[str, Any]] = None,
+    ) -> WorkflowDefinition:
+        """Apply constraints and user preferences to create final workflow."""
+        
+        constraints = constraints or {}
+        user_preferences = user_preferences or {}
+        
+        # Calculate duration and cost estimates
+        estimated_duration = len(tasks) * 600  # 10 minutes per task baseline
+        if goal_analysis.get("complexity") == "high":
+            estimated_duration *= 1.5
+        elif goal_analysis.get("complexity") == "low":
+            estimated_duration *= 0.7
+        
+        # Apply user constraints
+        max_duration = constraints.get("max_duration_seconds", int(estimated_duration))
+        max_cost = constraints.get("max_cost_usd", 5.0)
+        
+        # Apply user preferences for models/settings
+        if "preferred_models" in user_preferences:
+            for agent in agents:
+                agent.preferred_models = user_preferences["preferred_models"]
+        
+        if "temperature" in user_preferences:
+            for agent in agents:
+                agent.temperature = user_preferences["temperature"]
+        
+        # Create workflow name based on goal
+        workflow_name = self._generate_workflow_name(goal, goal_analysis)
+        
+        return WorkflowDefinition(
+            name=workflow_name,
+            description=f"Intelligently generated workflow to achieve: {goal}",
+            goal=goal,
+            agents=agents,
+            tasks=tasks,
+            max_duration_seconds=max_duration,
+            max_cost_usd=max_cost,
+            metadata={
+                "creation_method": "intelligent_analysis",
+                "goal_analysis": goal_analysis,
+                "constraints": constraints,
+                "user_preferences": user_preferences,
+            },
+        )
+
+    def _generate_workflow_name(self, goal: str, goal_analysis: dict[str, Any]) -> str:
+        """Generate an appropriate name for the workflow."""
+        goal_type = goal_analysis.get("goal_type", "general")
+        complexity = goal_analysis.get("complexity", "medium")
+        
+        # Extract key words from goal
+        import re
+        words = re.findall(r'\b\w+\b', goal.lower())
+        key_words = [word for word in words if len(word) > 3 and word not in 
+                    {'this', 'that', 'with', 'from', 'they', 'have', 'will', 'been', 'were'}]
+        
+        if key_words:
+            main_subject = key_words[0].title()
+        else:
+            main_subject = "Goal"
+        
+        return f"{main_subject} {goal_type.title()} - {complexity.title()} Complexity"

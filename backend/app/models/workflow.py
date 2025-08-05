@@ -7,12 +7,12 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from app.database.session import Base
+from app.database.types import UniversalJSON
 
 
 class Workflow(Base):
@@ -28,15 +28,15 @@ class Workflow(Base):
 
     # Workflow configuration
     goal: Mapped[str] = mapped_column(Text)  # High-level objective
-    agent_team: Mapped[dict] = mapped_column(JSONB, default=dict)  # Agent IDs and roles
-    workflow_graph: Mapped[dict] = mapped_column(JSONB, default=dict)  # Execution graph
+    agent_team: Mapped[dict] = mapped_column(UniversalJSON, default=dict)  # Agent IDs and roles
+    workflow_graph: Mapped[dict] = mapped_column(UniversalJSON, default=dict)  # Execution graph
     execution_policy: Mapped[dict] = mapped_column(
-        JSONB, default=dict
+        UniversalJSON, default=dict
     )  # Routing and execution rules
 
     # Input/Output configuration
-    input_schema: Mapped[dict] = mapped_column(JSONB, default=dict)
-    output_schema: Mapped[dict] = mapped_column(JSONB, default=dict)
+    input_schema: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
+    output_schema: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
 
     # Execution state
     status: Mapped[str] = mapped_column(
@@ -44,8 +44,8 @@ class Workflow(Base):
         default="draft",  # "draft", "running", "paused", "completed", "failed"
     )
     current_step: Mapped[Optional[str]] = mapped_column(String(100))
-    execution_context: Mapped[dict] = mapped_column(JSONB, default=dict)
-    intermediate_results: Mapped[dict] = mapped_column(JSONB, default=dict)
+    execution_context: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
+    intermediate_results: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
 
     # Execution metadata
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
@@ -92,9 +92,9 @@ class WorkflowExecution(Base):
     )
 
     # Execution details
-    input_data: Mapped[dict] = mapped_column(JSONB, default=dict)
-    output_data: Mapped[dict] = mapped_column(JSONB, default=dict)
-    execution_log: Mapped[dict] = mapped_column(JSONB, default=dict)
+    input_data: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
+    output_data: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
+    execution_log: Mapped[dict] = mapped_column(UniversalJSON, default=dict)
 
     # Status and timing
     status: Mapped[str] = mapped_column(String(20))
