@@ -19,7 +19,8 @@ export default defineConfig({
     port: Number(process.env.PORT) || 4173,
     // allow Railway’s healthcheck host
     allowedHosts: [
-      'healthcheck.railway.app'
+      'healthcheck.railway.app',
+      'z2-production.up.railway.app'
     ],
   },
 })
