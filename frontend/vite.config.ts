@@ -1,16 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Add path alias so that imports using "@" resolve to the src directory. Without this,
-  // Rollup and Vite cannot resolve aliases defined only in tsconfig.json, causing build errors.
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-    },
+      '@': path.resolve(__dirname, './src'),
+    }
   },
   server: {
     host: '0.0.0.0',
