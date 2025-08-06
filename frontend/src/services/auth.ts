@@ -9,7 +9,13 @@ import {
   User as AuthUser 
 } from '../types/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+// Construct the API base URL. In development we default to the backend running on
+// localhost without an API prefix. In production, VITE_API_BASE_URL should be
+// set to the backend domain without the `/api/v1` suffix. To avoid missing or
+// duplicated prefixes we normalise here.
+const apiRoot = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Append `/api/v1` if not already present
+const API_BASE_URL = apiRoot.endsWith('/api/v1') ? apiRoot : `${apiRoot}/api/v1`;
 
 class AuthService {
   private baseURL: string;
