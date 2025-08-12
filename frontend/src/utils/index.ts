@@ -179,7 +179,7 @@ export function getErrorMessage(error: unknown): string {
  *
  * @returns True if localStorage can be used.
  */
-export function safeLocalStorage() {
+export function safeLocalStorage(): boolean {
   try {
     const test = '__localStorage_test__';
     localStorage.setItem(test, test);
