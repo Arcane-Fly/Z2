@@ -38,6 +38,7 @@ async def list_available_models(
     multimodal_only: bool = False,
     max_cost: Optional[float] = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """List all available LLM models across providers with filtering options."""
     models = ALL_MODELS.copy()
@@ -111,6 +112,7 @@ async def list_available_models(
 @router.get("/providers")
 async def list_providers(
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """List all configured LLM providers and their status."""
     from app.agents.mil import ModelIntegrationLayer
@@ -156,6 +158,7 @@ async def list_providers(
 async def get_model_info(
     model_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Get detailed information about a specific model."""
     spec = get_model_by_id(model_id)
@@ -188,6 +191,7 @@ async def validate_model_configuration(
     model_id: str,
     required_capabilities: list[str],
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Validate that a model supports all required capabilities."""
     try:

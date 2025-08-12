@@ -11,10 +11,12 @@ from pathlib import Path
 from typing import Any, Dict
 
 import structlog
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 
+from app.core.auth_dependencies import get_current_active_user
 from app.core.config import settings
+from app.models.user import User
 
 logger = structlog.get_logger(__name__)
 
@@ -22,7 +24,9 @@ router = APIRouter()
 
 
 @router.get("/storage")
-async def debug_storage() -> Dict[str, Any]:
+async def debug_storage(
+    current_user: User = Depends(get_current_active_user),
+) -> Dict[str, Any]:
     """
     Debug storage configuration and test storage access.
     
@@ -143,7 +147,9 @@ async def debug_storage() -> Dict[str, Any]:
 
 
 @router.get("/environment")
-async def debug_environment() -> Dict[str, Any]:
+async def debug_environment(
+    current_user: User = Depends(get_current_active_user),
+) -> Dict[str, Any]:
     """Debug environment variables and configuration."""
     try:
         # Get all environment variables
@@ -187,7 +193,9 @@ async def debug_environment() -> Dict[str, Any]:
 
 
 @router.post("/test-storage")
-async def test_storage_operations() -> Dict[str, Any]:
+async def test_storage_operations(
+    current_user: User = Depends(get_current_active_user),
+) -> Dict[str, Any]:
     """Test basic storage operations (create, write, read, delete)."""
     try:
         storage_path = Path(settings.storage_path)
