@@ -23,6 +23,12 @@ export function formatDateTime(date: string | Date): string {
   });
 }
 
+/**
+ * Returns a human-readable time difference between now and the given date.
+ *
+ * @param date - Date to compare against the current time.
+ * @returns Relative time string like "5 minutes ago".
+ */
 export function formatRelativeTime(date: string | Date): string {
   const d = new Date(date);
   const now = new Date();
@@ -80,7 +86,18 @@ export function isValidUrl(url: string): boolean {
 }
 
 // Array utilities
-export function groupBy<T>(array: T[], keyFn: (item: T) => string): Record<string, T[]> {
+/**
+ * Groups array items using a key-generating function.
+ *
+ * @typeParam T - Type of array elements.
+ * @param array - Source array to group.
+ * @param keyFn - Function returning the grouping key for an item.
+ * @returns Object whose keys map to arrays of grouped items.
+ */
+export function groupBy<T>(
+  array: T[],
+  keyFn: (item: T) => string,
+): Record<string, T[]> {
   return array.reduce((groups, item) => {
     const key = keyFn(item);
     if (!groups[key]) {
@@ -137,6 +154,12 @@ export function getFileExtension(filename: string): string {
 }
 
 // Error handling utilities
+/**
+ * Extracts a message string from unknown error values.
+ *
+ * @param error - Value that may represent an error.
+ * @returns Error message or generic fallback text.
+ */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -151,7 +174,12 @@ export function getErrorMessage(error: unknown): string {
 }
 
 // Local storage utilities
-export function safeLocalStorage() {
+/**
+ * Checks whether localStorage is available and writable.
+ *
+ * @returns True if localStorage can be used.
+ */
+export function safeLocalStorage(): boolean {
   try {
     const test = '__localStorage_test__';
     localStorage.setItem(test, test);
@@ -162,6 +190,14 @@ export function safeLocalStorage() {
   }
 }
 
+/**
+ * Retrieves a JSON-parsed value from localStorage.
+ *
+ * @typeParam T - Expected value type.
+ * @param key - Storage key to read.
+ * @param defaultValue - Value returned if retrieval fails.
+ * @returns Parsed value or defaultValue when unavailable.
+ */
 export function getStorageItem<T>(key: string, defaultValue: T): T {
   if (!safeLocalStorage()) return defaultValue;
   
@@ -173,6 +209,14 @@ export function getStorageItem<T>(key: string, defaultValue: T): T {
   }
 }
 
+/**
+ * Stores a JSON-serialized value in localStorage.
+ *
+ * @typeParam T - Type of value to store.
+ * @param key - Storage key to write.
+ * @param value - Value to serialize and store.
+ * @returns True when write succeeds, false otherwise.
+ */
 export function setStorageItem<T>(key: string, value: T): boolean {
   if (!safeLocalStorage()) return false;
   

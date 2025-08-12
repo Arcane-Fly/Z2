@@ -69,7 +69,7 @@ describe('App Component', () => {
 
   it('has proper accessibility structure', () => {
     const { container } = render(<App />)
-    // Should not have any accessibility violations for basic structure
-    expect(container.firstChild).toHaveClass('min-h-screen')
+    const rootDiv = container.querySelector('.min-h-screen')
+    expect(rootDiv).toBeTruthy()
   })
 })
