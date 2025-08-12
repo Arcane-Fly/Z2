@@ -41,7 +41,7 @@ This roadmap reflects the current implementation status and outlines the path to
 - ✅ Database session management and dependency injection
 
 ### 🔄 In Progress Tasks:
-- ✅ Complete authentication integration in all endpoints (MOSTLY COMPLETED - major endpoints done)
+- ✅ Complete authentication integration in all endpoints (FULLY COMPLETED)
 - ✅ Add advanced query filtering and pagination for resource listing (COMPLETED)
 - ✅ Enhance validation and error handling across endpoints (COMPLETED for major endpoints)
 - ✅ Complete user update functionality with authorization (COMPLETED)
@@ -164,7 +164,7 @@ This roadmap reflects the current implementation status and outlines the path to
 - ✅ Refresh token management with database persistence
 
 ### 🔄 In Progress Tasks:
-- 🔄 Complete integration of authentication across all API endpoints (current TODOs)
+- ✅ Complete integration of authentication across all API endpoints
 - 🔄 Implement granular permissions system for resources
 - 🔄 Add OAuth integration (Google, GitHub, Microsoft)
 - 🔄 Enhance user profile management and settings

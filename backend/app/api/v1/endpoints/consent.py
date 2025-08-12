@@ -16,6 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import get_db
 from app.models.consent import ConsentRequest as ConsentRequestModel
 from app.services.consent_service import ConsentService
+from app.core.auth_dependencies import get_current_active_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -93,15 +95,22 @@ async def request_consent(
     http_request: Request,
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> ConsentResponse:
     """Request user consent for accessing a resource or tool."""
     ip_address, user_agent = get_client_info(http_request)
-    
+
+    if request.user_id != str(current_user.id) and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User not authorized to request consent for this user",
+        )
+
     # Check if there's an auto-approval policy
     policy = await consent_service.get_access_policy(
         request.resource_type, request.resource_name
     )
-    
+
     consent_request = await consent_service.create_consent_request(
         user_id=request.user_id,
         resource_type=request.resource_type,
@@ -148,6 +157,7 @@ async def grant_consent(
     http_request: Request,
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> ConsentResponse:
     """Grant consent for a pending request."""
     ip_address, user_agent = get_client_info(http_request)
@@ -169,6 +179,11 @@ async def grant_consent(
         )
     
     # Check if user is authorized to grant consent
+    if user_id != str(current_user.id) and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User not authorized to grant this consent",
+        )
     if consent_request.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -207,6 +222,7 @@ async def deny_consent(
     http_request: Request = None,
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> ConsentResponse:
     """Deny consent for a pending request."""
     ip_address, user_agent = get_client_info(http_request)
@@ -227,6 +243,12 @@ async def deny_consent(
             detail=f"Consent request not found: {consent_id}",
         )
     
+    if user_id != str(current_user.id) and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User not authorized to deny this consent",
+        )
+
     success = await consent_service.deny_consent(
         consent_id=consent_uuid,
         denied_by=user_id,
@@ -255,6 +277,7 @@ async def get_consent_status(
     consent_id: str,
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> ConsentResponse:
     """Get the status of a consent request."""
     try:
@@ -301,9 +324,16 @@ async def check_access(
     http_request: Request,
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> dict[str, Any]:
     """Check if user has access to a resource or tool."""
     ip_address, user_agent = get_client_info(http_request)
+
+    if request.user_id != str(current_user.id) and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User not authorized to check access for this user",
+        )
     
     result = await consent_service.check_access(
         user_id=request.user_id,
@@ -321,8 +351,11 @@ async def check_access(
 @router.get("/policies")
 async def list_access_policies(
     consent_service: ConsentService = Depends(get_consent_service),
+    current_user: User = Depends(get_current_active_user),
 ) -> dict[str, list[dict]]:
     """List all access control policies."""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     policies = await consent_service.list_access_policies()
     
     return {
@@ -348,8 +381,11 @@ async def update_access_policy(
     policy: AccessPolicy,
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> dict[str, str]:
     """Update an access control policy."""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     await consent_service.create_or_update_access_policy(
         resource_type=resource_type,
         resource_name=resource_name,
@@ -372,8 +408,11 @@ async def get_audit_logs(
     limit: int = 100,
     offset: int = 0,
     consent_service: ConsentService = Depends(get_consent_service),
+    current_user: User = Depends(get_current_active_user),
 ) -> dict[str, list[dict]]:
     """Get audit logs with optional filtering."""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     logs = await consent_service.get_audit_logs(
         user_id=user_id,
         resource_type=resource_type,
@@ -402,8 +441,12 @@ async def get_audit_logs(
 async def get_user_sessions(
     user_id: str,
     consent_service: ConsentService = Depends(get_consent_service),
+    current_user: User = Depends(get_current_active_user),
 ) -> dict[str, Any]:
     """Get active consent sessions for a user."""
+    if user_id != str(current_user.id) and not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
     grants = await consent_service.get_user_active_consents(user_id)
     
     active_consents = []
@@ -430,8 +473,11 @@ async def get_user_sessions(
 async def setup_default_policies(
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> dict[str, str]:
     """Set up default access policies for MCP resources and tools."""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
     # Default policies for MCP tools and resources
     default_policies = [
@@ -480,8 +526,12 @@ async def setup_default_policies(
 async def cleanup_expired_consents(
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
 ) -> dict[str, int]:
     """Clean up expired consent requests and grants."""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
     count = await consent_service.cleanup_expired_consents()
     await db.commit()
     return {"expired_consents_cleaned": count}
