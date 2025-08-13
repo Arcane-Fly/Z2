@@ -57,11 +57,14 @@
       "rootDirectory": "./frontend",
       "steps": {
         "install": {
-          "commands": ["npm ci"]
+          "commands": [
+            "corepack enable && corepack prepare yarn@4.3.1 --activate",
+            "yarn install --immutable"
+          ]
         },
         "build": {
           "inputs": [{ "step": "install" }],
-          "commands": ["npm run build"]
+          "commands": ["yarn build"]
         }
       },
       "deploy": {
@@ -69,7 +72,7 @@
           "...",
           { "step": "build" }
         ],
-        "startCommand": "npm run start",
+        "startCommand": "yarn start",
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",

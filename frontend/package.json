@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "preinstall": "corepack enable && corepack prepare yarn@4.3.1 --activate",
     "dev": "vite",
     "build": "tsc && vite build",
     "start": "serve -s dist -l $PORT",
@@ -64,5 +65,6 @@
     "typescript": "^5.2.2",
     "vite": "^7.0.6",
     "vitest": "^3.2.4"
-  }
+  },
+  "packageManager": "yarn@4.3.1+sha512.af78262d7d125afbfeed740602ace8c5e4405cd7f4735c08feb327286b2fdb2390fbca01589bfd1f50b1240548b74806767f5a063c94b67e431aabd0d86f7774"
 }
