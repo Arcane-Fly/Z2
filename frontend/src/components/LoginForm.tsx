@@ -1,16 +1,13 @@
 /**
  * Login form component for Z2 platform
  */
-
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { LoginRequest } from '../types/auth';
-
 interface LoginFormProps {
   onSuccess?: () => void;
   onSwitchToRegister?: () => void;
 }
-
 export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JSX.Element {
   const { login, authState, clearError } = useAuth();
   const [formData, setFormData] = useState<LoginRequest>({
@@ -19,7 +16,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
     remember_me: false,
   });
   const [showPassword, setShowPassword] = useState(false);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -27,11 +23,9 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-
     try {
       await login(formData);
       onSuccess?.();
@@ -39,9 +33,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
       // Error is handled by the auth context
     }
   };
-
   const isLoading = authState.isLoading;
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -93,7 +85,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
             Sign in to your Z2 AI Workforce Platform
           </p>
         </div>
-
         {/* Main Form Card */}
         <div style={{
           background: 'rgba(255, 255, 255, 0.95)',
@@ -139,7 +130,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
               </div>
             </div>
           )}
-
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Username Field */}
             <div>
@@ -179,8 +169,8 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                   value={formData.username}
                   onChange={handleChange}
                   disabled={isLoading}
-                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  onFocus={(e) => (e.target as HTMLInputElement).style.borderColor = '#3b82f6'}
+                  onBlur={(e) => (e.target as HTMLInputElement).style.borderColor = '#e5e7eb'}
                 />
                 <div style={{
                   position: 'absolute',
@@ -195,24 +185,47 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 </div>
               </div>
             </div>
-            
+           
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="password" style={{
+                display: 'block',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '8px',
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+              }}>
                 Password
               </label>
-              <div className="relative">
+              <div style={{ position: 'relative' }}>
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  className="block w-full px-4 py-3 pr-12 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '12px 44px 12px 44px',
+                    background: 'white',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    color: '#111827',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    boxSizing: 'border-box'
+                  }}
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={isLoading}
+                  onFocus={(e) => (e.target as HTMLInputElement).style.borderColor = '#3b82f6'}
+                  onBlur={(e) => (e.target as HTMLInputElement).style.borderColor = '#e5e7eb'}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
@@ -228,9 +241,25 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 </div>
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '12px',
+                    transform: 'translateY(-50%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: 'none',
+                    border: 'none',
+                    cursor: isLoading ? 'default' : 'pointer',
+                    color: '#9ca3af',
+                    transition: 'color 0.2s',
+                    padding: '0',
+                    opacity: isLoading ? 0.5 : 1
+                  }}
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
+                  onMouseEnter={(e) => !isLoading && ((e.target as HTMLElement).style.color = '#6b7280')}
+                  onMouseLeave={(e) => !isLoading && ((e.target as HTMLElement).style.color = '#9ca3af')}
                 >
                   {showPassword ? (
                     <svg
@@ -259,28 +288,53 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 </button>
               </div>
             </div>
-
             {/* Remember Me and Forgot Password */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <input
                   id="remember_me"
                   name="remember_me"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+                  style={{
+                    height: '16px',
+                    width: '16px',
+                    color: '#3b82f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '4px',
+                    cursor: isLoading ? 'default' : 'pointer',
+                    opacity: isLoading ? 0.5 : 1
+                  }}
                   checked={formData.remember_me}
                   onChange={handleChange}
                   disabled={isLoading}
                 />
-                <label htmlFor="remember_me" className="ml-2 block text-sm font-medium text-gray-700">
+                <label htmlFor="remember_me" style={{
+                  marginLeft: '8px',
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  cursor: isLoading ? 'default' : 'pointer',
+                  opacity: isLoading ? 0.5 : 1
+                }}>
                   Remember me
                 </label>
               </div>
-
-              <div className="text-sm">
+              <div style={{ fontSize: '14px' }}>
                 <button
                   type="button"
-                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors disabled:opacity-50"
+                  style={{
+                    fontWeight: '500',
+                    color: '#3b82f6',
+                    background: 'none',
+                    border: 'none',
+                    cursor: isLoading ? 'default' : 'pointer',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    padding: '0',
+                    transition: 'color 0.2s',
+                    opacity: isLoading ? 0.5 : 1
+                  }}
                   disabled={isLoading}
                   onClick={() => {
                     // Create a mailto link for password reset requests
@@ -292,21 +346,67 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                     );
                     window.location.href = `mailto:support@z2.ai?subject=${subject}&body=${body}`;
                   }}
+                  onMouseEnter={(e) => !isLoading && ((e.target as HTMLElement).style.color = '#2563eb')}
+                  onMouseLeave={(e) => !isLoading && ((e.target as HTMLElement).style.color = '#3b82f6')}
                 >
                   Forgot password?
                 </button>
               </div>
             </div>
-
             {/* Sign In Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              style={{
+                position: 'relative',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '12px 16px',
+                border: 'none',
+                fontSize: '14px',
+                fontWeight: '600',
+                borderRadius: '12px',
+                color: 'white',
+                background: isLoading
+                  ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                cursor: isLoading ? 'default' : 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)',
+                transform: 'translateY(0)',
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                opacity: isLoading ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  const target = e.target as HTMLElement;
+                  target.style.background = 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)';
+                  target.style.transform = 'translateY(-2px)';
+                  target.style.boxShadow = '0 15px 35px rgba(59, 130, 246, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  const target = e.target as HTMLElement;
+                  target.style.background = 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)';
+                  target.style.transform = 'translateY(0)';
+                  target.style.boxShadow = '0 10px 25px rgba(59, 130, 246, 0.3)';
+                }
+              }}
             >
               {isLoading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '2px solid transparent',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    marginRight: '8px',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
                   Signing in...
                 </div>
               ) : (
@@ -325,17 +425,36 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 </div>
               )}
             </button>
-
             {/* Register Link */}
             {onSwitchToRegister && (
-              <div className="text-center pt-4 border-t border-gray-200">
-                <span className="text-sm text-gray-600">
+              <div style={{
+                textAlign: 'center',
+                paddingTop: '16px',
+                borderTop: '1px solid #e5e7eb'
+              }}>
+                <span style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>
                   New to Z2?{' '}
                   <button
                     type="button"
-                    className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+                    style={{
+                      fontWeight: '600',
+                      color: '#3b82f6',
+                      background: 'none',
+                      border: 'none',
+                      cursor: isLoading ? 'default' : 'pointer',
+                      fontFamily: 'system-ui, -apple-system, sans-serif',
+                      padding: '0',
+                      transition: 'color 0.2s',
+                      opacity: isLoading ? 0.5 : 1
+                    }}
                     onClick={onSwitchToRegister}
                     disabled={isLoading}
+                    onMouseEnter={(e) => !isLoading && ((e.target as HTMLElement).style.color = '#2563eb')}
+                    onMouseLeave={(e) => !isLoading && ((e.target as HTMLElement).style.color = '#3b82f6')}
                   >
                     Create your account
                   </button>
@@ -344,10 +463,14 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
             )}
           </form>
         </div>
-
         {/* Security Note */}
-        <div className="text-center">
-          <p className="text-xs text-gray-500">
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          <p style={{
+            fontSize: '12px',
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            margin: '0'
+          }}>
             🔒 Your data is protected by enterprise-grade security
           </p>
         </div>
@@ -355,5 +478,4 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
     </div>
   );
 }
-
 export default LoginForm;
