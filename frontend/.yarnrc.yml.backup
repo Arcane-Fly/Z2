@@ -1,5 +1,0 @@
-nodeLinker: node-modules
-checksumBehavior: update
-enableGlobalCache: true
-compressionLevel: mixed
-npmRegistryServer: "https://registry.npmjs.org"
