@@ -1,16 +1,13 @@
 /**
  * Login form component for Z2 platform
  */
-
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { LoginRequest } from '../types/auth';
-
 interface LoginFormProps {
   onSuccess?: () => void;
   onSwitchToRegister?: () => void;
 }
-
 export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JSX.Element {
   const { login, authState, clearError } = useAuth();
   const [formData, setFormData] = useState<LoginRequest>({
@@ -19,7 +16,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
     remember_me: false,
   });
   const [showPassword, setShowPassword] = useState(false);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -27,11 +23,9 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-
     try {
       await login(formData);
       onSuccess?.();
@@ -39,9 +33,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
       // Error is handled by the auth context
     }
   };
-
   const isLoading = authState.isLoading;
-
   return (
     <div style={{
       minHeight: '100vh',
@@ -93,7 +85,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
             Sign in to your Z2 AI Workforce Platform
           </p>
         </div>
-
         {/* Main Form Card */}
         <div style={{
           background: 'rgba(255, 255, 255, 0.95)',
@@ -139,7 +130,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
               </div>
             </div>
           )}
-
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Username Field */}
             <div>
@@ -195,7 +185,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 </div>
               </div>
             </div>
-            
+           
             {/* Password Field */}
             <div>
               <label htmlFor="password" style={{
@@ -237,14 +227,15 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                   onFocus={(e) => (e.target as HTMLInputElement).style.borderColor = '#3b82f6'}
                   onBlur={(e) => (e.target as HTMLInputElement).style.borderColor = '#e5e7eb'}
                 />
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '12px',
-                  transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
-                }}>
-                  <svg style={{ height: '20px', width: '20px', color: '#9ca3af' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg
+                    className="h-5 w-5 text-gray-400"
+                    width={20}
+                    height={20}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -271,11 +262,25 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                   onMouseLeave={(e) => !isLoading && ((e.target as HTMLElement).style.color = '#9ca3af')}
                 >
                   {showPassword ? (
-                    <svg style={{ height: '20px', width: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      width={20}
+                      height={20}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464M18.364 18.364L16.95 16.95M18.364 18.364L20 20M8.464 8.464L7.05 7.05M16.95 16.95l1.414 1.414M20 20l-1.414-1.414M16.95 16.95L20 20" />
                     </svg>
                   ) : (
-                    <svg style={{ height: '20px', width: '20px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      width={20}
+                      height={20}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -283,7 +288,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 </button>
               </div>
             </div>
-
             {/* Remember Me and Forgot Password */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -317,7 +321,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                   Remember me
                 </label>
               </div>
-
               <div style={{ fontSize: '14px' }}>
                 <button
                   type="button"
@@ -350,7 +353,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 </button>
               </div>
             </div>
-
             {/* Sign In Button */}
             <button
               type="submit"
@@ -367,7 +369,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                 fontWeight: '600',
                 borderRadius: '12px',
                 color: 'white',
-                background: isLoading 
+                background: isLoading
                   ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
                   : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
                 cursor: isLoading ? 'default' : 'pointer',
@@ -408,15 +410,21 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
                   Signing in...
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <svg style={{ height: '20px', width: '20px', marginRight: '8px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center">
+                  <svg
+                    className="h-5 w-5 mr-2"
+                    width={20}
+                    height={20}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                   </svg>
                   Sign in to Z2
                 </div>
               )}
             </button>
-
             {/* Register Link */}
             {onSwitchToRegister && (
               <div style={{
@@ -455,7 +463,6 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
             )}
           </form>
         </div>
-
         {/* Security Note */}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <p style={{
@@ -471,5 +478,4 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
     </div>
   );
 }
-
 export default LoginForm;
