@@ -323,14 +323,24 @@ async def execute_agent_task(
     start_time = time.time()
     
     try:
-        # Create task prompt from request
-        task_prompt = f"Task: {execution_request.task_description}\n"
-        if execution_request.input_data:
-            task_prompt += f"Input Data: {execution_request.input_data}\n"
-        task_prompt += f"Expected Output Format: {execution_request.expected_output_format}"
+        # Create enhanced context for the task
+        task_context = {
+            "task_description": execution_request.task_description,
+            "input_data": execution_request.input_data,
+            "expected_output_format": execution_request.expected_output_format,
+            "agent_specialization": agent.role,
+            "execution_constraints": {
+                "max_tokens": execution_request.max_tokens or agent.max_tokens,
+                "temperature": execution_request.temperature or agent.temperature
+            }
+        }
         
-        # Process the task
-        response = await basic_agent.process_message(task_prompt)
+        # Use enhanced prompt processing for superior results
+        response = await basic_agent.process_message_enhanced(
+            user_message=execution_request.task_description,
+            context=task_context,
+            model_preference=execution_request.preferred_model
+        )
         
         execution_time_ms = (time.time() - start_time) * 1000
         

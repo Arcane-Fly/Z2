@@ -1,5 +1,6 @@
 """
-Basic AI Agent Implementation demonstrating DIE + MIL integration
+Basic AI Agent Implementation with Enhanced Prompting
+Demonstrates DIE + MIL integration with dramatically improved prompts for superior AI performance.
 """
 
 import asyncio
@@ -17,6 +18,11 @@ from app.agents.mil import (
 )
 from app.core.cache_and_rate_limit import get_cache, get_rate_limiter
 from app.core.config import settings
+from app.core.enhanced_prompts import (
+    EnhancedPromptLibrary, 
+    PromptEnhancer, 
+    EnhancedPromptTemplate
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -33,7 +39,7 @@ class BasicAIAgent:
         self.name = agent_name
         self.role = role
 
-        # Initialize DIE components
+        # Initialize DIE components with enhanced prompting
         self.prompt_generator = DynamicPromptGenerator()
         self.memory = ContextualMemory(
             short_term={},
@@ -41,6 +47,10 @@ class BasicAIAgent:
             summary={},
         )
 
+        # Initialize enhanced prompt system
+        self.enhanced_template = EnhancedPromptLibrary.get_template_by_role(role)
+        self.prompt_enhancer = PromptEnhancer()
+        
         # Initialize MIL components
         self.mil = ModelIntegrationLayer()
         
@@ -49,7 +59,7 @@ class BasicAIAgent:
         self.total_cost = 0.0
         self.total_tokens = 0
 
-        # Register a default template
+        # Register default templates (legacy + enhanced)
         self._setup_default_templates()
 
         logger.info("Basic AI agent initialized", agent_name=agent_name, role=role)
@@ -259,6 +269,117 @@ class BasicAIAgent:
         except Exception as e:
             logger.error("Failed to process message", error=str(e))
             return f"I apologize, but I encountered an error processing your message: {str(e)}"
+
+    async def process_message_enhanced(
+        self,
+        user_message: str,
+        context: Optional[Dict[str, Any]] = None,
+        model_preference: Optional[str] = None,
+        use_cache: bool = True,
+    ) -> str:
+        """
+        Process a message using dramatically improved prompts for superior AI performance.
+        
+        This method uses the enhanced prompt system with advanced reasoning frameworks,
+        structured thinking, and sophisticated prompt engineering techniques.
+        """
+        try:
+            # Prepare variables for enhanced prompt
+            variables = {
+                "agent_name": self.agent_name,
+                "role": self.role,
+                "user_message": user_message,
+                "context": context or self.memory.get_full_context(),
+            }
+            
+            # Generate enhanced prompt
+            enhanced_prompt = self.prompt_enhancer.apply_techniques(
+                self.enhanced_template, 
+                variables
+            )
+            
+            # Optimize for the specific model
+            if model_preference:
+                enhanced_prompt = self.prompt_enhancer.optimize_for_model(
+                    enhanced_prompt, 
+                    model_preference
+                )
+            
+            logger.info("Generated enhanced prompt", 
+                       agent_name=self.agent_name,
+                       prompt_length=len(enhanced_prompt),
+                       template_name=self.enhanced_template.name)
+            
+            # Create LLM request with enhanced prompt
+            request = LLMRequest(
+                prompt=enhanced_prompt,
+                task_type=self._determine_task_type(user_message),
+                max_tokens=2048,
+                temperature=0.7,
+                context=variables
+            )
+            
+            # Use MIL to route and execute
+            response = await self.mil.route_and_execute(request, preferred_model=model_preference)
+            
+            if response and response.content:
+                # Update memory with enhanced interaction
+                self.memory.update_context({
+                    "last_enhanced_prompt": enhanced_prompt[:200] + "...",
+                    "last_response": response.content,
+                    "enhanced_template_used": self.enhanced_template.name,
+                    "model_used": response.model_used,
+                    "timestamp": str(asyncio.get_event_loop().time()),
+                })
+                
+                # Update statistics
+                self.total_requests += 1
+                self.total_cost += getattr(response, 'cost', 0.0)
+                self.total_tokens += getattr(response, 'total_tokens', 0)
+                
+                logger.info("Enhanced message processed successfully",
+                           agent_name=self.agent_name,
+                           model_used=response.model_used,
+                           response_length=len(response.content))
+                
+                return response.content
+            else:
+                # Enhanced fallback response
+                fallback = f"""As {self.agent_name}, I understand you're asking: "{user_message}"
+
+I apologize, but I'm experiencing technical difficulties at the moment. However, based on my expertise in {self.role}, I can offer this preliminary insight:
+
+This appears to be a question that would benefit from careful analysis. I'd recommend breaking it down into key components and considering multiple perspectives to develop a comprehensive response.
+
+Please try your request again, and I'll be better able to provide the detailed, thoughtful response you deserve."""
+                
+                return fallback
+                
+        except Exception as e:
+            logger.error("Enhanced message processing failed", 
+                        error=str(e), agent_name=self.agent_name)
+            
+            # Enhanced error response
+            return f"""As {self.agent_name}, I apologize for the technical difficulty in processing your message: "{user_message}"
+
+While I'm currently experiencing some challenges, I want to acknowledge that your question deserves a thoughtful response. Please try rephrasing your request, and I'll do my best to provide you with the insights you're looking for.
+
+Technical note: {str(e)}"""
+
+    def _determine_task_type(self, message: str) -> str:
+        """Determine the type of task based on the message content."""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["analyze", "analysis", "examine", "evaluate"]):
+            return "analysis"
+        elif any(word in message_lower for word in ["research", "investigate", "find", "search"]):
+            return "research"
+        elif any(word in message_lower for word in ["solve", "problem", "issue", "fix"]):
+            return "problem_solving"
+        elif any(word in message_lower for word in ["explain", "describe", "what", "how"]):
+            return "explanation"
+        else:
+            return "general_conversation"
 
     def get_context_summary(self) -> dict:
         """Get a summary of the agent's current context."""
