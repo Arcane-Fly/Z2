@@ -23,7 +23,7 @@
           "...",
           { "step": "install" }
         ],
-        "startCommand": "export PATH=\"$HOME/.local/bin:$PATH\" && { poetry run python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT || python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT; }",
+        "startCommand": "export PATH=\"$HOME/.local/bin:$PATH\" && python scripts/init_db.py && { poetry run python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT || python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT; }",
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",
@@ -36,6 +36,9 @@
           "LOG_LEVEL": "INFO",
           "CORS_ORIGINS": "[\"https://${{services.frontend.RAILWAY_PUBLIC_DOMAIN}}\"]",
           "API_V1_PREFIX": "/api/v1",
+          "JWT_SECRET": "${{JWT_SECRET}}",
+          "DATABASE_URL": "${{DATABASE_URL}}",
+          "DEFAULT_ADMIN_PASSWORD": "${{DEFAULT_ADMIN_PASSWORD}}",
           "_STORAGE_ALTERNATIVES": "Alternative mount paths: /data, /storage, /workspace/storage, /opt/app/storage"
         }
       },
@@ -64,7 +67,14 @@
         },
         "build": {
           "inputs": [{ "step": "install" }],
-          "commands": ["yarn build"]
+          "commands": ["yarn build"],
+          "variables": {
+            "NODE_ENV": "production",
+            "VITE_API_BASE_URL": "https://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
+            "VITE_WS_BASE_URL": "wss://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
+            "VITE_APP_NAME": "Z2 AI Workforce Platform",
+            "VITE_APP_VERSION": "0.1.0"
+          }
         }
       },
       "deploy": {
@@ -76,10 +86,6 @@
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",
-          "VITE_API_BASE_URL": "https://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
-          "VITE_WS_BASE_URL": "wss://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
-          "VITE_APP_NAME": "Z2 AI Workforce Platform",
-          "VITE_APP_VERSION": "0.1.0",
           "STORAGE_PATH": "/app/storage"
         }
       },
