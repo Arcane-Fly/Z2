@@ -4,7 +4,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { ApiResponse, User, Agent, Workflow, AuthToken, LoginRequest } from '../types';
-import { API_CONFIG } from './apiConfig';
+import API_CONFIG from '../config/api';
 
 class ApiService {
   private client: AxiosInstance;
@@ -17,9 +17,7 @@ class ApiService {
       baseURL: this.baseURL,
       timeout: API_CONFIG.timeout,
       withCredentials: API_CONFIG.withCredentials,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: API_CONFIG.headers,
     });
 
     // Request interceptor to add auth token
