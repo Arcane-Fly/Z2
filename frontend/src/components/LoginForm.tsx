@@ -26,7 +26,7 @@ interface LoginFormProps {
 export function LoginForm({
   onSuccess,
   onSwitchToRegister,
-}: LoginFormProps): JSX.Element {
+}: LoginFormProps): React.JSX.Element {
   const { login, authState, clearError } = useAuth();
 
   const [formData, setFormData] = useState<LoginRequest>({

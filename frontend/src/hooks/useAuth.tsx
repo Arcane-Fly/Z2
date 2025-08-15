@@ -100,7 +100,7 @@ interface AuthProviderProps {
 }
 
 // Provider component
-export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
+export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // Initialize authentication state on mount

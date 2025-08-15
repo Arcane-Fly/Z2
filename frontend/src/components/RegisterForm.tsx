@@ -12,7 +12,7 @@ interface RegisterFormProps {
   onSwitchToLogin?: () => void;
 }
 
-export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps): JSX.Element {
+export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps): React.JSX.Element {
   const { register, authState, clearError } = useAuth();
   const [formData, setFormData] = useState<RegisterRequest>({
     username: '',

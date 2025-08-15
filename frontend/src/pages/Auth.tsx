@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 
-export function AuthPage(): JSX.Element {
+export function AuthPage(): React.JSX.Element {
   const { authState } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
 
