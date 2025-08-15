@@ -1,0 +1,30 @@
+# Railpack ignore file
+# Prevents Railpack from using conflicting Docker files when railpack.json is preferred
+
+# Ignore Docker files that conflict with railpack config
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+
+# Ignore build artifacts
+dist/
+build/
+node_modules/
+.next/
+.vite/
+
+# Ignore development files
+*.log
+.env.local
+.env.development
+.env.test
+
+# Ignore deployment artifacts
+.vercel/
+.netlify/
+
+# Keep essential config files (commented out so they're NOT ignored)
+# railpack.json
+# package.json
+# requirements.txt
+# pyproject.toml
