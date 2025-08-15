@@ -82,7 +82,6 @@
           "...",
           { "step": "build" }
         ],
-        "startCommand": "yarn preview",
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",

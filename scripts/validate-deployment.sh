@@ -33,12 +33,15 @@ else:
 # Check Railway configuration
 echo "Checking Railway configuration..."
 cd ..
+
+# Validate railway.json for Docker deployment
 if [ -f "railway.json" ]; then
     if ! python3 -c "import json; json.load(open('railway.json'))" 2>/dev/null; then
         echo "❌ railway.json validation failed"
         exit 1
     fi
-    echo "✅ railway.json valid"
+    BUILDER=$(python3 -c "import json; print(json.load(open('railway.json')).get('build', {}).get('builder', 'none'))")
+    echo "✅ railway.json valid, using builder: $BUILDER"
 fi
 
 if [ -f "railpack.json" ]; then
@@ -46,7 +49,34 @@ if [ -f "railpack.json" ]; then
         echo "❌ railpack.json validation failed"
         exit 1
     fi
+    
+    # Check for conflicting startCommand in frontend (should not exist when using Docker)
+    FRONTEND_START=$(python3 -c "
+import json
+try:
+    data = json.load(open('railpack.json'))
+    print(data.get('services', {}).get('frontend', {}).get('deploy', {}).get('startCommand', 'none'))
+except:
+    print('none')
+" 2>/dev/null)
+    
+    if [ "$FRONTEND_START" != "none" ]; then
+        echo "⚠️  Warning: Frontend has startCommand in railpack.json but should use Docker"
+    else
+        echo "✅ Frontend deployment config clean (no yarn startCommand conflict)"
+    fi
+    
     echo "✅ railpack.json valid"
+fi
+
+# Check for container startup compatibility
+echo "Checking container configuration..."
+if [ -f "frontend/Dockerfile" ]; then
+    if grep -q "nginx:alpine" frontend/Dockerfile && grep -q 'CMD.*nginx.*daemon off' frontend/Dockerfile; then
+        echo "✅ Frontend Dockerfile properly configured for nginx"
+    else
+        echo "⚠️  Warning: Frontend Dockerfile may have startup issues"
+    fi
 fi
 
 echo "✅ All validations passed"
