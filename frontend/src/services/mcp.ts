@@ -88,7 +88,21 @@ class MCPService {
   private eventSources = new Map<string, EventSource>();
   
   constructor() {
-    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    // Protocol-aware fallback for production environments
+    const getBaseURL = () => {
+      if (import.meta.env.VITE_API_BASE_URL) {
+        return import.meta.env.VITE_API_BASE_URL;
+      }
+      
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        // In production HTTPS, use HTTPS with backend domain
+        return `https://${window.location.hostname.replace('z2-production', 'z2-backend-production')}`;
+      }
+      
+      return 'http://localhost:8000';
+    };
+
+    const baseURL = getBaseURL();
     
     this.client = axios.create({
       baseURL: `${baseURL}/api/v1/mcp`,

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
 import AuthPage from './pages/Auth';
+import { DemoPage } from './pages/DemoPage';
 import { Layout } from '@/components/layout/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Agents } from './pages/Agents';
@@ -17,6 +18,7 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/demo" element={<DemoPage />} />
           
           {/* Protected routes with layout */}
           <Route 

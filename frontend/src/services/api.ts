@@ -10,7 +10,16 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    // Protocol-aware fallback for production environments
+    const defaultURL = (() => {
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        // In production HTTPS, use HTTPS with backend domain
+        return `https://${window.location.hostname.replace('z2-production', 'z2-backend-production')}`;
+      }
+      return 'http://localhost:8000';
+    })();
+    
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || defaultURL;
     
     this.client = axios.create({
       baseURL: this.baseURL,

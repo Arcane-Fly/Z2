@@ -13,7 +13,22 @@ import {
 // localhost without an API prefix. In production, VITE_API_BASE_URL should be
 // set to the backend domain without the `/api/v1` suffix. To avoid missing or
 // duplicated prefixes we normalise here.
-const apiRoot = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+// Protocol-aware fallback for production environments
+const getApiRoot = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    // In production HTTPS, use HTTPS with backend domain
+    return `https://${window.location.hostname.replace('z2-production', 'z2-backend-production')}`;
+  }
+  
+  return 'http://localhost:8000';
+};
+
+const apiRoot = getApiRoot();
 // Append `/api/v1` if not already present
 const API_BASE_URL = apiRoot.endsWith('/api/v1') ? apiRoot : `${apiRoot}/api/v1`;
 
