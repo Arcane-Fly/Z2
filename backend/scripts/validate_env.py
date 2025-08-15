@@ -6,20 +6,19 @@ This script validates the CORS_ORIGINS environment variable format
 to prevent deployment failures due to configuration issues.
 """
 
-import os
 import json
+import os
 import sys
-from typing import List, Union
 
 
 def validate_cors_origins() -> bool:
     """Validate CORS_ORIGINS environment variable format."""
     cors_env = os.getenv("CORS_ORIGINS", "")
-    
+
     if not cors_env:
         print("ℹ️  CORS_ORIGINS environment variable not set, will use defaults")
         return True
-    
+
     try:
         # Test the same parsing logic as our Settings class
         if cors_env.strip().startswith("[") and cors_env.strip().endswith("]"):
@@ -27,10 +26,10 @@ def validate_cors_origins() -> bool:
             origins = json.loads(cors_env)
             if not isinstance(origins, list):
                 raise ValueError("CORS_ORIGINS must be a list when using JSON format")
-            
+
             # Filter out empty strings
             origins = [str(origin).strip() for origin in origins if origin]
-            
+
             if not origins:
                 print("⚠️  Empty CORS origins array, will use defaults")
             else:
@@ -42,14 +41,14 @@ def validate_cors_origins() -> bool:
                 print("⚠️  Empty CORS origins string, will use defaults")
             else:
                 print(f"✅ CORS_ORIGINS valid comma-separated ({len(origins)} origins): {origins}")
-        
+
         # Validate URL formats
         for origin in origins:
             if not (origin.startswith('http://') or origin.startswith('https://')):
                 print(f"⚠️  Warning: Origin may be invalid (missing protocol): {origin}")
-        
+
         return True
-        
+
     except json.JSONDecodeError as e:
         print(f"❌ CORS_ORIGINS JSON parsing failed: {e}")
         print(f"   Value: {cors_env}")
@@ -63,11 +62,11 @@ def validate_cors_origins() -> bool:
 def validate_database_url() -> bool:
     """Validate DATABASE_URL format."""
     db_url = os.getenv("DATABASE_URL", "")
-    
+
     if not db_url:
         print("ℹ️  DATABASE_URL not set, will use default")
         return True
-    
+
     if db_url.startswith(("postgresql://", "postgresql+asyncpg://", "sqlite://", "sqlite+aiosqlite://")):
         print(f"✅ DATABASE_URL format valid: {db_url.split('@')[0]}@...")
         return True
@@ -81,21 +80,21 @@ def validate_required_in_production() -> bool:
     """Validate required environment variables in production."""
     node_env = os.getenv("NODE_ENV", "development")
     debug = os.getenv("DEBUG", "false").lower()
-    
+
     if node_env == "production" or debug == "false":
         required_vars = ["DATABASE_URL", "SECRET_KEY", "REDIS_URL"]
         missing_vars = []
-        
+
         for var in required_vars:
             if not os.getenv(var):
                 missing_vars.append(var)
-        
+
         if missing_vars:
             print(f"❌ Missing required production environment variables: {missing_vars}")
             return False
         else:
             print("✅ All required production environment variables are set")
-    
+
     return True
 
 
@@ -103,22 +102,22 @@ def main() -> int:
     """Main validation function."""
     print("🔍 Z2 Backend Environment Validation")
     print("=" * 50)
-    
+
     # Check NODE_ENV
     node_env = os.getenv("NODE_ENV", "development")
     debug = os.getenv("DEBUG", "false")
     print(f"Environment: {node_env} (debug={debug})")
     print()
-    
+
     # Run validations
     validations = [
         ("CORS Origins", validate_cors_origins),
         ("Database URL", validate_database_url),
         ("Production Requirements", validate_required_in_production),
     ]
-    
+
     all_passed = True
-    
+
     for name, validator in validations:
         print(f"Validating {name}...")
         try:
@@ -128,7 +127,7 @@ def main() -> int:
             print(f"❌ {name} validation error: {e}")
             all_passed = False
         print()
-    
+
     # Summary
     if all_passed:
         print("🎉 All environment variable validations passed!")

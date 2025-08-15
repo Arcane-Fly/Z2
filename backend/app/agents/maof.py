@@ -11,7 +11,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
@@ -88,7 +88,7 @@ class AgentDefinition:
 
     # Model preferences
     preferred_models: list[str] = field(default_factory=list)
-    model_routing_policy: Optional[RoutingPolicy] = None
+    model_routing_policy: RoutingPolicy | None = None
 
     # Behavior settings
     temperature: float = 0.7
@@ -130,7 +130,7 @@ class Task:
     id: UUID = field(default_factory=uuid4)
     name: str = ""
     description: str = ""
-    assigned_agent: Optional[UUID] = None
+    assigned_agent: UUID | None = None
     dependencies: list[UUID] = field(default_factory=list)
 
     # Task configuration
@@ -140,10 +140,10 @@ class Task:
 
     # Execution state
     status: TaskStatus = TaskStatus.PENDING
-    start_time: Optional[float] = None
-    end_time: Optional[float] = None
+    start_time: float | None = None
+    end_time: float | None = None
     output_data: dict[str, Any] = field(default_factory=dict)
-    error_message: Optional[str] = None
+    error_message: str | None = None
     retry_count: int = 0
     max_retries: int = 3
 
@@ -153,7 +153,7 @@ class Task:
     iterations: int = 0
 
     # Cancellation support
-    _cancel_event: Optional[asyncio.Event] = field(default=None, init=False)
+    _cancel_event: asyncio.Event | None = field(default=None, init=False)
 
     def __post_init__(self):
         """Initialize internal state."""
@@ -185,7 +185,7 @@ class WorkflowDefinition:
 
     # Team composition
     agents: list[AgentDefinition] = field(default_factory=list)
-    coordinator_agent: Optional[UUID] = None
+    coordinator_agent: UUID | None = None
 
     # Task graph
     tasks: list[Task] = field(default_factory=list)
@@ -209,13 +209,13 @@ class WorkflowDefinition:
     cancelled_tasks: list[UUID] = field(default_factory=list)
 
     # Execution metadata
-    start_time: Optional[float] = None
-    end_time: Optional[float] = None
+    start_time: float | None = None
+    end_time: float | None = None
     total_tokens_used: int = 0
     total_cost_usd: float = 0.0
 
     # Cancellation support
-    _stop_event: Optional[asyncio.Event] = field(default=None, init=False)
+    _stop_event: asyncio.Event | None = field(default=None, init=False)
 
     def __post_init__(self):
         """Initialize internal state."""
@@ -231,7 +231,7 @@ class WorkflowDefinition:
         """Check if stop has been requested."""
         return self._stop_event and self._stop_event.is_set()
 
-    def get_task_by_id(self, task_id: UUID) -> Optional[Task]:
+    def get_task_by_id(self, task_id: UUID) -> Task | None:
         """Get task by ID."""
         for task in self.tasks:
             if task.id == task_id:
@@ -343,7 +343,7 @@ class Agent:
             task.end_time = time.time()
             task.status = TaskStatus.FAILED
             task.error_message = f"Task execution timed out after {self.definition.timeout_seconds}s"
-            
+
             logger.error(
                 "Task execution timed out",
                 agent=self.definition.name,
@@ -355,7 +355,7 @@ class Agent:
         except Exception as e:
             task.end_time = time.time()
             task.retry_count += 1
-            
+
             if task.can_retry():
                 task.status = TaskStatus.RETRYING
                 logger.warning(
@@ -607,10 +607,10 @@ class WorkflowOrchestrator:
         self, workflow: WorkflowDefinition
     ) -> dict[str, Any]:
         """Execute workflow with enhanced coordination and event loop."""
-        
+
         # Build task execution plan
         execution_plan = self._build_execution_plan(workflow)
-        
+
         # Shared context for all tasks
         workflow_context = {
             "workflow_id": str(workflow.id),
@@ -623,7 +623,7 @@ class WorkflowOrchestrator:
         completed_tasks = set()
         failed_tasks = set()
         cancelled_tasks = set()
-        
+
         while execution_plan and not workflow.is_stop_requested():
             # Check for cost and time limits
             if await self._check_workflow_limits(workflow):
@@ -664,7 +664,7 @@ class WorkflowOrchestrator:
 
             # Remove completed/failed tasks from execution plan
             execution_plan = [
-                task for task in execution_plan 
+                task for task in execution_plan
                 if task.id not in (completed_tasks | failed_tasks | cancelled_tasks)
             ]
 
@@ -682,11 +682,11 @@ class WorkflowOrchestrator:
         """Build task execution plan based on dependencies."""
         # Start with all tasks
         execution_plan = workflow.tasks.copy()
-        
+
         # Sort by dependencies (tasks with fewer dependencies first)
         def dependency_count(task):
             return len(task.dependencies)
-        
+
         execution_plan.sort(key=dependency_count)
         return execution_plan
 
@@ -695,22 +695,22 @@ class WorkflowOrchestrator:
     ) -> list[Task]:
         """Get tasks that are ready to execute."""
         ready = []
-        
+
         for task in execution_plan:
             if task.status == TaskStatus.PENDING:
                 # Check if all dependencies are satisfied
                 dependencies_satisfied = all(
                     dep_id in completed for dep_id in task.dependencies
                 )
-                
+
                 # Check if any dependency failed
                 dependencies_failed = any(
                     dep_id in failed for dep_id in task.dependencies
                 )
-                
+
                 if dependencies_satisfied and not dependencies_failed:
                     ready.append(task)
-        
+
         return ready
 
     async def _start_ready_tasks(
@@ -721,12 +721,12 @@ class WorkflowOrchestrator:
             if task.id not in self.task_futures:
                 # Create task execution coroutine
                 task_coro = self._execute_task_with_tracking(task, workflow, context)
-                
+
                 # Schedule task execution
                 future = asyncio.create_task(task_coro)
                 self.task_futures[task.id] = future
                 workflow.current_tasks.append(task.id)
-                
+
                 logger.debug(
                     "Started task execution",
                     task=task.name,
@@ -763,17 +763,17 @@ class WorkflowOrchestrator:
 
         # Check all task futures
         finished_task_ids = []
-        
+
         for task_id, future in self.task_futures.items():
             if future.done():
                 finished_task_ids.append(task_id)
                 task = workflow.get_task_by_id(task_id)
-                
+
                 if task:
                     try:
                         # Get the result (this will raise if the task failed)
                         await future
-                        
+
                         if task.status == TaskStatus.COMPLETED:
                             completed.add(task_id)
                             workflow.completed_tasks.append(task_id)
@@ -783,18 +783,18 @@ class WorkflowOrchestrator:
                         else:
                             failed.add(task_id)
                             workflow.failed_tasks.append(task_id)
-                            
+
                     except asyncio.CancelledError:
                         cancelled.add(task_id)
                         workflow.cancelled_tasks.append(task_id)
                         task.status = TaskStatus.CANCELLED
-                        
+
                     except Exception as e:
                         failed.add(task_id)
                         workflow.failed_tasks.append(task_id)
                         task.status = TaskStatus.FAILED
                         task.error_message = str(e)
-                        
+
                         logger.error(
                             "Task failed during execution",
                             task=task.name,
@@ -844,7 +844,7 @@ class WorkflowOrchestrator:
     async def _cancel_workflow_tasks(self, workflow: WorkflowDefinition) -> None:
         """Cancel all running tasks in the workflow."""
         # Cancel all task futures
-        for task_id, future in self.task_futures.items():
+        for _task_id, future in self.task_futures.items():
             if not future.done():
                 future.cancel()
 
@@ -861,9 +861,9 @@ class WorkflowOrchestrator:
         """Handle workflow cancellation gracefully."""
         workflow.status = WorkflowStatus.CANCELLED
         workflow.end_time = time.time()
-        
+
         await self._cancel_workflow_tasks(workflow)
-        
+
         logger.info(
             "Workflow cancelled",
             workflow=workflow.name,
@@ -878,7 +878,7 @@ class WorkflowOrchestrator:
                 workflow=workflow.name,
                 remaining=len(self.task_futures),
             )
-            
+
             try:
                 await asyncio.wait_for(
                     asyncio.gather(*self.task_futures.values(), return_exceptions=True),
@@ -912,7 +912,7 @@ class WorkflowOrchestrator:
     def _collect_workflow_results(self, workflow: WorkflowDefinition) -> dict[str, Any]:
         """Collect and format workflow execution results."""
         results = {}
-        
+
         for task in workflow.tasks:
             if task.status == TaskStatus.COMPLETED:
                 results[task.name] = task.output_data
@@ -958,7 +958,7 @@ class WorkflowOrchestrator:
             agent = self.agent_pool[task.assigned_agent]
 
             # Execute task with enhanced error handling
-            result = await agent.execute_task(task, context)
+            await agent.execute_task(task, context)
 
             # Update workflow metrics
             workflow.total_tokens_used += task.tokens_used
@@ -1279,9 +1279,9 @@ class MultiAgentOrchestrationFramework:
     async def execute_goal_oriented_workflow(
         self,
         goal: str,
-        template_name: Optional[str] = None,
-        custom_agents: Optional[list[AgentDefinition]] = None,
-        input_data: Optional[dict[str, Any]] = None,
+        template_name: str | None = None,
+        custom_agents: list[AgentDefinition] | None = None,
+        input_data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Execute a goal-oriented workflow."""
 
@@ -1289,7 +1289,7 @@ class MultiAgentOrchestrationFramework:
         if template_name and template_name in self.workflow_templates:
             workflow = self.workflow_templates[template_name]
             workflow.goal = goal  # Update goal
-            
+
             # Update task input data if provided
             if input_data:
                 for task in workflow.tasks:
@@ -1305,8 +1305,8 @@ class MultiAgentOrchestrationFramework:
     async def _create_dynamic_workflow(
         self,
         goal: str,
-        custom_agents: Optional[list[AgentDefinition]] = None,
-        input_data: Optional[dict[str, Any]] = None,
+        custom_agents: list[AgentDefinition] | None = None,
+        input_data: dict[str, Any] | None = None,
     ) -> WorkflowDefinition:
         """Create a dynamic workflow based on goal analysis."""
 
@@ -1372,7 +1372,7 @@ class MultiAgentOrchestrationFramework:
 
 class IntelligentWorkflowCreator:
     """
-    Enhanced workflow creation system that analyzes goals and creates 
+    Enhanced workflow creation system that analyzes goals and creates
     optimized multi-agent workflows following agent-os specifications.
     """
 
@@ -1521,9 +1521,9 @@ class IntelligentWorkflowCreator:
     async def create_intelligent_workflow(
         self,
         goal: str,
-        input_data: Optional[dict[str, Any]] = None,
-        constraints: Optional[dict[str, Any]] = None,
-        user_preferences: Optional[dict[str, Any]] = None,
+        input_data: dict[str, Any] | None = None,
+        constraints: dict[str, Any] | None = None,
+        user_preferences: dict[str, Any] | None = None,
     ) -> WorkflowDefinition:
         """
         Create an intelligent workflow based on comprehensive goal analysis.
@@ -1532,26 +1532,26 @@ class IntelligentWorkflowCreator:
 
         # 1. Analyze the goal to understand its nature and complexity
         goal_analysis = await self._analyze_goal_comprehensive(goal, input_data, constraints)
-        
+
         # 2. Select optimal workflow pattern based on analysis
         workflow_pattern = self._select_workflow_pattern(goal_analysis)
-        
+
         # 3. Create agents based on determined requirements
         agents = self._create_optimized_agents(workflow_pattern, goal_analysis)
-        
+
         # 4. Generate intelligent task structure
         tasks = await self._generate_intelligent_tasks(
             goal, goal_analysis, workflow_pattern, agents
         )
-        
+
         # 5. Optimize task dependencies and execution flow
         optimized_tasks = self._optimize_task_dependencies(tasks, workflow_pattern)
-        
+
         # 6. Apply constraints and preferences
         final_workflow = self._apply_constraints_and_preferences(
             goal, agents, optimized_tasks, goal_analysis, constraints, user_preferences
         )
-        
+
         logger.info(
             "Intelligent workflow created",
             workflow_name=final_workflow.name,
@@ -1560,25 +1560,25 @@ class IntelligentWorkflowCreator:
             estimated_duration=final_workflow.max_duration_seconds,
             complexity=goal_analysis.get("complexity", "unknown"),
         )
-        
+
         return final_workflow
 
     async def _analyze_goal_comprehensive(
         self,
         goal: str,
-        input_data: Optional[dict[str, Any]] = None,
-        constraints: Optional[dict[str, Any]] = None,
+        input_data: dict[str, Any] | None = None,
+        constraints: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Perform comprehensive analysis of the goal."""
-        
+
         # Create analysis prompt
         analysis_prompt = f"""
         Analyze the following goal for intelligent workflow creation:
-        
+
         Goal: {goal}
         Input Data: {json.dumps(input_data or {}, indent=2)}
         Constraints: {json.dumps(constraints or {}, indent=2)}
-        
+
         Provide analysis in the following JSON format:
         {{
             "goal_type": "research|coding|writing|analysis|planning|review|complex",
@@ -1593,34 +1593,34 @@ class IntelligentWorkflowCreator:
             "critical_dependencies": ["dep1", "dep2"]
         }}
         """
-        
+
         # Get analysis from LLM
         request = LLMRequest(
             prompt=analysis_prompt,
             max_tokens=1000,
             temperature=0.1,  # Low temperature for analytical accuracy
         )
-        
+
         # Use a reasoning model for complex analysis
         routing_policy = RoutingPolicy(
             task_type="analysis",
             preferred_models=["openai/gpt-4.1", "anthropic/claude-3.5-sonnet"],
             fallback_models=["openai/gpt-4.1-mini"],
         )
-        
+
         try:
             response = await self.mil.generate_response(request, routing_policy)
             analysis = json.loads(response.content)
-            
+
             # Add pattern matching results
             pattern_match = self._match_goal_patterns(goal)
             analysis["pattern_match"] = pattern_match
-            
+
             return analysis
-            
+
         except Exception as e:
             logger.warning("Goal analysis failed, using fallback", error=str(e))
-            
+
             # Fallback to pattern-based analysis
             pattern_match = self._match_goal_patterns(goal)
             return {
@@ -1640,7 +1640,7 @@ class IntelligentWorkflowCreator:
     def _match_goal_patterns(self, goal: str) -> dict[str, Any]:
         """Match goal against known patterns."""
         goal_lower = goal.lower()
-        
+
         for pattern_type, pattern_data in self.goal_patterns.items():
             for keyword in pattern_data["keywords"]:
                 if keyword in goal_lower:
@@ -1651,7 +1651,7 @@ class IntelligentWorkflowCreator:
                         "estimated_duration": pattern_data["estimated_duration"],
                         "agents": pattern_data["agents"],
                     }
-        
+
         # Default to complex pattern
         return {
             "type": "complex",
@@ -1665,13 +1665,13 @@ class IntelligentWorkflowCreator:
         """Select the optimal workflow pattern based on analysis."""
         goal_type = goal_analysis.get("goal_type", "complex")
         complexity = goal_analysis.get("complexity", "medium")
-        
+
         # Get base template
         if goal_type in self.workflow_templates:
             pattern = self.workflow_templates[goal_type].copy()
         else:
             pattern = self.workflow_templates["complex"].copy()
-        
+
         # Adjust pattern based on complexity
         if complexity == "low":
             # Simplify pattern - remove some tasks
@@ -1679,7 +1679,7 @@ class IntelligentWorkflowCreator:
         elif complexity == "high":
             # Use complex pattern regardless of goal type
             pattern = self.workflow_templates["complex"].copy()
-        
+
         pattern["goal_analysis"] = goal_analysis
         return pattern
 
@@ -1688,18 +1688,18 @@ class IntelligentWorkflowCreator:
     ) -> list[AgentDefinition]:
         """Create optimized agents based on workflow requirements."""
         required_roles = set()
-        
+
         # Extract roles from workflow pattern
         for task in workflow_pattern["tasks"]:
             required_roles.add(task["role"])
-        
+
         # Add pattern-based roles if available
         pattern_match = goal_analysis.get("pattern_match", {})
         if "agents" in pattern_match:
             required_roles.update(pattern_match["agents"])
-        
+
         agents = []
-        
+
         for role in required_roles:
             # Create customized agent for each role
             agent = AgentDefinition(
@@ -1712,7 +1712,7 @@ class IntelligentWorkflowCreator:
                 temperature=self._get_optimal_temperature_for_role(role),
             )
             agents.append(agent)
-        
+
         return agents
 
     def _get_optimal_models_for_role(
@@ -1720,7 +1720,7 @@ class IntelligentWorkflowCreator:
     ) -> list[str]:
         """Get optimal model selection for each agent role."""
         complexity = goal_analysis.get("complexity", "medium")
-        
+
         # High-performance models for complex tasks
         if complexity == "high":
             role_models = {
@@ -1741,7 +1741,7 @@ class IntelligentWorkflowCreator:
                 AgentRole.REVIEWER: ["anthropic/claude-3.5-sonnet"],
                 AgentRole.VALIDATOR: ["openai/gpt-4.1-mini"],
             }
-        
+
         return role_models.get(role, ["openai/gpt-4.1-mini"])
 
     def _get_optimal_temperature_for_role(self, role: AgentRole) -> float:
@@ -1757,7 +1757,7 @@ class IntelligentWorkflowCreator:
             AgentRole.COORDINATOR: 0.4, # Balanced coordination
             AgentRole.VALIDATOR: 0.1,  # Strict validation
         }
-        
+
         return role_temperatures.get(role, 0.5)
 
     async def _generate_intelligent_tasks(
@@ -1768,27 +1768,27 @@ class IntelligentWorkflowCreator:
         agents: list[AgentDefinition],
     ) -> list[Task]:
         """Generate intelligent task structure based on goal analysis."""
-        
+
         # Create agent lookup
         agent_by_role = {agent.role: agent for agent in agents}
-        
+
         tasks = []
-        
+
         for i, task_template in enumerate(workflow_pattern["tasks"]):
             # Find appropriate agent
             agent = agent_by_role.get(task_template["role"])
             if not agent:
                 logger.warning(f"No agent found for role {task_template['role']}")
                 continue
-            
+
             # Create enhanced task description
             enhanced_description = await self._enhance_task_description(
                 task_template["description"], goal, goal_analysis
             )
-            
+
             # Create success criteria based on goal analysis
             success_criteria = goal_analysis.get("success_criteria", ["Task completed successfully"])
-            
+
             task = Task(
                 name=task_template["name"],
                 description=enhanced_description,
@@ -1798,50 +1798,50 @@ class IntelligentWorkflowCreator:
                 success_criteria=success_criteria,
                 timeout_seconds=600,  # 10 minutes per task
             )
-            
+
             tasks.append(task)
-        
+
         return tasks
 
     async def _enhance_task_description(
         self, base_description: str, goal: str, goal_analysis: dict[str, Any]
     ) -> str:
         """Enhance task descriptions with goal-specific context."""
-        
+
         enhancement_prompt = f"""
         Enhance this task description for better clarity and goal alignment:
-        
+
         Base Description: {base_description}
         Overall Goal: {goal}
         Goal Type: {goal_analysis.get('goal_type', 'general')}
         Requirements: {goal_analysis.get('key_requirements', [])}
-        
+
         Provide an enhanced, specific description that:
         1. Clearly connects to the overall goal
         2. Specifies what exactly needs to be done
         3. Includes success criteria
         4. Is concise but comprehensive
-        
+
         Enhanced Description:
         """
-        
+
         try:
             request = LLMRequest(
                 prompt=enhancement_prompt,
                 max_tokens=300,
                 temperature=0.3,
             )
-            
+
             response = await self.mil.generate_response(request)
             enhanced = response.content.strip()
-            
+
             # Ensure we have a reasonable enhancement
             if len(enhanced) > 20 and "Enhanced Description:" in enhancement_prompt:
                 return enhanced
-            
+
         except Exception as e:
             logger.debug("Task enhancement failed, using base description", error=str(e))
-        
+
         # Fallback to enhanced base description
         return f"{base_description} for goal: {goal}"
 
@@ -1849,13 +1849,13 @@ class IntelligentWorkflowCreator:
         self, tasks: list[Task], workflow_pattern: dict[str, Any]
     ) -> list[Task]:
         """Optimize task dependencies for efficient execution."""
-        
+
         # Set up basic sequential dependencies unless marked as parallel
         for i, task in enumerate(tasks):
             if i > 0:
                 task_template = workflow_pattern["tasks"][i]
                 parallel_allowed = task_template.get("parallel", False)
-                
+
                 if not parallel_allowed:
                     # Sequential dependency on previous task
                     task.dependencies = [tasks[i-1].id]
@@ -1867,7 +1867,7 @@ class IntelligentWorkflowCreator:
                             # Depends on the last sequential task
                             task.dependencies = [tasks[j].id]
                             break
-        
+
         return tasks
 
     def _apply_constraints_and_preferences(
@@ -1876,37 +1876,37 @@ class IntelligentWorkflowCreator:
         agents: list[AgentDefinition],
         tasks: list[Task],
         goal_analysis: dict[str, Any],
-        constraints: Optional[dict[str, Any]] = None,
-        user_preferences: Optional[dict[str, Any]] = None,
+        constraints: dict[str, Any] | None = None,
+        user_preferences: dict[str, Any] | None = None,
     ) -> WorkflowDefinition:
         """Apply constraints and user preferences to create final workflow."""
-        
+
         constraints = constraints or {}
         user_preferences = user_preferences or {}
-        
+
         # Calculate duration and cost estimates
         estimated_duration = len(tasks) * 600  # 10 minutes per task baseline
         if goal_analysis.get("complexity") == "high":
             estimated_duration *= 1.5
         elif goal_analysis.get("complexity") == "low":
             estimated_duration *= 0.7
-        
+
         # Apply user constraints
         max_duration = constraints.get("max_duration_seconds", int(estimated_duration))
         max_cost = constraints.get("max_cost_usd", 5.0)
-        
+
         # Apply user preferences for models/settings
         if "preferred_models" in user_preferences:
             for agent in agents:
                 agent.preferred_models = user_preferences["preferred_models"]
-        
+
         if "temperature" in user_preferences:
             for agent in agents:
                 agent.temperature = user_preferences["temperature"]
-        
+
         # Create workflow name based on goal
         workflow_name = self._generate_workflow_name(goal, goal_analysis)
-        
+
         return WorkflowDefinition(
             name=workflow_name,
             description=f"Intelligently generated workflow to achieve: {goal}",
@@ -1927,16 +1927,16 @@ class IntelligentWorkflowCreator:
         """Generate an appropriate name for the workflow."""
         goal_type = goal_analysis.get("goal_type", "general")
         complexity = goal_analysis.get("complexity", "medium")
-        
+
         # Extract key words from goal
         import re
         words = re.findall(r'\b\w+\b', goal.lower())
-        key_words = [word for word in words if len(word) > 3 and word not in 
+        key_words = [word for word in words if len(word) > 3 and word not in
                     {'this', 'that', 'with', 'from', 'they', 'have', 'will', 'been', 'were'}]
-        
+
         if key_words:
             main_subject = key_words[0].title()
         else:
             main_subject = "Goal"
-        
+
         return f"{main_subject} {goal_type.title()} - {complexity.title()} Complexity"

@@ -5,19 +5,18 @@ This module implements user consent workflows and access control
 for tools and resources as required for production MCP servers.
 """
 
-from datetime import datetime, timedelta
-from typing import Any, Optional
+from datetime import datetime
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.session import get_db
-from app.models.consent import ConsentRequest as ConsentRequestModel
-from app.services.consent_service import ConsentService
 from app.core.auth_dependencies import get_current_active_user
+from app.database.session import get_db
 from app.models.user import User
+from app.services.consent_service import ConsentService
 
 router = APIRouter()
 
@@ -31,7 +30,7 @@ class ConsentRequest(BaseModel):
     resource_name: str
     description: str
     permissions: list[str]
-    expires_in_hours: Optional[int] = 24
+    expires_in_hours: int | None = 24
 
 
 class ConsentResponse(BaseModel):
@@ -39,8 +38,8 @@ class ConsentResponse(BaseModel):
 
     consent_id: str
     status: str  # "pending", "granted", "denied", "expired"
-    granted_at: Optional[str] = None
-    expires_at: Optional[str] = None
+    granted_at: str | None = None
+    expires_at: str | None = None
     permissions: list[str]
 
 
@@ -51,9 +50,9 @@ class AccessPolicy(BaseModel):
     resource_name: str
     required_permissions: list[str]
     auto_approve: bool = False
-    max_usage_per_hour: Optional[int] = None
-    max_usage_per_day: Optional[int] = None
-    description: Optional[str] = None
+    max_usage_per_hour: int | None = None
+    max_usage_per_day: int | None = None
+    description: str | None = None
 
 
 class AuditLog(BaseModel):
@@ -65,7 +64,7 @@ class AuditLog(BaseModel):
     action: str  # "request", "grant", "deny", "access", "error"
     resource_type: str
     resource_name: str
-    details: Optional[dict] = None
+    details: dict | None = None
 
 
 class AccessCheckRequest(BaseModel):
@@ -82,7 +81,7 @@ def get_consent_service(db: AsyncSession = Depends(get_db)) -> ConsentService:
     return ConsentService(db)
 
 
-def get_client_info(request: Request) -> tuple[Optional[str], Optional[str]]:
+def get_client_info(request: Request) -> tuple[str | None, str | None]:
     """Extract client IP and user agent from request."""
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -121,7 +120,7 @@ async def request_consent(
         ip_address=ip_address,
         user_agent=user_agent,
     )
-    
+
     # Auto-approve if policy allows
     if policy and policy.auto_approve:
         grant = await consent_service.grant_consent(
@@ -131,7 +130,7 @@ async def request_consent(
             ip_address=ip_address,
             user_agent=user_agent,
         )
-        
+
         if grant:
             await db.commit()
             return ConsentResponse(
@@ -141,7 +140,7 @@ async def request_consent(
                 expires_at=grant.expires_at.isoformat(),
                 permissions=request.permissions,
             )
-    
+
     await db.commit()
     return ConsentResponse(
         consent_id=str(consent_request.id),
@@ -161,7 +160,7 @@ async def grant_consent(
 ) -> ConsentResponse:
     """Grant consent for a pending request."""
     ip_address, user_agent = get_client_info(http_request)
-    
+
     try:
         consent_uuid = UUID(consent_id)
     except ValueError:
@@ -169,7 +168,7 @@ async def grant_consent(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid consent ID format",
         )
-    
+
     # Get the original request
     consent_request = await consent_service.get_consent_request(consent_uuid)
     if not consent_request:
@@ -177,7 +176,7 @@ async def grant_consent(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Consent request not found: {consent_id}",
         )
-    
+
     # Check if user is authorized to grant consent
     if user_id != str(current_user.id) and not current_user.is_superuser:
         raise HTTPException(
@@ -189,22 +188,22 @@ async def grant_consent(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User not authorized to grant this consent",
         )
-    
+
     grant = await consent_service.grant_consent(
         consent_id=consent_uuid,
         granted_by=user_id,
         ip_address=ip_address,
         user_agent=user_agent,
     )
-    
+
     if not grant:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot grant consent for this request",
         )
-    
+
     await db.commit()
-    
+
     return ConsentResponse(
         consent_id=consent_id,
         status="granted",
@@ -218,7 +217,7 @@ async def grant_consent(
 async def deny_consent(
     consent_id: str,
     user_id: str,
-    reason: Optional[str] = None,
+    reason: str | None = None,
     http_request: Request = None,
     consent_service: ConsentService = Depends(get_consent_service),
     db: AsyncSession = Depends(get_db),
@@ -226,7 +225,7 @@ async def deny_consent(
 ) -> ConsentResponse:
     """Deny consent for a pending request."""
     ip_address, user_agent = get_client_info(http_request)
-    
+
     try:
         consent_uuid = UUID(consent_id)
     except ValueError:
@@ -234,7 +233,7 @@ async def deny_consent(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid consent ID format",
         )
-    
+
     # Get the original request
     consent_request = await consent_service.get_consent_request(consent_uuid)
     if not consent_request:
@@ -242,7 +241,7 @@ async def deny_consent(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Consent request not found: {consent_id}",
         )
-    
+
     if user_id != str(current_user.id) and not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -256,15 +255,15 @@ async def deny_consent(
         ip_address=ip_address,
         user_agent=user_agent,
     )
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot deny consent for this request",
         )
-    
+
     await db.commit()
-    
+
     return ConsentResponse(
         consent_id=consent_id,
         status="denied",
@@ -287,34 +286,34 @@ async def get_consent_status(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid consent ID format",
         )
-    
+
     consent_request = await consent_service.get_consent_request(consent_uuid)
     if not consent_request:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Consent not found: {consent_id}",
         )
-    
+
     # Check if consent has expired
     if (
-        consent_request.status == "granted" 
-        and consent_request.expires_at 
+        consent_request.status == "granted"
+        and consent_request.expires_at
         and datetime.now() > consent_request.expires_at.replace(tzinfo=None)
     ):
         consent_request.status = "expired"
         await db.commit()
-    
+
     response = ConsentResponse(
         consent_id=consent_id,
         status=consent_request.status,
         permissions=consent_request.permissions,
     )
-    
+
     if consent_request.granted_at:
         response.granted_at = consent_request.granted_at.isoformat()
     if consent_request.expires_at:
         response.expires_at = consent_request.expires_at.isoformat()
-    
+
     return response
 
 
@@ -334,7 +333,7 @@ async def check_access(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User not authorized to check access for this user",
         )
-    
+
     result = await consent_service.check_access(
         user_id=request.user_id,
         resource_type=request.resource_type,
@@ -343,7 +342,7 @@ async def check_access(
         ip_address=ip_address,
         user_agent=user_agent,
     )
-    
+
     await db.commit()  # Commit any audit log entries
     return result
 
@@ -357,7 +356,7 @@ async def list_access_policies(
     if not current_user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     policies = await consent_service.list_access_policies()
-    
+
     return {
         "policies": [
             {
@@ -395,16 +394,16 @@ async def update_access_policy(
         max_usage_per_day=policy.max_usage_per_day,
         description=policy.description,
     )
-    
+
     await db.commit()
     return {"message": "Policy updated successfully"}
 
 
 @router.get("/audit")
 async def get_audit_logs(
-    user_id: Optional[str] = None,
-    resource_type: Optional[str] = None,
-    action: Optional[str] = None,
+    user_id: str | None = None,
+    resource_type: str | None = None,
+    action: str | None = None,
     limit: int = 100,
     offset: int = 0,
     consent_service: ConsentService = Depends(get_consent_service),
@@ -420,7 +419,7 @@ async def get_audit_logs(
         limit=limit,
         offset=offset,
     )
-    
+
     return {
         "logs": [
             {
@@ -448,7 +447,7 @@ async def get_user_sessions(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
     grants = await consent_service.get_user_active_consents(user_id)
-    
+
     active_consents = []
     for grant in grants:
         active_consents.append({
@@ -465,7 +464,7 @@ async def get_user_sessions(
                 "description": grant.request.description,
             },
         })
-    
+
     return {"user_id": user_id, "active_consents": active_consents}
 
 
@@ -478,7 +477,7 @@ async def setup_default_policies(
     """Set up default access policies for MCP resources and tools."""
     if not current_user.is_superuser:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-    
+
     # Default policies for MCP tools and resources
     default_policies = [
         {
@@ -506,7 +505,7 @@ async def setup_default_policies(
             "description": "Access agent information and status",
         },
         {
-            "resource_type": "resource", 
+            "resource_type": "resource",
             "resource_name": "workflow",
             "required_permissions": ["workflow:read"],
             "auto_approve": True,
@@ -514,10 +513,10 @@ async def setup_default_policies(
             "description": "Access workflow templates and definitions",
         },
     ]
-    
+
     for policy_data in default_policies:
         await consent_service.create_or_update_access_policy(**policy_data)
-    
+
     await db.commit()
     return {"message": f"Set up {len(default_policies)} default policies"}
 

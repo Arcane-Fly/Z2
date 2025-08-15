@@ -2,7 +2,6 @@
 Comprehensive unit tests for LLM provider integration and model routing.
 """
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -22,13 +21,13 @@ from app.agents.mil import ModelCapability as MILModelCapability
 from app.core.cache_and_rate_limit import LLMResponseCache, RateLimiter
 from app.core.models_registry import (
     ALL_MODELS,
+    ModelCapability,
+    ProviderType,
     get_model_by_id,
     get_models_by_capability,
     get_models_by_provider,
-    ProviderType,
     validate_model_support,
 )
-from app.core.models_registry import ModelCapability
 
 
 class TestModelRegistry:
@@ -45,7 +44,7 @@ class TestModelRegistry:
             # Note: Some models like Whisper have 0 token limits by design
             assert spec.input_token_limit >= 0
             assert spec.output_token_limit >= 0
-            
+
             # Check that key models have cost and context window data
             if model_id in ["gpt-4.1", "gpt-4.1-mini", "o4-mini", "claude-sonnet-4-20250514"]:
                 assert spec.cost_per_input_token is not None
@@ -57,7 +56,7 @@ class TestModelRegistry:
         model = get_model_by_id("gpt-4.1")
         assert model is not None
         assert model.name == "GPT-4.1"
-        
+
         model = get_model_by_id("nonexistent-model")
         assert model is None
 
@@ -66,7 +65,7 @@ class TestModelRegistry:
         openai_models = get_models_by_provider(ProviderType.OPENAI)
         assert len(openai_models) > 0
         assert all(spec.provider == ProviderType.OPENAI for spec in openai_models.values())
-        
+
         anthropic_models = get_models_by_provider(ProviderType.ANTHROPIC)
         assert len(anthropic_models) > 0
         assert all(spec.provider == ProviderType.ANTHROPIC for spec in anthropic_models.values())
@@ -76,14 +75,14 @@ class TestModelRegistry:
         reasoning_models = get_models_by_capability(ModelCapability.REASONING)
         assert len(reasoning_models) > 0
         assert all(
-            ModelCapability.REASONING in spec.capabilities 
+            ModelCapability.REASONING in spec.capabilities
             for spec in reasoning_models.values()
         )
-        
+
         multimodal_models = get_models_by_capability(ModelCapability.MULTIMODAL)
         assert len(multimodal_models) > 0
         assert all(
-            ModelCapability.MULTIMODAL in spec.capabilities 
+            ModelCapability.MULTIMODAL in spec.capabilities
             for spec in multimodal_models.values()
         )
 
@@ -92,17 +91,17 @@ class TestModelRegistry:
         # Test valid model with required capabilities
         result = validate_model_support("gpt-4.1", [ModelCapability.TEXT_GENERATION])
         assert result is True
-        
+
         result = validate_model_support("gpt-4.1", [
-            ModelCapability.TEXT_GENERATION, 
+            ModelCapability.TEXT_GENERATION,
             ModelCapability.FUNCTION_CALLING
         ])
         assert result is True
-        
+
         # Test invalid model
         result = validate_model_support("nonexistent-model", [ModelCapability.TEXT_GENERATION])
         assert result is False
-        
+
         # Test model without required capability
         result = validate_model_support("whisper-1", [ModelCapability.TEXT_GENERATION])
         assert result is False
@@ -141,19 +140,19 @@ class TestLLMProviders:
         mock_client_instance = AsyncMock()
         mock_openai_client.return_value = mock_client_instance
         mock_client_instance.chat.completions.create.return_value = mock_openai_response
-        
+
         # Create provider and test
         provider = OpenAIProvider("test-api-key")
-        
+
         request = LLMRequest(
             prompt="Test prompt",
             model_id="gpt-4.1-mini",
             max_tokens=100,
             temperature=0.7,
         )
-        
+
         response = await provider.generate(request)
-        
+
         assert isinstance(response, LLMResponse)
         assert response.content == "Test response from OpenAI"
         assert response.model_used == "gpt-4.1-mini"
@@ -168,19 +167,19 @@ class TestLLMProviders:
         mock_client_instance = AsyncMock()
         mock_anthropic_client.return_value = mock_client_instance
         mock_client_instance.messages.create.return_value = mock_anthropic_response
-        
+
         # Create provider and test
         provider = AnthropicProvider("test-api-key")
-        
+
         request = LLMRequest(
             prompt="Test prompt",
             model_id="claude-3.5-sonnet",
             max_tokens=100,
             temperature=0.7,
         )
-        
+
         response = await provider.generate(request)
-        
+
         assert isinstance(response, LLMResponse)
         assert response.content == "Test response from Claude"
         assert response.model_used == "claude-3.5-sonnet"
@@ -192,7 +191,7 @@ class TestLLMProviders:
         """Test OpenAI provider model information."""
         provider = OpenAIProvider("test-api-key")
         models = provider.get_available_models()
-        
+
         assert len(models) > 0
         assert all(isinstance(model, ModelInfo) for model in models)
         assert all(model.provider == "openai" for model in models)
@@ -200,11 +199,11 @@ class TestLLMProviders:
     def test_cost_calculation(self):
         """Test cost calculation for providers."""
         provider = OpenAIProvider("test-api-key")
-        
+
         # Test known model
         cost = provider.calculate_cost(1000, 500, "gpt-4.1-mini")
         assert cost > 0
-        
+
         # Test unknown model
         cost = provider.calculate_cost(1000, 500, "unknown-model")
         assert cost == 0.0
@@ -217,7 +216,7 @@ class TestDynamicModelRouter:
     def router_with_providers(self):
         """Create router with mock providers."""
         router = DynamicModelRouter()
-        
+
         # Mock OpenAI provider
         openai_provider = MagicMock()
         openai_provider.get_available_models.return_value = [
@@ -233,7 +232,7 @@ class TestDynamicModelRouter:
                 quality_score=0.85,
             )
         ]
-        
+
         router.register_provider("openai", openai_provider)
         return router
 
@@ -247,7 +246,7 @@ class TestDynamicModelRouter:
         """Test optimal model selection logic."""
         request = LLMRequest(prompt="Test prompt")
         policy = RoutingPolicy(cost_weight=0.5, quality_weight=0.5)
-        
+
         selected_model = router_with_providers.get_optimal_model(request, policy)
         assert selected_model is not None
 
@@ -257,7 +256,7 @@ class TestDynamicModelRouter:
         policy = RoutingPolicy(
             required_capabilities=[MILModelCapability.TEXT_GENERATION]
         )
-        
+
         candidates = router_with_providers._filter_by_capabilities(request, policy)
         assert len(candidates) > 0
 
@@ -265,7 +264,7 @@ class TestDynamicModelRouter:
         """Test filtering by policy constraints."""
         candidates = ["openai/gpt-4.1-mini"]
         policy = RoutingPolicy(max_cost_per_request=0.01)
-        
+
         filtered = router_with_providers._filter_by_constraints(candidates, policy)
         # Should filter based on constraints
         assert isinstance(filtered, list)
@@ -278,30 +277,30 @@ class TestCachingAndRateLimiting:
     async def test_response_cache(self):
         """Test LLM response caching."""
         cache = LLMResponseCache()
-        
+
         # Test cache miss
         result = await cache.get("test prompt", "gpt-4.1-mini")
         assert result is None
-        
+
         # Set cache
         response_data = {
             "content": "Cached response",
             "model_used": "gpt-4.1-mini",
             "cost_usd": 0.001,
         }
-        
+
         await cache.set(
             prompt="test prompt",
             model_id="gpt-4.1-mini",
             response_data=response_data,
             ttl_seconds=3600,
         )
-        
+
         # Test cache hit
         result = await cache.get("test prompt", "gpt-4.1-mini")
         assert result is not None
         assert result["content"] == "Cached response"
-        
+
         # Test cache stats
         stats = cache.get_stats()
         assert stats["cache_hits"] > 0
@@ -311,18 +310,18 @@ class TestCachingAndRateLimiting:
     async def test_rate_limiter(self):
         """Test rate limiting functionality."""
         rate_limiter = RateLimiter()
-        
+
         # Test initial request (should be allowed)
         allowed, info = await rate_limiter.check_rate_limit(
             provider="test",
             model_id="test-model",
             estimated_cost=0.001,
         )
-        
+
         assert allowed is True
         assert "minute_count" in info
         assert "hour_count" in info
-        
+
         # Test usage recording
         await rate_limiter.record_usage(
             provider="test",
@@ -355,10 +354,10 @@ class TestBasicAgentIntegration:
         context = agent.get_context_summary()
         assert context["agent_name"] == "TestAgent"
         assert context["interaction_count"] == 0
-        
+
         # Process a message (will use fallback since no providers configured)
         await agent.process_message("Hello, test message")
-        
+
         # Check context updated
         updated_context = agent.get_context_summary()
         assert updated_context["interaction_count"] == 1
@@ -379,7 +378,7 @@ class TestBasicAgentIntegration:
         mock_mil = AsyncMock()
         mock_mil_class.return_value = mock_mil
         mock_mil.router.providers = {"openai": MagicMock()}
-        
+
         # Mock LLM response
         mock_response = LLMResponse(
             content="Test LLM response",
@@ -391,16 +390,16 @@ class TestBasicAgentIntegration:
             finish_reason="stop",
         )
         mock_mil.generate_response.return_value = mock_response
-        
+
         # Create new agent with mocked MIL
         agent.mil = mock_mil
-        
+
         # Test message processing
-        response = await agent.process_message("Test message")
-        
+        await agent.process_message("Test message")
+
         # Verify LLM was called
         mock_mil.generate_response.assert_called_once()
-        
+
         # Check usage stats updated
         stats = agent.get_usage_stats()
         assert stats["total_requests"] == 1
@@ -414,7 +413,7 @@ class TestModelIntegrationLayer:
     async def test_mil_initialization(self):
         """Test MIL initialization."""
         mil = ModelIntegrationLayer()
-        
+
         # Should initialize with available providers based on config
         assert mil.router is not None
         assert mil.default_policy is not None
@@ -424,11 +423,11 @@ class TestModelIntegrationLayer:
         """Test MIL with configured providers."""
         # Simple test that MIL can be initialized
         mil = ModelIntegrationLayer()
-        
+
         # Should have router initialized
         assert mil.router is not None
         assert mil.default_policy is not None
-        
+
         # Test provider status (should work even with no providers)
         status = mil.get_provider_status()
         assert isinstance(status, dict)
@@ -437,7 +436,7 @@ class TestModelIntegrationLayer:
         """Test provider status reporting."""
         mil = ModelIntegrationLayer()
         status = mil.get_provider_status()
-        
+
         assert isinstance(status, dict)
         # Should return status for each configured provider
 

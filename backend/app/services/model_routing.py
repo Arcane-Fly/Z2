@@ -4,15 +4,14 @@ Implements agent-os specifications for model routing and usage tracking.
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.model_routing import ModelRoutingPolicy, ModelUsageTracking
-from app.core.models_registry import ModelCapability
 
 logger = structlog.get_logger(__name__)
 
@@ -28,13 +27,13 @@ class ModelRoutingService:
         name: str,
         task_type: str,
         model_id: str,
-        description: Optional[str] = None,
-        fallback_models: Optional[List[str]] = None,
-        max_cost_per_request: Optional[float] = None,
-        max_latency_ms: Optional[int] = None,
-        required_capabilities: Optional[List[str]] = None,
+        description: str | None = None,
+        fallback_models: list[str] | None = None,
+        max_cost_per_request: float | None = None,
+        max_latency_ms: int | None = None,
+        required_capabilities: list[str] | None = None,
         priority: int = 100,
-        created_by: Optional[str] = None,
+        created_by: str | None = None,
     ) -> ModelRoutingPolicy:
         """Create a new routing policy."""
         policy = ModelRoutingPolicy(
@@ -49,21 +48,21 @@ class ModelRoutingService:
             priority=priority,
             created_by=created_by,
         )
-        
+
         self.db.add(policy)
         await self.db.commit()
         await self.db.refresh(policy)
-        
+
         logger.info(
             "Created routing policy",
             policy_id=str(policy.id),
             task_type=task_type,
             model_id=model_id,
         )
-        
+
         return policy
 
-    async def get_routing_policy(self, policy_id: UUID) -> Optional[ModelRoutingPolicy]:
+    async def get_routing_policy(self, policy_id: UUID) -> ModelRoutingPolicy | None:
         """Get a routing policy by ID."""
         result = await self.db.execute(
             select(ModelRoutingPolicy).where(ModelRoutingPolicy.id == policy_id)
@@ -72,14 +71,14 @@ class ModelRoutingService:
 
     async def get_routing_policy_for_task(
         self, task_type: str
-    ) -> Optional[ModelRoutingPolicy]:
+    ) -> ModelRoutingPolicy | None:
         """Get the highest priority active routing policy for a task type."""
         result = await self.db.execute(
             select(ModelRoutingPolicy)
             .where(
                 and_(
                     ModelRoutingPolicy.task_type == task_type,
-                    ModelRoutingPolicy.is_active == True,
+                    ModelRoutingPolicy.is_active is True,
                 )
             )
             .order_by(ModelRoutingPolicy.priority.asc())
@@ -89,14 +88,14 @@ class ModelRoutingService:
 
     async def list_routing_policies(
         self, active_only: bool = True
-    ) -> List[ModelRoutingPolicy]:
+    ) -> list[ModelRoutingPolicy]:
         """List all routing policies."""
         query = select(ModelRoutingPolicy)
         if active_only:
-            query = query.where(ModelRoutingPolicy.is_active == True)
-        
+            query = query.where(ModelRoutingPolicy.is_active is True)
+
         query = query.order_by(ModelRoutingPolicy.priority.asc())
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
@@ -104,7 +103,7 @@ class ModelRoutingService:
         self,
         policy_id: UUID,
         **updates: Any,
-    ) -> Optional[ModelRoutingPolicy]:
+    ) -> ModelRoutingPolicy | None:
         """Update a routing policy."""
         policy = await self.get_routing_policy(policy_id)
         if not policy:
@@ -142,12 +141,12 @@ class ModelRoutingService:
         output_tokens: int,
         cost_usd: float,
         latency_ms: int,
-        task_type: Optional[str] = None,
-        user_id: Optional[str] = None,
+        task_type: str | None = None,
+        user_id: str | None = None,
         was_cached: bool = False,
         success: bool = True,
-        error_type: Optional[str] = None,
-        request_metadata: Optional[Dict[str, Any]] = None,
+        error_type: str | None = None,
+        request_metadata: dict[str, Any] | None = None,
     ) -> ModelUsageTracking:
         """Track model usage for analytics and cost monitoring."""
         usage = ModelUsageTracking(
@@ -182,12 +181,12 @@ class ModelRoutingService:
 
     async def get_usage_statistics(
         self,
-        provider: Optional[str] = None,
-        model_id: Optional[str] = None,
-        task_type: Optional[str] = None,
-        user_id: Optional[str] = None,
+        provider: str | None = None,
+        model_id: str | None = None,
+        task_type: str | None = None,
+        user_id: str | None = None,
         hours_back: int = 24,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get comprehensive usage statistics."""
         # Build the base query
         base_query = select(ModelUsageTracking).where(
@@ -211,10 +210,10 @@ class ModelRoutingService:
             func.sum(ModelUsageTracking.total_tokens).label("total_tokens"),
             func.avg(ModelUsageTracking.latency_ms).label("avg_latency"),
             func.sum(
-                func.case((ModelUsageTracking.was_cached == True, 1), else_=0)
+                func.case((ModelUsageTracking.was_cached is True, 1), else_=0)
             ).label("cache_hits"),
             func.sum(
-                func.case((ModelUsageTracking.success == True, 1), else_=0)
+                func.case((ModelUsageTracking.success is True, 1), else_=0)
             ).label("successful_requests"),
         ).where(
             ModelUsageTracking.created_at >= datetime.utcnow() - timedelta(hours=hours_back)
@@ -302,17 +301,17 @@ class ModelRoutingService:
 
     async def get_cost_optimization_recommendations(
         self, hours_back: int = 168  # 1 week
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get recommendations for cost optimization based on usage patterns."""
         # Get usage data for analysis
         usage_stats = await self.get_usage_statistics(hours_back=hours_back)
-        
+
         recommendations = []
-        
+
         # Analyze cost by model
         cost_by_model = usage_stats.get("cost_by_model", {})
         total_cost = usage_stats.get("total_cost_usd", 0.0)
-        
+
         if total_cost > 0:
             # Find expensive models
             expensive_threshold = total_cost * 0.3  # Models that cost >30% of total
@@ -325,7 +324,7 @@ class ModelRoutingService:
                         "message": f"Model {model_id} accounts for ${data['total_cost']:.2f} ({data['total_cost']/total_cost*100:.1f}%) of total costs",
                         "suggestion": "Consider using a more cost-effective alternative for non-critical tasks",
                     })
-        
+
         # Check cache hit rate
         cache_hit_rate = usage_stats.get("cache_hit_rate", 0.0)
         if cache_hit_rate < 0.3:  # Less than 30% cache hit rate
@@ -335,7 +334,7 @@ class ModelRoutingService:
                 "message": f"Cache hit rate is {cache_hit_rate*100:.1f}%",
                 "suggestion": "Consider implementing better caching strategies to reduce costs and latency",
             })
-        
+
         # Check success rate
         success_rate = usage_stats.get("success_rate", 0.0)
         if success_rate < 0.95:  # Less than 95% success rate
@@ -345,7 +344,7 @@ class ModelRoutingService:
                 "message": f"Success rate is {success_rate*100:.1f}%",
                 "suggestion": "Investigate and fix reliability issues to improve system performance",
             })
-        
+
         return {
             "recommendations": recommendations,
             "analysis_period_hours": hours_back,

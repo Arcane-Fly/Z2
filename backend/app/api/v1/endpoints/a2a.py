@@ -7,16 +7,23 @@ including handshake, negotiation, communication, and streaming capabilities.
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Depends, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.utils.logging import get_logger
 from app.database.session import get_db
 from app.services.session_service import SessionService
+from app.utils.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -30,7 +37,7 @@ class A2AHandshakeRequest(BaseModel):
     agent_name: str = Field(..., description="Requesting agent name")
     capabilities: list[str] = Field(..., description="Agent capabilities")
     protocol_version: str = Field(default="1.0.0", description="A2A protocol version")
-    public_key: Optional[str] = Field(
+    public_key: str | None = Field(
         None, description="Agent's public key for encryption"
     )
 
@@ -44,7 +51,7 @@ class A2AHandshakeResponse(BaseModel):
     capabilities: list[str] = Field(..., description="Our capabilities")
     protocol_version: str = Field(..., description="Supported protocol version")
     expires_at: datetime = Field(..., description="Session expiration time")
-    public_key: Optional[str] = Field(None, description="Our public key")
+    public_key: str | None = Field(None, description="Our public key")
 
 
 class A2ANegotiationRequest(BaseModel):
@@ -57,7 +64,7 @@ class A2ANegotiationRequest(BaseModel):
         default_factory=dict, description="Task parameters"
     )
     priority: int = Field(default=5, ge=1, le=10, description="Task priority (1-10)")
-    timeout_seconds: Optional[int] = Field(None, description="Task timeout")
+    timeout_seconds: int | None = Field(None, description="Task timeout")
 
 
 class A2ANegotiationResponse(BaseModel):
@@ -69,7 +76,7 @@ class A2ANegotiationResponse(BaseModel):
         ..., description="Proposed execution workflow"
     )
     estimated_duration: int = Field(..., description="Estimated duration in seconds")
-    cost_estimate: Optional[float] = Field(None, description="Estimated cost")
+    cost_estimate: float | None = Field(None, description="Estimated cost")
     accepted: bool = Field(..., description="Whether we accept the task")
 
 
@@ -148,7 +155,7 @@ def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:
     return SessionService(db)
 
 
-def get_client_info(request: Request) -> tuple[Optional[str], Optional[str]]:
+def get_client_info(request: Request) -> tuple[str | None, str | None]:
     """Extract client IP and user agent from request."""
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -190,7 +197,7 @@ async def a2a_handshake(
     # Our capabilities (from config or registry)
     our_capabilities = [
         "workflow-orchestration",
-        "dynamic-reasoning", 
+        "dynamic-reasoning",
         "code-generation",
         "data-analysis",
         "multi-agent-coordination",
@@ -359,8 +366,8 @@ async def a2a_negotiate(
     )
 
     logger.info(
-        "A2A negotiation completed", 
-        negotiation_id=negotiation_id, 
+        "A2A negotiation completed",
+        negotiation_id=negotiation_id,
         accepted=can_handle,
         available_skills=available_skills,
     )
@@ -401,7 +408,7 @@ async def a2a_communicate(
 
     if message.message_type == "task_request":
         task_id = str(uuid.uuid4())
-        
+
         # Create task execution record
         await session_service.create_task_execution(
             task_id=task_id,
@@ -410,7 +417,7 @@ async def a2a_communicate(
             task_name=message.payload.get("task_name", "A2A Task"),
             task_parameters=message.payload,
         )
-        
+
         response_payload = {
             "status": "acknowledged",
             "task_id": task_id,
@@ -427,7 +434,7 @@ async def a2a_communicate(
         running_tasks = await session_service.list_session_tasks(
             message.session_id, status="running"
         )
-        
+
         response_payload = {
             "status": "active",
             "current_tasks": len(running_tasks),
@@ -471,7 +478,7 @@ async def a2a_communicate(
             "capabilities": [
                 "workflow-orchestration",
                 "dynamic-reasoning",
-                "code-generation", 
+                "code-generation",
                 "data-analysis",
                 "multi-agent-coordination",
                 "streaming-communication",
@@ -491,9 +498,9 @@ async def a2a_communicate(
         response_payload = {
             "status": "unsupported_message_type",
             "supported_types": [
-                "task_request", 
-                "status_inquiry", 
-                "result_request", 
+                "task_request",
+                "status_inquiry",
+                "result_request",
                 "heartbeat",
                 "capability_inquiry",
             ],
@@ -523,7 +530,7 @@ async def a2a_communicate(
 
 @router.websocket("/stream/{session_id}")
 async def a2a_stream(
-    websocket: WebSocket, 
+    websocket: WebSocket,
     session_id: str,
     session_service: SessionService = Depends(get_session_service),
 ):
@@ -539,7 +546,7 @@ async def a2a_stream(
         async with SessionLocal() as db:
             session_srv = SessionService(db)
             session = await session_srv.get_a2a_session(session_id)
-            
+
             if not session:
                 await websocket.close(code=4004, reason="Session not found")
                 return
@@ -570,7 +577,7 @@ async def a2a_stream(
             "timestamp": datetime.now(UTC).isoformat(),
             "capabilities": [
                 "streaming-communication",
-                "task-cancellation", 
+                "task-cancellation",
                 "progress-reporting",
                 "real-time-updates",
             ],
@@ -579,7 +586,7 @@ async def a2a_stream(
         while True:
             try:
                 data = await websocket.receive_json()
-                
+
                 # Process incoming message
                 message_type = data.get("type", "unknown")
                 logger.info("A2A stream message", session_id=session_id, type=message_type)
@@ -594,9 +601,9 @@ async def a2a_stream(
                     # Handle state update
                     state = data.get("state", "unknown")
                     progress = data.get("progress", 0.0)
-                    
+
                     await websocket.send_json({
-                        "type": "state_acknowledged", 
+                        "type": "state_acknowledged",
                         "state": state,
                         "progress": progress,
                         "timestamp": datetime.now(UTC).isoformat(),
@@ -606,13 +613,13 @@ async def a2a_stream(
                     # Handle progress updates and store in database
                     task_id = data.get("task_id")
                     progress = data.get("progress", 0)
-                    
+
                     if task_id:
                         async with SessionLocal() as db:
                             session_srv = SessionService(db)
                             await session_srv.update_task_progress(task_id, progress)
                             await db.commit()
-                    
+
                     # Echo back progress acknowledgment
                     await websocket.send_json({
                         "type": "progress_acknowledged",
@@ -642,7 +649,7 @@ async def a2a_stream(
                                 cancellation_reason="Cancelled via WebSocket",
                             )
                             await db.commit()
-                            
+
                             await websocket.send_json({
                                 "type": "cancellation_result",
                                 "task_id": task_id,
@@ -655,8 +662,8 @@ async def a2a_stream(
                         "type": "error",
                         "message": f"Unsupported message type: {message_type}",
                         "supported_types": [
-                            "ping", 
-                            "state_update", 
+                            "ping",
+                            "state_update",
                             "task_progress",
                             "subscribe_updates",
                             "cancel_task",
@@ -679,7 +686,7 @@ async def a2a_stream(
     finally:
         # Cleanup
         connection_manager.disconnect(session_id)
-        
+
         # Update session to indicate WebSocket disconnection
         try:
             async with SessionLocal() as db:
@@ -696,10 +703,10 @@ async def list_a2a_sessions(
 ):
     """List active A2A sessions."""
     sessions = await session_service.list_active_a2a_sessions()
-    
+
     # Clean up expired sessions
     cleanup_results = await session_service.cleanup_expired_sessions()
-    
+
     return {
         "active_sessions": len(sessions),
         "active_streams": len([s for s in sessions if s.has_websocket]),
@@ -728,7 +735,7 @@ async def terminate_a2a_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Terminate an A2A session."""
-    
+
     # Close WebSocket if active
     await connection_manager.send_message(
         session_id,
@@ -742,7 +749,7 @@ async def terminate_a2a_session(
 
     # Close session in database
     success = await session_service.close_a2a_session(session_id)
-    
+
     if not success:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -759,7 +766,7 @@ async def get_negotiation_status(
 ):
     """Get the status of a negotiation."""
     negotiation = await session_service.get_a2a_negotiation(negotiation_id)
-    
+
     if not negotiation:
         raise HTTPException(status_code=404, detail="Negotiation not found")
 
@@ -785,7 +792,7 @@ async def get_task_status(
 ):
     """Get the status of a task execution."""
     task = await session_service.get_task_execution(task_id)
-    
+
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
@@ -817,7 +824,7 @@ async def cancel_task(
         cancelled_by="api_request",
         cancellation_reason="Cancelled via API",
     )
-    
+
     if not success:
         raise HTTPException(
             status_code=400,
@@ -840,7 +847,7 @@ async def get_a2a_statistics(
     """Get A2A protocol statistics."""
     stats = await session_service.get_session_statistics()
     running_tasks = await session_service.list_running_tasks()
-    
+
     return {
         "timestamp": datetime.now(UTC).isoformat(),
         "protocol_version": "1.0.0",
@@ -851,7 +858,7 @@ async def get_a2a_statistics(
             "workflow-orchestration",
             "dynamic-reasoning",
             "code-generation",
-            "data-analysis", 
+            "data-analysis",
             "multi-agent-coordination",
             "streaming-communication",
             "task-cancellation",

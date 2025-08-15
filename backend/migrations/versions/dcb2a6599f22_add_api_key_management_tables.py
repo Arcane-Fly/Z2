@@ -5,17 +5,16 @@ Revises: 7ff22b4ef3a3
 Create Date: 2025-08-05 02:53:35.219937
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'dcb2a6599f22'
-down_revision: Union[str, Sequence[str], None] = '7ff22b4ef3a3'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = '7ff22b4ef3a3'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -83,7 +82,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_api_key_usage_api_key_id'), table_name='api_key_usage')
     op.drop_index(op.f('ix_api_key_usage_id'), table_name='api_key_usage')
     op.drop_table('api_key_usage')
-    
+
     op.drop_index(op.f('ix_api_keys_created_at'), table_name='api_keys')
     op.drop_index(op.f('ix_api_keys_user_id'), table_name='api_keys')
     op.drop_index(op.f('ix_api_keys_key_prefix'), table_name='api_keys')

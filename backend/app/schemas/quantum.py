@@ -3,7 +3,6 @@ Quantum computing schemas for Z2 platform API.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -15,12 +14,12 @@ from app.models.quantum import CollapseStrategy, TaskStatus, ThreadStatus
 class VariationBase(BaseModel):
     """Base schema for quantum execution variations."""
     name: str = Field(..., description="Name of the variation")
-    description: Optional[str] = Field(None, description="Description of the variation")
+    description: str | None = Field(None, description="Description of the variation")
     agent_type: str = Field(..., description="Type of agent to use")
-    provider: Optional[str] = Field(None, description="LLM provider to use")
-    model: Optional[str] = Field(None, description="Specific model to use")
-    prompt_modifications: Dict = Field(default_factory=dict, description="Modifications to apply to prompts")
-    parameters: Dict = Field(default_factory=dict, description="Additional parameters")
+    provider: str | None = Field(None, description="LLM provider to use")
+    model: str | None = Field(None, description="Specific model to use")
+    prompt_modifications: dict = Field(default_factory=dict, description="Modifications to apply to prompts")
+    parameters: dict = Field(default_factory=dict, description="Additional parameters")
     weight: float = Field(1.0, ge=0.0, description="Weight for weighted collapse strategies")
 
 
@@ -43,12 +42,12 @@ class VariationResponse(VariationBase):
 class QuantumTaskBase(BaseModel):
     """Base schema for quantum tasks."""
     name: str = Field(..., description="Name of the quantum task")
-    description: Optional[str] = Field(None, description="Description of the task")
+    description: str | None = Field(None, description="Description of the task")
     task_description: str = Field(..., description="The task to be executed")
     collapse_strategy: CollapseStrategy = Field(
         CollapseStrategy.BEST_SCORE, description="Strategy for collapsing results"
     )
-    metrics_config: Dict = Field(
+    metrics_config: dict = Field(
         default_factory=dict, description="Configuration for metrics evaluation"
     )
     max_parallel_executions: int = Field(
@@ -61,16 +60,16 @@ class QuantumTaskBase(BaseModel):
 
 class QuantumTaskCreate(QuantumTaskBase):
     """Schema for creating a new quantum task."""
-    variations: List[VariationCreate] = Field(
+    variations: list[VariationCreate] = Field(
         ..., min_items=1, max_items=20, description="List of execution variations"
     )
 
 
 class QuantumTaskUpdate(BaseModel):
     """Schema for updating a quantum task."""
-    name: Optional[str] = Field(None, description="Name of the quantum task")
-    description: Optional[str] = Field(None, description="Description of the task")
-    status: Optional[TaskStatus] = Field(None, description="Task status")
+    name: str | None = Field(None, description="Name of the quantum task")
+    description: str | None = Field(None, description="Description of the task")
+    status: TaskStatus | None = Field(None, description="Task status")
 
 
 class QuantumTaskResponse(QuantumTaskBase):
@@ -78,12 +77,12 @@ class QuantumTaskResponse(QuantumTaskBase):
     id: UUID
     status: TaskStatus
     progress: float
-    collapsed_result: Optional[Dict]
-    final_metrics: Optional[Dict]
-    execution_summary: Optional[Dict]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    total_execution_time: Optional[float]
+    collapsed_result: dict | None
+    final_metrics: dict | None
+    execution_summary: dict | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    total_execution_time: float | None
     user_id: UUID
     created_at: datetime
     updated_at: datetime
@@ -98,20 +97,20 @@ class QuantumThreadResultResponse(BaseModel):
     id: UUID
     thread_name: str
     status: ThreadStatus
-    result: Optional[Dict]
-    error_message: Optional[str]
-    execution_time: Optional[float]
-    success_rate: Optional[float]
-    completeness: Optional[float] 
-    accuracy: Optional[float]
-    total_score: Optional[float]
-    detailed_metrics: Dict
-    tokens_used: Optional[int]
-    cost: Optional[float]
-    provider_used: Optional[str]
-    model_used: Optional[str]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    result: dict | None
+    error_message: str | None
+    execution_time: float | None
+    success_rate: float | None
+    completeness: float | None
+    accuracy: float | None
+    total_score: float | None
+    detailed_metrics: dict
+    tokens_used: int | None
+    cost: float | None
+    provider_used: str | None
+    model_used: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
     task_id: UUID
     variation_id: UUID
     created_at: datetime
@@ -127,7 +126,7 @@ class QuantumTaskExecutionRequest(BaseModel):
     force_restart: bool = Field(
         False, description="Force restart if task is already running"
     )
-    custom_metrics: Optional[Dict] = Field(
+    custom_metrics: dict | None = Field(
         None, description="Custom metrics configuration for this execution"
     )
 
@@ -135,7 +134,7 @@ class QuantumTaskExecutionRequest(BaseModel):
 # Task list response
 class QuantumTaskListResponse(BaseModel):
     """Schema for quantum task list responses."""
-    tasks: List[QuantumTaskResponse]
+    tasks: list[QuantumTaskResponse]
     total_count: int
     page: int
     page_size: int
@@ -145,10 +144,10 @@ class QuantumTaskListResponse(BaseModel):
 # Detailed task response with related data
 class QuantumTaskDetailResponse(QuantumTaskResponse):
     """Schema for detailed quantum task responses with related data."""
-    variations: List[VariationResponse] = Field(
+    variations: list[VariationResponse] = Field(
         default_factory=list, description="Task variations"
     )
-    thread_results: List[QuantumThreadResultResponse] = Field(
+    thread_results: list[QuantumThreadResultResponse] = Field(
         default_factory=list, description="Thread execution results"
     )
 
@@ -156,7 +155,7 @@ class QuantumTaskDetailResponse(QuantumTaskResponse):
 # Metrics schemas
 class MetricsConfiguration(BaseModel):
     """Schema for metrics configuration."""
-    weights: Dict[str, float] = Field(
+    weights: dict[str, float] = Field(
         default_factory=lambda: {
             "execution_time": 0.2,
             "success_rate": 0.3,
@@ -165,11 +164,11 @@ class MetricsConfiguration(BaseModel):
         },
         description="Weights for different metrics"
     )
-    normalization: Dict[str, Dict] = Field(
+    normalization: dict[str, dict] = Field(
         default_factory=dict,
         description="Normalization parameters for metrics"
     )
-    custom_metrics: Dict[str, Dict] = Field(
+    custom_metrics: dict[str, dict] = Field(
         default_factory=dict,
         description="Custom metric definitions"
     )
@@ -180,6 +179,6 @@ class QuantumError(BaseModel):
     """Schema for quantum operation errors."""
     error_type: str
     message: str
-    details: Optional[Dict] = None
-    task_id: Optional[UUID] = None
-    thread_id: Optional[UUID] = None
+    details: dict | None = None
+    task_id: UUID | None = None
+    thread_id: UUID | None = None

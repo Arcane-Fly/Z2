@@ -8,7 +8,7 @@ with enhanced security features for production deployment.
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from fastapi import HTTPException, Request, status
@@ -37,22 +37,22 @@ security = HTTPBearer(auto_error=False)
 class TokenData(BaseModel):
     """Token data structure with enhanced security metadata."""
 
-    username: Optional[str] = None
-    user_id: Optional[str] = None
-    user_type: Optional[str] = None
+    username: str | None = None
+    user_id: str | None = None
+    user_type: str | None = None
     permissions: list[str] = Field(default_factory=list)
-    issued_at: Optional[datetime] = None
-    session_id: Optional[str] = None
+    issued_at: datetime | None = None
+    session_id: str | None = None
 
 
 class Token(BaseModel):
     """Access token response with refresh token support."""
 
     access_token: str
-    refresh_token: Optional[str] = None
+    refresh_token: str | None = None
     token_type: str = "bearer"
     expires_in: int
-    scope: Optional[str] = None
+    scope: str | None = None
 
 
 class UserCredentials(BaseModel):
@@ -171,7 +171,7 @@ class JWTManager:
     def create_access_token(
         self,
         data: dict[str, Any],
-        expires_delta: Optional[timedelta] = None
+        expires_delta: timedelta | None = None
     ) -> str:
         """Create a new JWT access token with enhanced security."""
         to_encode = data.copy()
@@ -293,116 +293,116 @@ class JWTManager:
         )
 
     async def store_refresh_token(
-        self, 
-        db: AsyncSession, 
-        refresh_token: str, 
-        user_id: str, 
+        self,
+        db: AsyncSession,
+        refresh_token: str,
+        user_id: str,
         session_id: str,
         expires_at: datetime
     ) -> None:
         """Store refresh token in database."""
         from app.models.role import RefreshToken
-        
+
         # Hash the token for storage
         token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
-        
+
         refresh_token_record = RefreshToken(
             token_hash=token_hash,
             user_id=user_id,
             session_id=session_id,
             expires_at=expires_at
         )
-        
+
         db.add(refresh_token_record)
         await db.commit()
 
     async def verify_refresh_token(
-        self, 
-        db: AsyncSession, 
+        self,
+        db: AsyncSession,
         refresh_token: str
-    ) -> Optional[TokenData]:
+    ) -> TokenData | None:
         """Verify refresh token and check if it's in database."""
         from app.models.role import RefreshToken
-        
+
         try:
             # First verify JWT
             token_data = self.verify_token(refresh_token, token_type="refresh_token")
-            
+
             # Then check if token exists in database and is not revoked
             token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
-            
+
             stmt = select(RefreshToken).where(
                 RefreshToken.token_hash == token_hash,
-                RefreshToken.is_revoked == False,
+                RefreshToken.is_revoked is False,
                 RefreshToken.expires_at > datetime.now(UTC)
             )
             result = await db.execute(stmt)
             db_token = result.scalar_one_or_none()
-            
+
             if not db_token:
                 return None
-                
+
             # Update last used timestamp
             stmt = update(RefreshToken).where(
                 RefreshToken.id == db_token.id
             ).values(last_used=datetime.now(UTC))
             await db.execute(stmt)
             await db.commit()
-            
+
             return token_data
-            
+
         except Exception as e:
             logger.warning("Refresh token verification failed", error=str(e))
             return None
 
     async def revoke_refresh_token(
-        self, 
-        db: AsyncSession, 
+        self,
+        db: AsyncSession,
         refresh_token: str
     ) -> bool:
         """Revoke a refresh token."""
         from app.models.role import RefreshToken
-        
+
         token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
-        
+
         stmt = update(RefreshToken).where(
             RefreshToken.token_hash == token_hash
         ).values(is_revoked=True)
-        
+
         result = await db.execute(stmt)
         await db.commit()
-        
+
         return result.rowcount > 0
 
     async def revoke_user_tokens(
-        self, 
-        db: AsyncSession, 
+        self,
+        db: AsyncSession,
         user_id: str
     ) -> int:
         """Revoke all refresh tokens for a user."""
         from app.models.role import RefreshToken
-        
+
         stmt = update(RefreshToken).where(
             RefreshToken.user_id == user_id
         ).values(is_revoked=True)
-        
+
         result = await db.execute(stmt)
         await db.commit()
-        
+
         return result.rowcount
 
     async def cleanup_expired_tokens(self, db: AsyncSession) -> int:
         """Clean up expired refresh tokens."""
         from app.models.role import RefreshToken
-        
+
         # Delete expired tokens
         stmt = RefreshToken.__table__.delete().where(
             RefreshToken.expires_at < datetime.now(UTC)
         )
-        
+
         result = await db.execute(stmt)
         await db.commit()
-        
+
         return result.rowcount
 
 
@@ -487,8 +487,8 @@ class AuthenticationService:
         self,
         credentials: UserCredentials,
         get_user_func,
-        request: Optional[Request] = None
-    ) -> Optional[Token]:
+        request: Request | None = None
+    ) -> Token | None:
         """Authenticate user with enhanced security checks."""
 
         # Rate limiting by IP or username

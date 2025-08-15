@@ -3,7 +3,6 @@ Model Integration Layer endpoints for Z2 API.
 """
 
 from datetime import datetime
-from typing import Optional
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -32,11 +31,11 @@ router = APIRouter()
 
 @router.get("/")
 async def list_available_models(
-    provider: Optional[str] = None,
-    capability: Optional[str] = None,
+    provider: str | None = None,
+    capability: str | None = None,
     reasoning_only: bool = False,
     multimodal_only: bool = False,
-    max_cost: Optional[float] = None,
+    max_cost: float | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -116,9 +115,9 @@ async def list_providers(
 ):
     """List all configured LLM providers and their status."""
     from app.agents.mil import ModelIntegrationLayer
-    
+
     providers_info = {}
-    
+
     # Try to get real provider status from MIL
     try:
         mil = ModelIntegrationLayer()
@@ -129,14 +128,14 @@ async def list_providers(
 
     for provider in ProviderType:
         provider_models = get_models_by_provider(provider)
-        
+
         # Get real status from MIL if available
         status = "unknown"
         if provider.value in provider_status:
             status = provider_status[provider.value].get("status", "unknown")
         elif provider_models:  # If we have models defined, assume configured
             status = "configured"
-            
+
         providers_info[provider.value] = {
             "name": provider.value.title(),
             "model_count": len(provider_models),
@@ -232,15 +231,15 @@ async def get_routing_policy(
     """Get current model routing policy configuration."""
     routing_service = ModelRoutingService(db)
     policies = await routing_service.list_routing_policies(active_only=True)
-    
+
     # Convert to the expected format
     routing_config = {}
     for policy in policies:
         routing_config[policy.task_type] = policy.model_id
-    
+
     # Merge with defaults for any missing task types
     merged_routing = {**DEFAULT_MODEL_ROUTING, **routing_config}
-    
+
     return {
         "routing_policy": merged_routing,
         "active_policies": [
@@ -269,7 +268,7 @@ async def update_routing_policy(
 ):
     """Update model routing policy configuration."""
     routing_service = ModelRoutingService(db)
-    
+
     # Validate that all specified models exist
     for task_type, model_id in new_routing.items():
         if not get_model_by_id(model_id):
@@ -283,7 +282,7 @@ async def update_routing_policy(
     for task_type, model_id in new_routing.items():
         # Check if policy exists for this task type
         existing_policy = await routing_service.get_routing_policy_for_task(task_type)
-        
+
         if existing_policy:
             # Update existing policy
             updated_policy = await routing_service.update_routing_policy(
@@ -322,30 +321,30 @@ async def update_routing_policy(
 async def estimate_request_cost(
     prompt: str,
     model_id: str,
-    max_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Estimate cost for a potential LLM request."""
     spec = get_model_by_id(model_id)
-    
+
     if not spec:
         raise HTTPException(status_code=404, detail=f"Model '{model_id}' not found")
-    
+
     if spec.cost_per_input_token is None:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Cost information not available for model '{model_id}'"
         )
-    
+
     # Estimate input tokens (rough approximation: 1 token ≈ 4 characters)
     estimated_input_tokens = len(prompt) // 4
     estimated_output_tokens = max_tokens or 150
-    
+
     # Calculate costs
     input_cost = (estimated_input_tokens / 1_000_000) * spec.cost_per_input_token
     output_cost = (estimated_output_tokens / 1_000_000) * spec.cost_per_output_token
     total_cost = input_cost + output_cost
-    
+
     return {
         "model_id": model_id,
         "estimated_input_tokens": estimated_input_tokens,
@@ -365,31 +364,31 @@ async def estimate_request_cost(
 
 @router.get("/usage/stats")
 async def get_usage_statistics(
-    provider: Optional[str] = None,
-    model_id: Optional[str] = None,
+    provider: str | None = None,
+    model_id: str | None = None,
     hours_back: int = 24,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Get usage statistics and cost tracking."""
     routing_service = ModelRoutingService(db)
-    
+
     try:
         stats = await routing_service.get_usage_statistics(
             provider=provider,
             model_id=model_id,
             hours_back=hours_back,
         )
-        
+
         # Add registry version and additional metadata
         stats["registry_version"] = MODEL_REGISTRY_VERSION
         stats["data_source"] = "persistent_database"
-        
+
         return stats
-        
+
     except Exception as e:
         logger.error("Failed to get usage statistics", error=str(e))
-        
+
         # Fallback to mock response if there's an error
         return {
             "message": "Usage statistics - using fallback data due to error",
@@ -416,7 +415,7 @@ async def get_usage_statistics(
 async def recommend_optimal_model(
     task_type: str,
     required_capabilities: list[str],
-    max_cost: Optional[float] = None,
+    max_cost: float | None = None,
     prefer_speed: bool = False,
     prefer_accuracy: bool = False,
     db: AsyncSession = Depends(get_db),
@@ -488,31 +487,31 @@ async def create_routing_policy(
     name: str,
     task_type: str,
     model_id: str,
-    description: Optional[str] = None,
-    fallback_models: Optional[list[str]] = None,
-    max_cost_per_request: Optional[float] = None,
-    max_latency_ms: Optional[int] = None,
-    required_capabilities: Optional[list[str]] = None,
+    description: str | None = None,
+    fallback_models: list[str] | None = None,
+    max_cost_per_request: float | None = None,
+    max_latency_ms: int | None = None,
+    required_capabilities: list[str] | None = None,
     priority: int = 100,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Create a new routing policy."""
     routing_service = ModelRoutingService(db)
-    
+
     # Validate model exists
     if not get_model_by_id(model_id):
         raise HTTPException(status_code=400, detail=f"Model '{model_id}' not found")
-    
+
     # Validate fallback models if provided
     if fallback_models:
         for fallback_model in fallback_models:
             if not get_model_by_id(fallback_model):
                 raise HTTPException(
-                    status_code=400, 
+                    status_code=400,
                     detail=f"Fallback model '{fallback_model}' not found"
                 )
-    
+
     policy = await routing_service.create_routing_policy(
         name=name,
         task_type=task_type,
@@ -525,7 +524,7 @@ async def create_routing_policy(
         priority=priority,
         created_by=current_user.username,
     )
-    
+
     return {
         "id": str(policy.id),
         "name": policy.name,
@@ -546,20 +545,20 @@ async def get_cost_optimization_recommendations(
 ):
     """Get cost optimization recommendations based on usage patterns."""
     routing_service = ModelRoutingService(db)
-    
+
     try:
         recommendations = await routing_service.get_cost_optimization_recommendations(
             hours_back=hours_back
         )
-        
+
         recommendations["registry_version"] = MODEL_REGISTRY_VERSION
         recommendations["generated_at"] = datetime.utcnow().isoformat()
-        
+
         return recommendations
-        
+
     except Exception as e:
         logger.error("Failed to generate optimization recommendations", error=str(e))
-        
+
         return {
             "message": "Cost optimization recommendations - analysis failed",
             "error": str(e),

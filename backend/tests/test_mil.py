@@ -221,7 +221,7 @@ class TestOpenAIProvider:
             mock_response.choices[0].message.content = "Test response"
             mock_response.choices[0].message.tool_calls = None  # No function calls
             mock_response.choices[0].finish_reason = "stop"
-            
+
             # Mock usage properly
             mock_response.usage = Mock()
             mock_response.usage.prompt_tokens = 10

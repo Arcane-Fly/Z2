@@ -7,7 +7,7 @@ from .quantum_service import QuantumAgentManager
 from .session_service import SessionService
 
 __all__ = [
-    "ConsentService", 
+    "ConsentService",
     "QuantumAgentManager",
     "SessionService",
 ]

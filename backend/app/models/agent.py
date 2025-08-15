@@ -3,7 +3,6 @@ Agent model for Z2 platform.
 """
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
@@ -24,7 +23,7 @@ class Agent(Base):
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4, index=True
     )
     name: Mapped[str] = mapped_column(String(100), index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
 
     # Agent configuration
     role: Mapped[str] = mapped_column(
@@ -48,7 +47,7 @@ class Agent(Base):
     )
     total_executions: Mapped[int] = mapped_column(default=0)
     total_tokens_used: Mapped[int] = mapped_column(default=0)
-    average_response_time: Mapped[Optional[float]] = mapped_column()
+    average_response_time: Mapped[float | None] = mapped_column()
 
     # Relationships
     created_by: Mapped[UUID] = mapped_column(
@@ -62,7 +61,7 @@ class Agent(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    last_used: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_used: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     def __repr__(self) -> str:
         return f"<Agent(id={self.id}, name={self.name}, role={self.role})>"

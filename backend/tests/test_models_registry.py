@@ -107,7 +107,7 @@ class TestModelsRegistry:
         assert any(model_id in ["o4-mini", "o3", "o3-mini"] for model_id in reasoning_model_ids)
 
         # Verify they all have reasoning capability
-        for model_id, spec in reasoning_models.items():
+        for _model_id, spec in reasoning_models.items():
             assert spec.is_reasoning_model is True
             assert ModelCapability.REASONING in spec.capabilities
 
@@ -119,7 +119,7 @@ class TestModelsRegistry:
         assert "gpt-4.1" in multimodal_models
 
         # Verify they all have multimodal capability
-        for model_id, spec in multimodal_models.items():
+        for _model_id, spec in multimodal_models.items():
             assert spec.is_multimodal is True
             assert ModelCapability.MULTIMODAL in spec.capabilities
 

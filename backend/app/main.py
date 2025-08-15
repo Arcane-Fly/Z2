@@ -21,10 +21,10 @@ from app.core.config import settings
 from app.core.security import SecurityHeaders
 from app.database.session import init_db
 from app.utils.monitoring import (
+    CONTENT_TYPE_LATEST,
     health_checker,
     initialize_monitoring,
     metrics_collector,
-    CONTENT_TYPE_LATEST,
 )
 
 logger = structlog.get_logger(__name__)
@@ -200,12 +200,9 @@ def create_application() -> FastAPI:
             health_status = await health_checker.comprehensive_health_check()
 
             # Return appropriate HTTP status based on health
-            status_code = 200
             if health_status["status"] == "degraded":
-                status_code = 200  # Still accept traffic but log warning
                 logger.warning("Service degraded", unhealthy_services=health_status.get("unhealthy_services"))
             elif health_status["status"] == "unhealthy":
-                status_code = 503  # Service unavailable
                 logger.error("Service unhealthy", error=health_status.get("error"))
 
             return health_status
@@ -243,11 +240,11 @@ def create_application() -> FastAPI:
         try:
             # Check essential dependencies for readiness
             health_status = await health_checker.comprehensive_health_check()
-            
+
             # For readiness, we're more strict about dependencies
             if health_status["status"] == "unhealthy":
                 return Response(status_code=503, content="Service not ready")
-            
+
             return {
                 "status": "ready",
                 "timestamp": datetime.now(UTC).isoformat(),

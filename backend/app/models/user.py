@@ -3,7 +3,7 @@ User model for Z2 platform.
 """
 
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, String, Text
@@ -14,7 +14,8 @@ from sqlalchemy.sql import func
 from app.database.session import Base
 
 if TYPE_CHECKING:
-    from app.models.role import Role, RefreshToken
+    from app.models.api_key import APIKey
+    from app.models.role import RefreshToken, Role
 
 
 class User(Base):
@@ -27,7 +28,7 @@ class User(Base):
     )
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    full_name: Mapped[Optional[str]] = mapped_column(String(255))
+    full_name: Mapped[str | None] = mapped_column(String(255))
     hashed_password: Mapped[str] = mapped_column(String(255))
 
     # User type and permissions
@@ -39,8 +40,8 @@ class User(Base):
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Profile information
-    bio: Mapped[Optional[str]] = mapped_column(Text)
-    avatar_url: Mapped[Optional[str]] = mapped_column(String(500))
+    bio: Mapped[str | None] = mapped_column(Text)
+    avatar_url: Mapped[str | None] = mapped_column(String(500))
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -49,21 +50,21 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Relationships (defined after the role module is imported)
-    roles: Mapped[List["Role"]] = relationship(
+    roles: Mapped[list["Role"]] = relationship(
         "Role",
         secondary="user_roles",
         back_populates="users"
     )
-    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan"
     )
-    
-    api_keys: Mapped[List["APIKey"]] = relationship(
+
+    api_keys: Mapped[list["APIKey"]] = relationship(
         "APIKey",
         back_populates="user",
         cascade="all, delete-orphan"

@@ -3,7 +3,7 @@ Role and Permission models for Z2 platform.
 """
 
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Table, Text
@@ -27,7 +27,7 @@ role_permissions = Table(
 
 # Association table for user-role many-to-many relationship
 user_roles = Table(
-    "user_roles", 
+    "user_roles",
     Base.metadata,
     Column("user_id", PG_UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True),
     Column("role_id", PG_UUID(as_uuid=True), ForeignKey("roles.id"), primary_key=True),
@@ -43,10 +43,10 @@ class Permission(Base):
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4, index=True
     )
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     resource: Mapped[str] = mapped_column(String(50), index=True)  # e.g., "users", "agents", "workflows"
     action: Mapped[str] = mapped_column(String(50), index=True)    # e.g., "read", "write", "delete", "execute"
-    
+
     # Metadata
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -56,9 +56,9 @@ class Permission(Base):
     )
 
     # Relationships
-    roles: Mapped[List["Role"]] = relationship(
-        "Role", 
-        secondary=role_permissions, 
+    roles: Mapped[list["Role"]] = relationship(
+        "Role",
+        secondary=role_permissions,
         back_populates="permissions"
     )
 
@@ -75,7 +75,7 @@ class Role(Base):
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4, index=True
     )
     name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     is_system_role: Mapped[bool] = mapped_column(Boolean, default=False)  # For built-in roles
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -88,12 +88,12 @@ class Role(Base):
     )
 
     # Relationships
-    permissions: Mapped[List[Permission]] = relationship(
+    permissions: Mapped[list[Permission]] = relationship(
         Permission,
         secondary=role_permissions,
         back_populates="roles"
     )
-    users: Mapped[List["User"]] = relationship(
+    users: Mapped[list["User"]] = relationship(
         "User",
         secondary=user_roles,
         back_populates="roles"
@@ -118,12 +118,12 @@ class RefreshToken(Base):
     session_id: Mapped[str] = mapped_column(String(255), index=True)
     is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    
+
     # Metadata
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    last_used: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_used: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")

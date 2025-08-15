@@ -4,7 +4,8 @@ Integration tests for consent and access control system.
 These tests validate the security framework for resource and tool access.
 """
 
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
 
 
@@ -28,10 +29,10 @@ class TestConsentSystem:
         mock_consent_service.list_access_policies.return_value = [
             AsyncMock(**policy) for policy in mock_policies
         ]
-        
+
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.get("/api/v1/consent/policies")
             assert response.status_code == 200
 
@@ -55,18 +56,18 @@ class TestConsentSystem:
         mock_policy = AsyncMock()
         mock_policy.auto_approve = True
         mock_consent_service.get_access_policy.return_value = mock_policy
-        
+
         # Mock consent request creation
         mock_request = AsyncMock()
         mock_request.id = "test-consent-id"
         mock_consent_service.create_consent_request.return_value = mock_request
-        
+
         # Mock grant creation
         mock_grant = AsyncMock()
         mock_grant.granted_at = AsyncMock()
         mock_grant.expires_at = AsyncMock()
         mock_consent_service.grant_consent.return_value = mock_grant
-        
+
         request_data = {
             "user_id": "test-user-auto",
             "resource_type": "resource",
@@ -78,7 +79,7 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.post("/api/v1/consent/consent/request", json=request_data)
             assert response.status_code == 200
 
@@ -95,15 +96,15 @@ class TestConsentSystem:
         mock_policy = AsyncMock()
         mock_policy.auto_approve = False
         mock_consent_service.get_access_policy.return_value = mock_policy
-        
+
         # Mock consent request creation
         mock_request = AsyncMock()
         mock_request.id = "test-consent-manual"
         mock_consent_service.create_consent_request.return_value = mock_request
-        
+
         # No grant for manual approval
         mock_consent_service.grant_consent.return_value = None
-        
+
         request_data = {
             "user_id": "test-user-manual",
             "resource_type": "tool",
@@ -115,7 +116,7 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.post("/api/v1/consent/consent/request", json=request_data)
             assert response.status_code == 200
 
@@ -127,13 +128,13 @@ class TestConsentSystem:
     def test_grant_consent(self, client: TestClient, mock_db, mock_consent_service):
         """Test granting consent for a pending request."""
         consent_id = "test-consent-grant"
-        
+
         # Mock consent request
         mock_request = AsyncMock()
         mock_request.user_id = "test-user-grant"
         mock_request.permissions = ["workflow:create"]
         mock_consent_service.get_consent_request.return_value = mock_request
-        
+
         # Mock grant creation
         mock_grant = AsyncMock()
         mock_grant.granted_at = AsyncMock()
@@ -142,7 +143,7 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             grant_response = client.post(
                 f"/api/v1/consent/consent/{consent_id}/grant",
                 params={"user_id": "test-user-grant"}
@@ -158,18 +159,18 @@ class TestConsentSystem:
     def test_deny_consent(self, client: TestClient, mock_db, mock_consent_service):
         """Test denying consent for a pending request."""
         consent_id = "test-consent-deny"
-        
+
         # Mock consent request
         mock_request = AsyncMock()
         mock_request.permissions = ["agent:execute"]
         mock_consent_service.get_consent_request.return_value = mock_request
-        
+
         # Mock successful denial
         mock_consent_service.deny_consent.return_value = True
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             deny_response = client.post(
                 f"/api/v1/consent/consent/{consent_id}/deny",
                 params={"user_id": "test-user-deny", "reason": "Security policy violation"}
@@ -183,7 +184,7 @@ class TestConsentSystem:
     def test_get_consent_status(self, client: TestClient, mock_db, mock_consent_service):
         """Test retrieving consent status."""
         consent_id = "test-consent-status"
-        
+
         # Mock consent request
         mock_request = AsyncMock()
         mock_request.status = "granted"
@@ -194,7 +195,7 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             status_response = client.get(f"/api/v1/consent/consent/{consent_id}")
             assert status_response.status_code == 200
 
@@ -207,10 +208,10 @@ class TestConsentSystem:
         """Test retrieving status for non-existent consent."""
         fake_id = "00000000-0000-0000-0000-000000000000"
         mock_consent_service.get_consent_request.return_value = None
-        
+
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.get(f"/api/v1/consent/consent/{fake_id}")
             assert response.status_code == 404
 
@@ -232,12 +233,12 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             access_response = client.post("/api/v1/consent/access/check", json=access_data)
             assert access_response.status_code == 200
 
             data = access_response.json()
-            assert data["allowed"] == True
+            assert data["allowed"] is True
 
     def test_access_check_without_consent(self, client: TestClient, mock_db, mock_consent_service):
         """Test access check without valid consent."""
@@ -256,12 +257,12 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.post("/api/v1/consent/access/check", json=access_data)
             assert response.status_code == 200
 
             data = response.json()
-            assert data["allowed"] == False
+            assert data["allowed"] is False
             assert "No valid consent found" in data["reason"]
 
     def test_access_check_missing_permissions(self, client: TestClient, mock_db, mock_consent_service):
@@ -281,12 +282,12 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.post("/api/v1/consent/access/check", json=access_data)
             assert response.status_code == 200
 
             data = response.json()
-            assert data["allowed"] == False
+            assert data["allowed"] is False
             assert "Missing permissions" in data["reason"]
 
     def test_access_check_no_policy(self, client: TestClient, mock_db, mock_consent_service):
@@ -306,12 +307,12 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.post("/api/v1/consent/access/check", json=access_data)
             assert response.status_code == 200
 
             data = response.json()
-            assert data["allowed"] == False
+            assert data["allowed"] is False
             assert "No access policy defined" in data["reason"]
 
     def test_audit_logs(self, client: TestClient, mock_db, mock_consent_service):
@@ -321,7 +322,7 @@ class TestConsentSystem:
             AsyncMock(
                 id="log-1",
                 timestamp=AsyncMock(),
-                user_id="test-user-audit", 
+                user_id="test-user-audit",
                 action="request",
                 resource_type="resource",
                 resource_name="agent",
@@ -332,7 +333,7 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.get("/api/v1/consent/audit")
             assert response.status_code == 200
 
@@ -354,7 +355,7 @@ class TestConsentSystem:
     def test_audit_logs_filtered_by_user(self, client: TestClient, mock_db, mock_consent_service):
         """Test filtering audit logs by user."""
         user_id = "test-user-filter"
-        
+
         # Mock filtered logs
         mock_logs = [
             AsyncMock(
@@ -371,7 +372,7 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.get(f"/api/v1/consent/audit?user_id={user_id}")
             assert response.status_code == 200
 
@@ -385,7 +386,7 @@ class TestConsentSystem:
     def test_user_sessions(self, client: TestClient, mock_db, mock_consent_service):
         """Test retrieving user consent sessions."""
         user_id = "test-user-sessions"
-        
+
         # Mock active consents
         mock_grant = AsyncMock()
         mock_grant.id = "grant-123"
@@ -399,12 +400,12 @@ class TestConsentSystem:
         mock_grant.request.resource_type = "resource"
         mock_grant.request.resource_name = "agent"
         mock_grant.request.description = "Session test"
-        
+
         mock_consent_service.get_user_active_consents.return_value = [mock_grant]
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.get(f"/api/v1/consent/sessions/{user_id}")
             assert response.status_code == 200
 
@@ -425,7 +426,7 @@ class TestConsentSystem:
         """Test setting up default access policies."""
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.post("/api/v1/consent/setup-default-policies")
             assert response.status_code == 200
 
@@ -440,7 +441,7 @@ class TestConsentSystem:
 
         with patch('app.api.v1.endpoints.consent.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.consent.get_consent_service', return_value=mock_consent_service):
-            
+
             response = client.post("/api/v1/consent/cleanup-expired")
             assert response.status_code == 200
 

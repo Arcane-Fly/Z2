@@ -10,7 +10,6 @@ Changes to this file should be carefully reviewed to prevent model downgrades or
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class ModelCapability(Enum):
@@ -60,13 +59,13 @@ class ModelSpec:
     output_token_limit: int
     supports_streaming: bool = True
     supports_system_message: bool = True
-    cost_per_input_token: Optional[float] = None  # USD per 1M tokens
-    cost_per_output_token: Optional[float] = None  # USD per 1M tokens
-    context_window: Optional[int] = None
-    model_card_url: Optional[str] = None
+    cost_per_input_token: float | None = None  # USD per 1M tokens
+    cost_per_output_token: float | None = None  # USD per 1M tokens
+    context_window: int | None = None
+    model_card_url: str | None = None
     is_reasoning_model: bool = False
     is_multimodal: bool = False
-    knowledge_cutoff: Optional[str] = None
+    knowledge_cutoff: str | None = None
 
 
 # OpenAI Models - Official Complete Technical Specifications
@@ -1083,7 +1082,7 @@ ALL_MODELS: dict[str, ModelSpec] = {
 }
 
 
-def get_model_by_id(model_id: str) -> Optional[ModelSpec]:
+def get_model_by_id(model_id: str) -> ModelSpec | None:
     """Get a model specification by its ID."""
     return ALL_MODELS.get(model_id)
 

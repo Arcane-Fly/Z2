@@ -6,7 +6,6 @@ Create Date: 2025-07-28 10:30:00.000000
 
 """
 from collections.abc import Sequence
-from typing import Union
 
 import sqlalchemy as sa
 from alembic import op
@@ -14,9 +13,9 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'f8a9c2d4e5b6'
-down_revision: Union[str, Sequence[str], None] = 'c7bb81d27d15'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = 'c7bb81d27d15'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -106,10 +105,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_quantum_thread_results_task_id'), table_name='quantum_thread_results')
     op.drop_index(op.f('ix_quantum_thread_results_status'), table_name='quantum_thread_results')
     op.drop_table('quantum_thread_results')
-    
+
     op.drop_index(op.f('ix_quantum_variations_task_id'), table_name='quantum_variations')
     op.drop_table('quantum_variations')
-    
+
     op.drop_index(op.f('ix_quantum_tasks_user_id'), table_name='quantum_tasks')
     op.drop_index(op.f('ix_quantum_tasks_status'), table_name='quantum_tasks')
     op.drop_index(op.f('ix_quantum_tasks_name'), table_name='quantum_tasks')

@@ -8,7 +8,7 @@ cost and latency for LLM API calls.
 import hashlib
 import time
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from redis.asyncio import Redis
@@ -40,7 +40,7 @@ class RateLimitConfig:
 class LLMResponseCache:
     """Redis-based cache for LLM responses to reduce API calls and costs."""
 
-    def __init__(self, redis_client: Optional[Redis] = None):
+    def __init__(self, redis_client: Redis | None = None):
         self.redis = redis_client
         self.local_cache: dict[str, Any] = {}
         self.cache_hits = 0
@@ -74,7 +74,7 @@ class LLMResponseCache:
         model_id: str,
         temperature: float = 0.7,
         max_tokens: int = 1000,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get cached response if available."""
         cache_key = self._generate_cache_key(prompt, model_id, temperature, max_tokens)
 
@@ -169,7 +169,7 @@ class LLMResponseCache:
 class RateLimiter:
     """Rate limiter for LLM API calls to prevent hitting provider limits."""
 
-    def __init__(self, redis_client: Optional[Redis] = None):
+    def __init__(self, redis_client: Redis | None = None):
         self.redis = redis_client
         self.local_state: dict[str, dict] = {}
 
@@ -192,14 +192,14 @@ class RateLimiter:
     ) -> tuple[bool, dict[str, Any]]:
         """
         Check if request is within rate limits.
-        
+
         Returns:
             tuple: (is_allowed, rate_limit_info)
         """
         current_time = time.time()
         minute_window = int(current_time // 60)
         hour_window = int(current_time // 3600)
-        
+
         key_base = f"rate_limit:{provider}:{model_id}"
         minute_key = f"{key_base}:minute:{minute_window}"
         hour_key = f"{key_base}:hour:{hour_window}"
@@ -218,7 +218,7 @@ class RateLimiter:
                 pipe.expire(hour_key, 3600)
                 pipe.incrbyfloat(cost_key, estimated_cost)
                 pipe.expire(cost_key, 3600)
-                
+
                 results = await pipe.execute()
                 minute_count = results[0]
                 hour_count = results[2]
@@ -227,15 +227,15 @@ class RateLimiter:
                 # Fall back to local rate limiting
                 if provider not in self.local_state:
                     self.local_state[provider] = {}
-                
+
                 provider_state = self.local_state[provider]
-                
+
                 # Clean old windows
                 provider_state = {
                     k: v for k, v in provider_state.items()
                     if v.get("window", 0) >= current_time - 3600
                 }
-                
+
                 minute_count = len([
                     v for v in provider_state.values()
                     if v.get("window", 0) >= current_time - 60
@@ -248,7 +248,7 @@ class RateLimiter:
 
             # Check limits
             config = RateLimitConfig()  # Use default config for now
-            
+
             rate_limit_info = {
                 "minute_count": minute_count,
                 "hour_count": hour_count,
@@ -262,22 +262,22 @@ class RateLimiter:
 
             # Check if limits exceeded
             if minute_count > config.requests_per_minute:
-                logger.warning("Rate limit exceeded (per minute)", 
-                             provider=provider, 
+                logger.warning("Rate limit exceeded (per minute)",
+                             provider=provider,
                              count=minute_count,
                              limit=config.requests_per_minute)
                 return False, rate_limit_info
 
             if hour_count > config.requests_per_hour:
-                logger.warning("Rate limit exceeded (per hour)", 
-                             provider=provider, 
+                logger.warning("Rate limit exceeded (per hour)",
+                             provider=provider,
                              count=hour_count,
                              limit=config.requests_per_hour)
                 return False, rate_limit_info
 
             if hour_cost > config.cost_limit_per_hour:
-                logger.warning("Cost limit exceeded", 
-                             provider=provider, 
+                logger.warning("Cost limit exceeded",
+                             provider=provider,
                              cost=hour_cost,
                              limit=config.cost_limit_per_hour)
                 return False, rate_limit_info
@@ -308,9 +308,9 @@ class RateLimiter:
         try:
             current_time = time.time()
             hour_window = int(current_time // 3600)
-            
+
             usage_key = f"usage:{provider}:{model_id}:{hour_window}"
-            
+
             if self.redis:
                 pipe = self.redis.pipeline()
                 pipe.hincrbyfloat(usage_key, "cost", actual_cost)
@@ -318,11 +318,11 @@ class RateLimiter:
                 pipe.hincrby(usage_key, "requests", 1)
                 pipe.expire(usage_key, 86400)  # Keep for 24 hours
                 await pipe.execute()
-            
-            logger.debug("Usage recorded", 
-                        provider=provider, 
+
+            logger.debug("Usage recorded",
+                        provider=provider,
                         model=model_id,
-                        cost=actual_cost, 
+                        cost=actual_cost,
                         tokens=tokens_used)
 
         except Exception as e:

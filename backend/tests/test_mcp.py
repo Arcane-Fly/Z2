@@ -5,7 +5,8 @@ These tests validate compliance with the MCP specification:
 https://modelcontextprotocol.io/specification/2025-03-26
 """
 
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
 
 
@@ -29,10 +30,10 @@ class TestMCPProtocol:
         """Test successful MCP session initialization."""
         # Mock the session creation
         mock_session_service.create_mcp_session.return_value = AsyncMock()
-        
+
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.post("/api/v1/mcp/initialize", json=sample_mcp_initialize_request)
             assert response.status_code == 200
 
@@ -61,7 +62,7 @@ class TestMCPProtocol:
 
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.post("/api/v1/mcp/initialize", json=request)
             assert response.status_code == 400
             assert "Unsupported protocol version" in response.json()["detail"]
@@ -70,7 +71,7 @@ class TestMCPProtocol:
         """Test listing MCP resources."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get("/api/v1/mcp/resources")
             assert response.status_code == 200
 
@@ -91,7 +92,7 @@ class TestMCPProtocol:
         """Test retrieving a specific MCP resource."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             # Test agent resource
             response = client.get("/api/v1/mcp/resources/agent://default")
             assert response.status_code == 200
@@ -113,7 +114,7 @@ class TestMCPProtocol:
         """Test retrieving a non-existent resource."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get("/api/v1/mcp/resources/nonexistent://resource")
             assert response.status_code == 404
 
@@ -121,7 +122,7 @@ class TestMCPProtocol:
         """Test listing MCP tools."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get("/api/v1/mcp/tools")
             assert response.status_code == 200
 
@@ -149,7 +150,7 @@ class TestMCPProtocol:
         mock_task = AsyncMock()
         mock_task.task_id = "test-task-123"
         mock_session_service.create_task_execution.return_value = mock_task
-        
+
         request_data = {
             "arguments": {
                 "agent_id": "test-agent",
@@ -164,7 +165,7 @@ class TestMCPProtocol:
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service), \
              patch('app.api.v1.endpoints.mcp.get_consent_service', return_value=AsyncMock()):
-            
+
             response = client.post("/api/v1/mcp/tools/execute_agent/call", json=request_data)
             assert response.status_code == 200
 
@@ -180,7 +181,7 @@ class TestMCPProtocol:
         mock_task = AsyncMock()
         mock_task.task_id = "test-workflow-task-456"
         mock_session_service.create_task_execution.return_value = mock_task
-        
+
         request_data = {
             "arguments": {
                 "name": "test-workflow",
@@ -194,7 +195,7 @@ class TestMCPProtocol:
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service), \
              patch('app.api.v1.endpoints.mcp.get_consent_service', return_value=AsyncMock()):
-            
+
             response = client.post("/api/v1/mcp/tools/create_workflow/call", json=request_data)
             assert response.status_code == 200
 
@@ -209,16 +210,16 @@ class TestMCPProtocol:
             "stream": False,
             "can_cancel": True
         }
-        
+
         # Mock task creation
         mock_task = AsyncMock()
         mock_task.task_id = "test-task-fail"
         mock_session_service.create_task_execution.return_value = mock_task
-        
+
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service), \
              patch('app.api.v1.endpoints.mcp.get_consent_service', return_value=AsyncMock()):
-            
+
             response = client.post("/api/v1/mcp/tools/nonexistent_tool/call", json=request_data)
             assert response.status_code == 404
 
@@ -226,7 +227,7 @@ class TestMCPProtocol:
         """Test listing MCP prompts."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get("/api/v1/mcp/prompts")
             assert response.status_code == 200
 
@@ -250,7 +251,7 @@ class TestMCPProtocol:
         """Test retrieving a specific prompt."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             # Test analyze_compliance prompt
             response = client.get("/api/v1/mcp/prompts/analyze_compliance")
             assert response.status_code == 200
@@ -264,7 +265,7 @@ class TestMCPProtocol:
         """Test retrieving a non-existent prompt."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get("/api/v1/mcp/prompts/nonexistent_prompt")
             assert response.status_code == 404
 
@@ -272,7 +273,7 @@ class TestMCPProtocol:
         """Test listing MCP sessions."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get("/api/v1/mcp/sessions")
             assert response.status_code == 200
 
@@ -289,7 +290,7 @@ class TestMCPProtocol:
 
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.post("/api/v1/mcp/sampling/createMessage", json=request_data)
             assert response.status_code == 200
 
@@ -302,7 +303,7 @@ class TestMCPProtocol:
         """Test MCP statistics endpoint."""
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get("/api/v1/mcp/statistics")
             assert response.status_code == 200
 
@@ -316,21 +317,21 @@ class TestMCPProtocol:
     def test_tool_cancellation(self, client: TestClient, mock_db, mock_session_service):
         """Test tool execution cancellation."""
         task_id = "test-cancel-task"
-        
+
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
-            response = client.post(f"/api/v1/mcp/tools/execute_agent/cancel", params={"task_id": task_id})
+
+            response = client.post("/api/v1/mcp/tools/execute_agent/cancel", params={"task_id": task_id})
             # May return 400 if task doesn't exist in test
             assert response.status_code in [200, 400]
 
     def test_tool_status_check(self, client: TestClient, mock_db, mock_session_service):
         """Test tool execution status checking."""
         task_id = "test-status-task"
-        
+
         with patch('app.api.v1.endpoints.mcp.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.mcp.get_session_service', return_value=mock_session_service):
-            
+
             response = client.get(f"/api/v1/mcp/tools/execute_agent/status/{task_id}")
             # May return 404 if task doesn't exist in test
             assert response.status_code in [200, 404]

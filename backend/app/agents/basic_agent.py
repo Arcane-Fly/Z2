@@ -4,13 +4,12 @@ Demonstrates DIE + MIL integration with dramatically improved prompts for superi
 """
 
 import asyncio
-from typing import Optional
+from typing import Any, Dict
 
 import structlog
 
 from app.agents.die import ContextualMemory, DynamicPromptGenerator, PromptTemplate
 from app.agents.mil import (
-    DynamicModelRouter,
     LLMRequest,
     LLMResponse,
     ModelIntegrationLayer,
@@ -19,9 +18,8 @@ from app.agents.mil import (
 from app.core.cache_and_rate_limit import get_cache, get_rate_limiter
 from app.core.config import settings
 from app.core.enhanced_prompts import (
-    EnhancedPromptLibrary, 
-    PromptEnhancer, 
-    EnhancedPromptTemplate
+    EnhancedPromptLibrary,
+    PromptEnhancer,
 )
 
 logger = structlog.get_logger(__name__)
@@ -50,10 +48,10 @@ class BasicAIAgent:
         # Initialize enhanced prompt system
         self.enhanced_template = EnhancedPromptLibrary.get_template_by_role(role)
         self.prompt_enhancer = PromptEnhancer()
-        
+
         # Initialize MIL components
         self.mil = ModelIntegrationLayer()
-        
+
         # Track usage statistics
         self.total_requests = 0
         self.total_cost = 0.0
@@ -94,7 +92,7 @@ class BasicAIAgent:
         self,
         user_message: str,
         template_name: str = "conversation",
-        model_preference: Optional[str] = None,
+        model_preference: str | None = None,
         use_cache: bool = True,
     ) -> str:
         """
@@ -149,7 +147,7 @@ class BasicAIAgent:
             # Check cache first if enabled
             cache = await get_cache()
             cached_response = None
-            
+
             if use_cache:
                 cached_response = await cache.get(
                     prompt=prompt,
@@ -161,7 +159,7 @@ class BasicAIAgent:
             if cached_response:
                 logger.info("Using cached response")
                 response_content = cached_response.get("content", "")
-                
+
                 # Update context with cached response
                 current_count = self.memory.short_term.get("interaction_count", 0)
                 self.memory.update_context(
@@ -179,20 +177,20 @@ class BasicAIAgent:
                 else:
                     # Check rate limits
                     rate_limiter = await get_rate_limiter()
-                    
+
                     # Estimate cost for rate limiting
                     estimated_tokens = len(prompt) // 4  # Rough token estimate
                     estimated_cost = estimated_tokens * 0.001  # Rough cost estimate
-                    
+
                     allowed, rate_info = await rate_limiter.check_rate_limit(
                         provider="default",
                         model_id=model_preference or settings.default_model,
                         estimated_cost=estimated_cost,
                     )
-                    
+
                     if not allowed:
                         logger.warning("Rate limit exceeded", rate_info=rate_info)
-                        response_content = f"I apologize, but I'm currently rate-limited. Please try again in a moment."
+                        response_content = "I apologize, but I'm currently rate-limited. Please try again in a moment."
                     else:
                         # Make actual LLM API call through MIL
                         try:
@@ -204,14 +202,14 @@ class BasicAIAgent:
                                     quality_weight=0.3,
                                 ),
                             )
-                            
+
                             response_content = response.content
-                            
+
                             # Update usage statistics
                             self.total_requests += 1
                             self.total_cost += response.cost_usd
                             self.total_tokens += response.tokens_used
-                            
+
                             # Record usage for rate limiting
                             await rate_limiter.record_usage(
                                 provider=response.provider,
@@ -219,7 +217,7 @@ class BasicAIAgent:
                                 actual_cost=response.cost_usd,
                                 tokens_used=response.tokens_used,
                             )
-                            
+
                             # Cache the response if successful
                             if use_cache and response_content:
                                 await cache.set(
@@ -235,7 +233,7 @@ class BasicAIAgent:
                                     temperature=settings.temperature,
                                     max_tokens=settings.max_tokens,
                                 )
-                            
+
                             logger.info(
                                 "LLM response generated",
                                 model=response.model_used,
@@ -244,7 +242,7 @@ class BasicAIAgent:
                                 cost=response.cost_usd,
                                 latency=response.latency_ms,
                             )
-                        
+
                         except Exception as e:
                             logger.error("LLM API call failed", error=str(e))
                             response_content = f"I apologize, but I encountered an error while processing your request. As {self.name}, I understand you said: '{user_message}'. Please try again or rephrase your request."
@@ -273,13 +271,13 @@ class BasicAIAgent:
     async def process_message_enhanced(
         self,
         user_message: str,
-        context: Optional[Dict[str, Any]] = None,
-        model_preference: Optional[str] = None,
+        context: Dict[str, Any] | None = None,
+        model_preference: str | None = None,
         use_cache: bool = True,
     ) -> str:
         """
         Process a message using dramatically improved prompts for superior AI performance.
-        
+
         This method uses the enhanced prompt system with advanced reasoning frameworks,
         structured thinking, and sophisticated prompt engineering techniques.
         """
@@ -291,25 +289,25 @@ class BasicAIAgent:
                 "user_message": user_message,
                 "context": context or self.memory.get_full_context(),
             }
-            
+
             # Generate enhanced prompt
             enhanced_prompt = self.prompt_enhancer.apply_techniques(
-                self.enhanced_template, 
+                self.enhanced_template,
                 variables
             )
-            
+
             # Optimize for the specific model
             if model_preference:
                 enhanced_prompt = self.prompt_enhancer.optimize_for_model(
-                    enhanced_prompt, 
+                    enhanced_prompt,
                     model_preference
                 )
-            
-            logger.info("Generated enhanced prompt", 
+
+            logger.info("Generated enhanced prompt",
                        agent_name=self.agent_name,
                        prompt_length=len(enhanced_prompt),
                        template_name=self.enhanced_template.name)
-            
+
             # Create LLM request with enhanced prompt
             request = LLMRequest(
                 prompt=enhanced_prompt,
@@ -318,10 +316,10 @@ class BasicAIAgent:
                 temperature=0.7,
                 context=variables
             )
-            
+
             # Use MIL to route and execute
             response = await self.mil.route_and_execute(request, preferred_model=model_preference)
-            
+
             if response and response.content:
                 # Update memory with enhanced interaction
                 self.memory.update_context({
@@ -331,17 +329,17 @@ class BasicAIAgent:
                     "model_used": response.model_used,
                     "timestamp": str(asyncio.get_event_loop().time()),
                 })
-                
+
                 # Update statistics
                 self.total_requests += 1
                 self.total_cost += getattr(response, 'cost', 0.0)
                 self.total_tokens += getattr(response, 'total_tokens', 0)
-                
+
                 logger.info("Enhanced message processed successfully",
                            agent_name=self.agent_name,
                            model_used=response.model_used,
                            response_length=len(response.content))
-                
+
                 return response.content
             else:
                 # Enhanced fallback response
@@ -352,13 +350,13 @@ I apologize, but I'm experiencing technical difficulties at the moment. However,
 This appears to be a question that would benefit from careful analysis. I'd recommend breaking it down into key components and considering multiple perspectives to develop a comprehensive response.
 
 Please try your request again, and I'll be better able to provide the detailed, thoughtful response you deserve."""
-                
+
                 return fallback
-                
+
         except Exception as e:
-            logger.error("Enhanced message processing failed", 
+            logger.error("Enhanced message processing failed",
                         error=str(e), agent_name=self.agent_name)
-            
+
             # Enhanced error response
             return f"""As {self.agent_name}, I apologize for the technical difficulty in processing your message: "{user_message}"
 
@@ -369,7 +367,7 @@ Technical note: {str(e)}"""
     def _determine_task_type(self, message: str) -> str:
         """Determine the type of task based on the message content."""
         message_lower = message.lower()
-        
+
         if any(word in message_lower for word in ["analyze", "analysis", "examine", "evaluate"]):
             return "analysis"
         elif any(word in message_lower for word in ["research", "investigate", "find", "search"]):
@@ -402,11 +400,11 @@ Technical note: {str(e)}"""
             "total_cost_usd": round(self.total_cost, 4),
             "total_tokens": self.total_tokens,
             "average_cost_per_request": (
-                round(self.total_cost / self.total_requests, 4) 
+                round(self.total_cost / self.total_requests, 4)
                 if self.total_requests > 0 else 0.0
             ),
             "average_tokens_per_request": (
-                round(self.total_tokens / self.total_requests, 2) 
+                round(self.total_tokens / self.total_requests, 2)
                 if self.total_requests > 0 else 0.0
             ),
         }

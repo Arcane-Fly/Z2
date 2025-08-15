@@ -2,15 +2,16 @@
 Simple unit tests for schemas and core functionality.
 """
 
-import pytest
-from pydantic import ValidationError
 from uuid import uuid4
 
+import pytest
+from pydantic import ValidationError
+
 from app.schemas import (
-    UserUpdate, 
-    AgentExecutionRequest, 
+    AgentExecutionRequest,
+    ModelTestRequest,
+    UserUpdate,
     WorkflowCreate,
-    ModelTestRequest
 )
 
 
@@ -128,7 +129,7 @@ class TestSchemaValidation:
 
         with pytest.raises(ValidationError):
             WorkflowCreate(
-                name="Valid Name", 
+                name="Valid Name",
                 goal="Valid goal here",
                 max_duration_seconds=100000  # Greater than 86400
             )
@@ -137,7 +138,7 @@ class TestSchemaValidation:
         with pytest.raises(ValidationError):
             WorkflowCreate(
                 name="Valid Name",
-                goal="Valid goal here", 
+                goal="Valid goal here",
                 max_cost_usd=0.05  # Less than 0.1
             )
 
@@ -180,7 +181,7 @@ class TestSchemaValidation:
         with pytest.raises(ValidationError):
             ModelTestRequest(
                 model_id="gpt-4o",
-                prompt="Valid prompt here", 
+                prompt="Valid prompt here",
                 max_tokens=5000  # Greater than 4096
             )
 
@@ -206,13 +207,13 @@ class TestBasicAgentLogic:
     def test_contextual_memory_initialization(self):
         """Test ContextualMemory initialization."""
         from app.agents.die import ContextualMemory
-        
+
         memory = ContextualMemory(
             short_term={},
             long_term={},
             summary={}
         )
-        
+
         assert memory.short_term == {}
         assert memory.long_term == {}
         assert memory.summary == {}
@@ -220,27 +221,27 @@ class TestBasicAgentLogic:
     def test_contextual_memory_update(self):
         """Test ContextualMemory update functionality."""
         from app.agents.die import ContextualMemory
-        
+
         memory = ContextualMemory(
             short_term={},
             long_term={},
             summary={}
         )
-        
+
         # Update context
         memory.update_context({"user_input": "Hello", "timestamp": "2023-01-01"})
-        
+
         assert memory.short_term["user_input"] == "Hello"
         assert memory.short_term["timestamp"] == "2023-01-01"
 
     def test_contextual_memory_compression(self):
         """Test ContextualMemory compression functionality."""
         from app.agents.die import ContextualMemory
-        
+
         memory = ContextualMemory(
             short_term={
                 "item1": "value1",
-                "item2": "value2", 
+                "item2": "value2",
                 "item3": "value3",
                 "item4": "value4",
                 "item5": "value5",
@@ -249,13 +250,13 @@ class TestBasicAgentLogic:
             long_term={},
             summary={}
         )
-        
+
         # Compress memory
         memory.compress_to_summary()
-        
+
         # Short term should be cleared
         assert memory.short_term == {}
-        
+
         # Summary should contain recent context
         assert "recent_context" in memory.summary
         assert "item" in memory.summary["recent_context"]
@@ -263,13 +264,13 @@ class TestBasicAgentLogic:
     def test_prompt_template_creation(self):
         """Test PromptTemplate creation."""
         from app.agents.die import PromptTemplate
-        
+
         template = PromptTemplate(
             role="You are a helpful assistant",
             task="Answer the user's question",
             format="Respond in JSON format"
         )
-        
+
         assert template.role == "You are a helpful assistant"
         assert template.task == "Answer the user's question"
         assert template.format == "Respond in JSON format"
@@ -280,8 +281,8 @@ class TestModelIntegrationLayer:
 
     def test_model_info_creation(self):
         """Test ModelInfo creation."""
-        from app.agents.mil import ModelInfo, ModelCapability
-        
+        from app.agents.mil import ModelCapability, ModelInfo
+
         model = ModelInfo(
             id="gpt-4o",
             provider="openai",
@@ -294,7 +295,7 @@ class TestModelIntegrationLayer:
             avg_latency_ms=1500.0,
             quality_score=0.95
         )
-        
+
         assert model.id == "gpt-4o"
         assert model.provider == "openai"
         assert model.context_window == 128000
@@ -305,7 +306,7 @@ class TestModelIntegrationLayer:
     def test_routing_policy_creation(self):
         """Test RoutingPolicy creation."""
         from app.agents.mil import RoutingPolicy
-        
+
         policy = RoutingPolicy(
             cost_weight=0.3,
             latency_weight=0.4,
@@ -314,7 +315,7 @@ class TestModelIntegrationLayer:
             max_cost_per_request=1.0,
             max_latency_ms=3000.0
         )
-        
+
         assert policy.cost_weight == 0.3
         assert policy.latency_weight == 0.4
         assert policy.quality_weight == 0.3

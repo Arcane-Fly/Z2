@@ -3,19 +3,24 @@ Authentication endpoints for Z2 API.
 """
 
 from datetime import UTC, datetime, timedelta
-from typing import Optional
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.security import PasswordSecurity, UserCredentials, auth_service, jwt_manager
-from app.core.auth_dependencies import get_current_user, get_current_active_user
+from app.core.auth_dependencies import get_current_active_user
+from app.core.security import (
+    PasswordSecurity,
+    UserCredentials,
+    auth_service,
+    jwt_manager,
+)
 from app.database.session import get_db
+from app.models.role import Role
 from app.models.user import User
-from app.models.role import Role, RefreshToken
 from app.schemas import (
     BaseResponse,
     TokenResponse,
@@ -26,9 +31,10 @@ from app.schemas import (
 
 router = APIRouter()
 security = HTTPBearer()
+logger = structlog.get_logger(__name__)
 
 
-async def get_user_by_username_with_roles(db: AsyncSession, username: str) -> Optional[dict]:
+async def get_user_by_username_with_roles(db: AsyncSession, username: str) -> dict | None:
     """Get user by username from database with roles and permissions."""
     stmt = (
         select(User)
@@ -61,7 +67,7 @@ async def get_user_by_username_with_roles(db: AsyncSession, username: str) -> Op
     return None
 
 
-async def get_user_by_id_with_roles(db: AsyncSession, user_id: str) -> Optional[dict]:
+async def get_user_by_id_with_roles(db: AsyncSession, user_id: str) -> dict | None:
     """Get user by ID from database with roles and permissions."""
     stmt = (
         select(User)
@@ -145,10 +151,10 @@ async def register(
 
     # Assign default role based on user type
     from app.models.role import Role
-    stmt = select(Role).where(Role.name == user_data.user_type, Role.is_active == True)
+    stmt = select(Role).where(Role.name == user_data.user_type, Role.is_active is True)
     result = await db.execute(stmt)
     default_role = result.scalar_one_or_none()
-    
+
     if default_role:
         new_user.roles.append(default_role)
         await db.commit()
@@ -261,7 +267,7 @@ async def refresh_token(
     try:
         body = await request.json()
         refresh_token = body.get("refresh_token")
-        
+
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

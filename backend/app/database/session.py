@@ -54,13 +54,13 @@ async def init_db() -> None:
         async with engine.begin() as conn:
             # Import all models here to ensure they are registered with SQLAlchemy
             from app.models import (  # noqa: F401
-                agent, 
-                user, 
-                workflow, 
-                consent, 
-                session,
+                agent,
+                api_key,
+                consent,
                 model_routing,
-                api_key
+                session,
+                user,
+                workflow,
             )
 
             # Create all tables

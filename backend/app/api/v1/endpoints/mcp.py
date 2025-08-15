@@ -7,18 +7,19 @@ MCP specification: https://modelcontextprotocol.io/specification/2025-03-26
 
 import asyncio
 import uuid
-from typing import Any, Optional, AsyncGenerator
-from datetime import datetime, UTC
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.database.session import get_db
-from app.services.session_service import SessionService
 from app.services.consent_service import ConsentService
+from app.services.session_service import SessionService
 
 router = APIRouter()
 
@@ -27,10 +28,10 @@ router = APIRouter()
 class MCPCapabilities(BaseModel):
     """MCP server capabilities."""
 
-    resources: Optional[dict[str, Any]] = None
-    tools: Optional[dict[str, Any]] = None
-    prompts: Optional[dict[str, Any]] = None
-    sampling: Optional[dict[str, Any]] = None
+    resources: dict[str, Any] | None = None
+    tools: dict[str, Any] | None = None
+    prompts: dict[str, Any] | None = None
+    sampling: dict[str, Any] | None = None
 
 
 class MCPInitializeRequest(BaseModel):
@@ -59,8 +60,8 @@ class MCPResource(BaseModel):
 
     uri: str
     name: str
-    description: Optional[str] = None
-    mimeType: Optional[str] = None
+    description: str | None = None
+    mimeType: str | None = None
 
 
 class MCPTool(BaseModel):
@@ -76,23 +77,23 @@ class MCPPrompt(BaseModel):
 
     name: str
     description: str
-    arguments: Optional[list[dict[str, Any]]] = None
+    arguments: list[dict[str, Any]] | None = None
 
 
 class MCPProgressUpdate(BaseModel):
     """Progress update for long-running operations."""
 
     progress: float  # 0.0 to 1.0
-    total: Optional[int] = None
-    completed: Optional[int] = None
-    message: Optional[str] = None
+    total: int | None = None
+    completed: int | None = None
+    message: str | None = None
 
 
 class MCPToolCallRequest(BaseModel):
     """Tool call request with optional progress tracking."""
 
     arguments: dict[str, Any]
-    session_id: Optional[str] = None
+    session_id: str | None = None
     stream: bool = False
     can_cancel: bool = True
 
@@ -107,7 +108,7 @@ def get_consent_service(db: AsyncSession = Depends(get_db)) -> ConsentService:
     return ConsentService(db)
 
 
-def get_client_info(request: Request) -> tuple[Optional[str], Optional[str]]:
+def get_client_info(request: Request) -> tuple[str | None, str | None]:
     """Extract client IP and user agent from request."""
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
@@ -137,10 +138,10 @@ async def initialize_mcp_session(
 
     # Extract client information
     ip_address, user_agent = get_client_info(http_request)
-    
+
     # Create session
     session_id = str(uuid.uuid4())
-    
+
     # Server capabilities
     server_capabilities = MCPCapabilities(
         resources={"subscribe": True, "listChanged": True},
@@ -150,7 +151,7 @@ async def initialize_mcp_session(
     )
 
     # Store session in database
-    session = await session_service.create_mcp_session(
+    await session_service.create_mcp_session(
         session_id=session_id,
         protocol_version=request.protocolVersion,
         client_info=request.clientInfo,
@@ -166,26 +167,26 @@ async def initialize_mcp_session(
     # Add session ID to response headers
     response_dict = response.model_dump()
     response_dict["session_id"] = session_id
-    
+
     return response_dict
 
 
 @router.get("/resources")
 async def list_resources(
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     session_service: SessionService = Depends(get_session_service),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """List available MCP resources with dynamic discovery."""
-    
+
     # Update session activity if provided
     if session_id:
         await session_service.update_mcp_session_activity(session_id)
         await db.commit()
-    
+
     # Dynamic resource discovery
     resources = []
-    
+
     # Agent resources
     resources.extend([
         MCPResource(
@@ -207,7 +208,7 @@ async def list_resources(
             mimeType="application/json",
         ),
     ])
-    
+
     # Workflow resources
     resources.extend([
         MCPResource(
@@ -223,7 +224,7 @@ async def list_resources(
             mimeType="application/json",
         ),
     ])
-    
+
     # System resources
     resources.extend([
         MCPResource(
@@ -246,21 +247,21 @@ async def list_resources(
 @router.get("/resources/{resource_uri:path}")
 async def get_resource(
     resource_uri: str,
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     session_service: SessionService = Depends(get_session_service),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Get specific MCP resource content with dynamic content generation."""
-    
+
     # Update session activity if provided
     if session_id:
         await session_service.update_mcp_session_activity(session_id)
         await db.commit()
-    
+
     # Dynamic resource content based on URI
     if resource_uri.startswith("agent://"):
         agent_type = resource_uri.replace("agent://", "")
-        
+
         # Get current agent status and capabilities
         agent_data = {
             "type": "agent",
@@ -270,21 +271,21 @@ async def get_resource(
             "load": "25%",
             "last_activity": datetime.now(UTC).isoformat(),
         }
-        
+
         if agent_type == "reasoning":
             agent_data["capabilities"].extend(["complex_reasoning", "multi_step_analysis"])
         elif agent_type == "code":
             agent_data["capabilities"].extend(["code_generation", "code_analysis", "debugging"])
-        
+
         return {
             "uri": resource_uri,
             "mimeType": "application/json",
             "text": str(agent_data).replace("'", '"'),  # Convert to JSON string
         }
-        
+
     elif resource_uri.startswith("workflow://"):
         workflow_type = resource_uri.replace("workflow://", "")
-        
+
         if workflow_type == "templates":
             workflow_data = {
                 "type": "workflow_templates",
@@ -310,16 +311,16 @@ async def get_resource(
                     for s in sessions
                 ]
             }
-        
+
         return {
             "uri": resource_uri,
             "mimeType": "application/json",
             "text": str(workflow_data).replace("'", '"'),
         }
-        
+
     elif resource_uri.startswith("system://"):
         system_type = resource_uri.replace("system://", "")
-        
+
         if system_type == "metrics":
             # Get system metrics
             stats = await session_service.get_session_statistics()
@@ -330,7 +331,7 @@ async def get_resource(
                 "uptime": "running",
                 "version": settings.app_version,
             }
-            
+
             return {
                 "uri": resource_uri,
                 "mimeType": "application/json",
@@ -343,7 +344,7 @@ async def get_resource(
                 "mimeType": "text/plain",
                 "text": f"System logs - {datetime.now(UTC).isoformat()}\nSystem operational",
             }
-    
+
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Resource not found: {resource_uri}",
@@ -352,17 +353,17 @@ async def get_resource(
 
 @router.get("/tools")
 async def list_tools(
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     session_service: SessionService = Depends(get_session_service),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """List available MCP tools with dynamic discovery."""
-    
+
     # Update session activity if provided
     if session_id:
         await session_service.update_mcp_session_activity(session_id)
         await db.commit()
-    
+
     # Dynamic tool discovery
     tools = [
         MCPTool(
@@ -420,13 +421,13 @@ async def stream_tool_execution(
     db: AsyncSession,
 ) -> AsyncGenerator[str, None]:
     """Stream tool execution progress."""
-    
+
     # Simulate long-running task with progress updates
     total_steps = 10
-    
+
     for step in range(total_steps + 1):
         progress = step / total_steps
-        
+
         # Update task progress in database
         await session_service.update_task_progress(
             task_id=task_id,
@@ -434,7 +435,7 @@ async def stream_tool_execution(
             status="running" if step < total_steps else "completed",
         )
         await db.commit()
-        
+
         # Generate progress update
         update = MCPProgressUpdate(
             progress=progress,
@@ -442,9 +443,9 @@ async def stream_tool_execution(
             completed=step,
             message=f"Executing {tool_name} - Step {step}/{total_steps}",
         )
-        
+
         yield f"data: {update.model_dump_json()}\n\n"
-        
+
         if step < total_steps:
             await asyncio.sleep(0.5)  # Simulate work
 
@@ -459,17 +460,17 @@ async def call_tool(
     db: AsyncSession = Depends(get_db),
 ) -> Any:
     """Execute MCP tool with given arguments, supporting streaming and cancellation."""
-    
+
     # Update session activity if provided
     if request_data.session_id:
         await session_service.update_mcp_session_activity(request_data.session_id)
-    
+
     # Check consent for tool access (simplified - in production would check user ID)
     ip_address, user_agent = get_client_info(http_request)
-    
+
     # Create task execution record
     task_id = str(uuid.uuid4())
-    task = await session_service.create_task_execution(
+    await session_service.create_task_execution(
         task_id=task_id,
         session_id=request_data.session_id or "anonymous",
         task_type="mcp_tool",
@@ -478,7 +479,7 @@ async def call_tool(
         can_cancel=request_data.can_cancel,
     )
     await db.commit()
-    
+
     # If streaming is requested, return streaming response
     if request_data.stream:
         return StreamingResponse(
@@ -490,7 +491,7 @@ async def call_tool(
                 "X-Task-ID": task_id,
             },
         )
-    
+
     # Non-streaming execution
     if tool_name == "execute_agent":
         result_data = {
@@ -501,11 +502,11 @@ async def call_tool(
             "result": f"Agent {request_data.arguments.get('agent_id', 'default')} executed task: {request_data.arguments.get('task', 'unknown')}",
             "execution_time": "2.3s",
         }
-        
+
         # Update task as completed
         await session_service.complete_task(task_id=task_id, result=result_data)
         await db.commit()
-        
+
         return {
             "content": [
                 {
@@ -516,7 +517,7 @@ async def call_tool(
             "task_id": task_id,
             "metadata": result_data,
         }
-        
+
     elif tool_name == "create_workflow":
         result_data = {
             "task_id": task_id,
@@ -525,10 +526,10 @@ async def call_tool(
             "status": "created",
             "workflow_id": str(uuid.uuid4()),
         }
-        
+
         await session_service.complete_task(task_id=task_id, result=result_data)
         await db.commit()
-        
+
         return {
             "content": [
                 {
@@ -539,14 +540,14 @@ async def call_tool(
             "task_id": task_id,
             "metadata": result_data,
         }
-        
+
     elif tool_name == "analyze_system":
         scope = request_data.arguments.get("scope", "performance")
         detailed = request_data.arguments.get("detailed", False)
-        
+
         # Get system statistics
         stats = await session_service.get_session_statistics()
-        
+
         result_data = {
             "task_id": task_id,
             "scope": scope,
@@ -560,10 +561,10 @@ async def call_tool(
                 ],
             },
         }
-        
+
         await session_service.complete_task(task_id=task_id, result=result_data)
         await db.commit()
-        
+
         return {
             "content": [
                 {
@@ -574,16 +575,16 @@ async def call_tool(
             "task_id": task_id,
             "metadata": result_data,
         }
-    
+
     else:
         await session_service.complete_task(
             task_id=task_id,
             error_message=f"Tool not found: {tool_name}",
         )
         await db.commit()
-        
+
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Tool not found: {tool_name}"
         )
 
@@ -596,21 +597,21 @@ async def cancel_tool(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Cancel a running tool execution."""
-    
+
     success = await session_service.cancel_task(
         task_id=task_id,
         cancelled_by="user",
         cancellation_reason="User requested cancellation",
     )
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot cancel task - task not found or not cancellable",
         )
-    
+
     await db.commit()
-    
+
     return {
         "task_id": task_id,
         "status": "cancelled",
@@ -625,14 +626,14 @@ async def get_tool_status(
     session_service: SessionService = Depends(get_session_service),
 ) -> dict[str, Any]:
     """Get the status of a tool execution."""
-    
+
     task = await session_service.get_task_execution(task_id)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task not found: {task_id}",
         )
-    
+
     return {
         "task_id": task_id,
         "tool_name": tool_name,
@@ -649,17 +650,17 @@ async def get_tool_status(
 
 @router.get("/prompts")
 async def list_prompts(
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     session_service: SessionService = Depends(get_session_service),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """List available MCP prompts with dynamic discovery."""
-    
+
     # Update session activity if provided
     if session_id:
         await session_service.update_mcp_session_activity(session_id)
         await db.commit()
-    
+
     # Dynamic prompt discovery
     prompts = [
         MCPPrompt(
@@ -709,23 +710,23 @@ async def list_prompts(
 @router.get("/prompts/{prompt_name}")
 async def get_prompt(
     prompt_name: str,
-    arguments: Optional[dict[str, Any]] = None,
-    session_id: Optional[str] = None,
+    arguments: dict[str, Any] | None = None,
+    session_id: str | None = None,
     session_service: SessionService = Depends(get_session_service),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Get MCP prompt with arguments."""
-    
+
     # Update session activity if provided
     if session_id:
         await session_service.update_mcp_session_activity(session_id)
         await db.commit()
-    
+
     # Dynamic prompt generation based on arguments
     if prompt_name == "analyze_compliance":
         document = arguments.get("document", "No document provided") if arguments else "No document provided"
         standards = arguments.get("standards", ["general"]) if arguments else ["general"]
-        
+
         return {
             "description": "Analyze document for compliance requirements",
             "messages": [
@@ -738,11 +739,11 @@ async def get_prompt(
                 }
             ],
         }
-        
+
     elif prompt_name == "generate_report":
         data = arguments.get("data", "No data provided") if arguments else "No data provided"
         format_type = arguments.get("format", "markdown") if arguments else "markdown"
-        
+
         return {
             "description": "Generate a structured report from data",
             "messages": [
@@ -755,12 +756,12 @@ async def get_prompt(
                 }
             ],
         }
-        
+
     elif prompt_name == "code_review":
         code = arguments.get("code", "No code provided") if arguments else "No code provided"
         language = arguments.get("language", "auto-detect") if arguments else "auto-detect"
         focus = arguments.get("focus", ["security", "performance", "maintainability"]) if arguments else ["security", "performance", "maintainability"]
-        
+
         return {
             "description": "Perform automated code review",
             "messages": [
@@ -773,7 +774,7 @@ async def get_prompt(
                 }
             ],
         }
-    
+
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -787,7 +788,7 @@ async def list_sessions(
 ) -> dict[str, Any]:
     """List active MCP sessions."""
     sessions = await session_service.list_active_mcp_sessions()
-    
+
     return {
         "sessions": [
             {
@@ -812,22 +813,22 @@ async def close_session(
 ) -> dict[str, Any]:
     """Close MCP session."""
     success = await session_service.close_mcp_session(session_id)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Session not found: {session_id}",
         )
-    
+
     await db.commit()
-    
+
     return {"message": f"Session {session_id} closed successfully"}
 
 
 @router.post("/sampling/createMessage")
 async def create_message(
     request: dict[str, Any],
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     session_service: SessionService = Depends(get_session_service),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
@@ -836,17 +837,17 @@ async def create_message(
 
     This allows the MCP server to request model completions from the client.
     """
-    
+
     # Update session activity if provided
     if session_id:
         await session_service.update_mcp_session_activity(session_id)
         await db.commit()
-    
+
     # Enhanced sampling response with context awareness
     model = request.get("model", "default")
     messages = request.get("messages", [])
-    max_tokens = request.get("max_tokens", 100)
-    
+    request.get("max_tokens", 100)
+
     # Generate contextual response based on message content
     if messages:
         last_message = messages[-1].get("content", "")
@@ -858,7 +859,7 @@ async def create_message(
             response_text = "I understand your request and would provide a comprehensive response based on the context and requirements."
     else:
         response_text = "This is a sample response from the MCP sampling API."
-    
+
     return {
         "model": model,
         "role": "assistant",
@@ -880,10 +881,10 @@ async def get_mcp_statistics(
     session_service: SessionService = Depends(get_session_service),
 ) -> dict[str, Any]:
     """Get MCP server statistics and metrics."""
-    
+
     stats = await session_service.get_session_statistics()
     running_tasks = await session_service.list_running_tasks()
-    
+
     return {
         "timestamp": datetime.now(UTC).isoformat(),
         "server_info": {

@@ -5,19 +5,19 @@ Database service layer for consent and access control operations.
 Handles consent requests, grants, audit logging, and access policies.
 """
 
-from datetime import datetime, timedelta, UTC
-from typing import Optional, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, and_, or_, func
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.consent import (
-    ConsentRequest, 
-    ConsentGrant, 
-    AccessPolicy, 
-    ConsentAuditLog
+    AccessPolicy,
+    ConsentAuditLog,
+    ConsentGrant,
+    ConsentRequest,
 )
 
 
@@ -34,12 +34,12 @@ class ConsentService:
         resource_name: str,
         description: str,
         permissions: list[str],
-        expires_in_hours: Optional[int] = 24,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        expires_in_hours: int | None = 24,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> ConsentRequest:
         """Create a new consent request."""
-        
+
         request = ConsentRequest(
             user_id=user_id,
             resource_type=resource_type,
@@ -48,10 +48,10 @@ class ConsentService:
             permissions=permissions,
             expires_in_hours=expires_in_hours,
         )
-        
+
         self.db.add(request)
         await self.db.flush()  # Get the ID
-        
+
         # Create audit log
         await self.create_audit_log(
             user_id=user_id,
@@ -63,10 +63,10 @@ class ConsentService:
             ip_address=ip_address,
             user_agent=user_agent,
         )
-        
+
         return request
 
-    async def get_consent_request(self, consent_id: UUID) -> Optional[ConsentRequest]:
+    async def get_consent_request(self, consent_id: UUID) -> ConsentRequest | None:
         """Get a consent request by ID."""
         result = await self.db.execute(
             select(ConsentRequest)
@@ -79,29 +79,29 @@ class ConsentService:
         self,
         consent_id: UUID,
         granted_by: str,
-        expires_in_hours: Optional[int] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-    ) -> Optional[ConsentGrant]:
+        expires_in_hours: int | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> ConsentGrant | None:
         """Grant consent for a request."""
-        
+
         request = await self.get_consent_request(consent_id)
         if not request:
             return None
-            
+
         if request.status != "pending":
             return None
-            
+
         # Calculate expiration
         expires_at = datetime.now(UTC) + timedelta(
             hours=expires_in_hours or request.expires_in_hours or 24
         )
-        
+
         # Update request status
         request.status = "granted"
         request.granted_at = datetime.now(UTC)
         request.expires_at = expires_at
-        
+
         # Create grant record
         grant = ConsentGrant(
             request_id=consent_id,
@@ -109,9 +109,9 @@ class ConsentService:
             granted_permissions=request.permissions,
             expires_at=expires_at,
         )
-        
+
         self.db.add(grant)
-        
+
         # Create audit log
         await self.create_audit_log(
             user_id=request.user_id,
@@ -123,29 +123,29 @@ class ConsentService:
             ip_address=ip_address,
             user_agent=user_agent,
         )
-        
+
         return grant
 
     async def deny_consent(
         self,
         consent_id: UUID,
         denied_by: str,
-        reason: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        reason: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> bool:
         """Deny consent for a request."""
-        
+
         request = await self.get_consent_request(consent_id)
         if not request:
             return False
-            
+
         if request.status != "pending":
             return False
-            
+
         # Update request status
         request.status = "denied"
-        
+
         # Create audit log
         await self.create_audit_log(
             user_id=request.user_id,
@@ -157,7 +157,7 @@ class ConsentService:
             ip_address=ip_address,
             user_agent=user_agent,
         )
-        
+
         return True
 
     async def check_access(
@@ -166,11 +166,11 @@ class ConsentService:
         resource_type: str,
         resource_name: str,
         permissions: list[str],
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> dict[str, Any]:
         """Check if user has access to a resource."""
-        
+
         # Get access policy
         policy = await self.get_access_policy(resource_type, resource_name)
         if not policy:
@@ -195,7 +195,7 @@ class ConsentService:
 
         # Check for valid consent
         now = datetime.now(UTC)
-        
+
         # Query for valid grants
         grant_query = (
             select(ConsentGrant)
@@ -211,17 +211,17 @@ class ConsentService:
                 )
             )
         )
-        
+
         result = await self.db.execute(grant_query)
         grant = result.scalar_one_or_none()
-        
+
         if not grant:
             return {"allowed": False, "reason": "No valid consent found"}
 
         # Update usage tracking
         grant.usage_count += 1
         grant.last_used_at = now
-        
+
         # Create access audit log
         await self.create_audit_log(
             user_id=user_id,
@@ -238,15 +238,15 @@ class ConsentService:
 
     async def get_access_policy(
         self, resource_type: str, resource_name: str
-    ) -> Optional[AccessPolicy]:
+    ) -> AccessPolicy | None:
         """Get access policy for a resource."""
         policy_key = f"{resource_type}:{resource_name}"
-        
+
         result = await self.db.execute(
             select(AccessPolicy).where(
                 and_(
                     AccessPolicy.policy_key == policy_key,
-                    AccessPolicy.is_active == True,
+                    AccessPolicy.is_active is True,
                 )
             )
         )
@@ -258,16 +258,16 @@ class ConsentService:
         resource_name: str,
         required_permissions: list[str],
         auto_approve: bool = False,
-        max_usage_per_hour: Optional[int] = None,
-        max_usage_per_day: Optional[int] = None,
-        description: Optional[str] = None,
+        max_usage_per_hour: int | None = None,
+        max_usage_per_day: int | None = None,
+        description: str | None = None,
     ) -> AccessPolicy:
         """Create or update an access policy."""
         policy_key = f"{resource_type}:{resource_name}"
-        
+
         # Check if policy exists
         existing = await self.get_access_policy(resource_type, resource_name)
-        
+
         if existing:
             # Update existing policy
             existing.required_permissions = required_permissions
@@ -297,8 +297,8 @@ class ConsentService:
         """List all access policies."""
         query = select(AccessPolicy)
         if active_only:
-            query = query.where(AccessPolicy.is_active == True)
-        
+            query = query.where(AccessPolicy.is_active is True)
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
@@ -308,10 +308,10 @@ class ConsentService:
         action: str,
         resource_type: str,
         resource_name: str,
-        request_id: Optional[UUID] = None,
-        details: Optional[dict] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        request_id: UUID | None = None,
+        details: dict | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> ConsentAuditLog:
         """Create an audit log entry."""
         log_entry = ConsentAuditLog(
@@ -329,15 +329,15 @@ class ConsentService:
 
     async def get_audit_logs(
         self,
-        user_id: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        action: Optional[str] = None,
+        user_id: str | None = None,
+        resource_type: str | None = None,
+        action: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[ConsentAuditLog]:
         """Get audit logs with optional filtering."""
         query = select(ConsentAuditLog).order_by(ConsentAuditLog.timestamp.desc())
-        
+
         conditions = []
         if user_id:
             conditions.append(ConsentAuditLog.user_id == user_id)
@@ -345,19 +345,19 @@ class ConsentService:
             conditions.append(ConsentAuditLog.resource_type == resource_type)
         if action:
             conditions.append(ConsentAuditLog.action == action)
-            
+
         if conditions:
             query = query.where(and_(*conditions))
-            
+
         query = query.limit(limit).offset(offset)
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
     async def get_user_active_consents(self, user_id: str) -> list[ConsentGrant]:
         """Get active consent grants for a user."""
         now = datetime.now(UTC)
-        
+
         query = (
             select(ConsentGrant)
             .join(ConsentRequest)
@@ -371,12 +371,12 @@ class ConsentService:
                 )
             )
         )
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
     async def revoke_consent(
-        self, grant_id: UUID, revoked_by: str, reason: Optional[str] = None
+        self, grant_id: UUID, revoked_by: str, reason: str | None = None
     ) -> bool:
         """Revoke a consent grant."""
         result = await self.db.execute(
@@ -385,13 +385,13 @@ class ConsentService:
             .where(ConsentGrant.id == grant_id)
         )
         grant = result.scalar_one_or_none()
-        
+
         if not grant:
             return False
-            
+
         grant.revoked_at = datetime.now(UTC)
         grant.request.status = "revoked"
-        
+
         # Create audit log
         await self.create_audit_log(
             user_id=grant.request.user_id,
@@ -405,13 +405,13 @@ class ConsentService:
                 "reason": reason,
             },
         )
-        
+
         return True
 
     async def cleanup_expired_consents(self) -> int:
         """Clean up expired consent requests and grants."""
         now = datetime.now(UTC)
-        
+
         # Update expired requests
         expired_requests = await self.db.execute(
             select(ConsentRequest).where(
@@ -421,10 +421,10 @@ class ConsentService:
                 )
             )
         )
-        
+
         count = 0
         for request in expired_requests.scalars():
             request.status = "expired"
             count += 1
-            
+
         return count

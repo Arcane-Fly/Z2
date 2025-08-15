@@ -9,12 +9,18 @@ import asyncio
 import os
 import time
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 import psutil
 import sentry_sdk
 import structlog
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
@@ -74,7 +80,7 @@ class SentryConfig:
         except Exception as e:
             logger.error("Failed to initialize Sentry", error=str(e))
 
-    def _before_send_filter(self, event: dict[str, Any], hint: dict[str, Any]) -> Optional[dict[str, Any]]:
+    def _before_send_filter(self, event: dict[str, Any], hint: dict[str, Any]) -> dict[str, Any] | None:
         """Filter and modify events before sending to Sentry."""
         # Don't send health check errors
         if event.get('transaction') == '/health':
@@ -321,53 +327,53 @@ class MetricsCollector:
         self.request_counts = {}
         self.response_times = {}
         self.error_counts = {}
-        
+
         # Prometheus metrics
         self.http_requests_total = Counter(
             'z2_http_requests_total',
             'Total number of HTTP requests',
             ['method', 'endpoint', 'status_code']
         )
-        
+
         self.http_request_duration = Histogram(
             'z2_http_request_duration_seconds',
             'HTTP request latency',
             ['method', 'endpoint']
         )
-        
+
         self.http_requests_in_progress = Gauge(
             'z2_http_requests_in_progress',
             'Number of HTTP requests currently being processed'
         )
-        
+
         self.model_requests_total = Counter(
             'z2_model_requests_total',
             'Total number of LLM model requests',
             ['provider', 'model', 'status']
         )
-        
+
         self.model_request_duration = Histogram(
             'z2_model_request_duration_seconds',
             'Model request latency',
             ['provider', 'model']
         )
-        
+
         self.active_agents = Gauge(
             'z2_active_agents',
             'Number of currently active agents'
         )
-        
+
         self.workflow_executions_total = Counter(
             'z2_workflow_executions_total',
             'Total number of workflow executions',
             ['status']
         )
-        
+
         self.database_connections = Gauge(
             'z2_database_connections',
             'Number of active database connections'
         )
-        
+
         self.redis_operations_total = Counter(
             'z2_redis_operations_total',
             'Total Redis operations',
@@ -394,14 +400,14 @@ class MetricsCollector:
             if key not in self.error_counts:
                 self.error_counts[key] = 0
             self.error_counts[key] += 1
-        
+
         # Prometheus metrics
         self.http_requests_total.labels(
             method=method,
             endpoint=endpoint,
             status_code=str(status_code)
         ).inc()
-        
+
         self.http_request_duration.labels(
             method=method,
             endpoint=endpoint
@@ -414,7 +420,7 @@ class MetricsCollector:
             model=model,
             status=status
         ).inc()
-        
+
         if status == "success":
             self.model_request_duration.labels(
                 provider=provider,
@@ -455,7 +461,7 @@ class MetricsCollector:
             },
             "error_counts": self.error_counts.copy()
         }
-    
+
     def get_prometheus_metrics(self) -> bytes:
         """Get metrics in Prometheus format."""
         return generate_latest()
@@ -463,31 +469,31 @@ class MetricsCollector:
 
 class PerformanceMetrics:
     """Simple performance metrics tracking."""
-    
+
     def __init__(self):
         self.request_count = 0
         self.total_response_time = 0.0
         self.error_count = 0
         self.response_times = []
         self.memory_usage = []
-        
+
     def add_request(self, response_time: float, is_error: bool = False):
         """Add a request to the metrics."""
         self.request_count += 1
         self.total_response_time += response_time
         self.response_times.append(response_time)
-        
+
         if is_error:
             self.error_count += 1
-            
+
     @property
     def average_response_time(self) -> float:
         """Calculate average response time."""
         if self.request_count == 0:
             return 0.0
         return self.total_response_time / self.request_count
-        
-    @property 
+
+    @property
     def error_rate(self) -> float:
         """Calculate error rate as percentage."""
         if self.request_count == 0:

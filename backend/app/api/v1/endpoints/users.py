@@ -2,7 +2,6 @@
 User management endpoints for Z2 API.
 """
 
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,11 +9,9 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth_dependencies import (
-    get_current_user, 
-    RequireUserRead,
-    RequireUserWrite, 
     RequireUserDelete,
-    RequireSystemAdmin
+    RequireUserRead,
+    RequireUserWrite,
 )
 from app.database.session import get_db
 from app.models.user import User
@@ -27,9 +24,9 @@ router = APIRouter()
 async def list_users(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    search: Optional[str] = Query(None, description="Search by username, email, or full name"),
-    user_type: Optional[str] = Query(None, description="Filter by user type"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    search: str | None = Query(None, description="Search by username, email, or full name"),
+    user_type: str | None = Query(None, description="Filter by user type"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
     current_user: User = Depends(RequireUserRead),
     db: AsyncSession = Depends(get_db),
 ):
@@ -171,7 +168,7 @@ async def update_user(
 
     # Apply updates
     update_data = user_update.model_dump(exclude_unset=True)
-    
+
     # Restrict certain fields for non-admin users
     if not current_user.is_superuser:
         # Remove admin-only fields
@@ -185,7 +182,7 @@ async def update_user(
         )
         result_email = await db.execute(stmt_email)
         existing_user = result_email.scalar_one_or_none()
-        
+
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

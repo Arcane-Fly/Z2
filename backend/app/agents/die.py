@@ -6,7 +6,7 @@ and structured prompt engineering as specified in the Z2 requirements.
 """
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
@@ -49,9 +49,9 @@ class PromptTemplate:
     role: str  # Agent's role description
     task: str  # Specific task to perform
     format: str  # Expected output format
-    context: Optional[str] = None  # Additional context
-    constraints: Optional[list[str]] = None  # Task constraints
-    examples: Optional[list[str]] = None  # Few-shot examples
+    context: str | None = None  # Additional context
+    constraints: list[str] | None = None  # Task constraints
+    examples: list[str] | None = None  # Few-shot examples
 
     def render(self, variables: dict[str, Any]) -> str:
         """Render the template with provided variables."""
@@ -62,7 +62,7 @@ class PromptTemplate:
             except (KeyError, ValueError):
                 # Return template with variable placeholders if formatting fails
                 return template_str
-        
+
         prompt_parts = [
             f"Role: {safe_format(self.role, variables)}",
             f"Task: {safe_format(self.task, variables)}",
@@ -153,7 +153,7 @@ class DynamicPromptGenerator:
             main_points = context.summary.get("main_points", "")
             if main_points:
                 summary_parts.append(f"History: {main_points}")
-            
+
             # Add performance metrics if available
             success_rate = context.summary.get("overall_success_rate")
             if success_rate is not None:
@@ -179,44 +179,44 @@ class DynamicPromptGenerator:
         """Prioritize context items by relevance."""
         # Define priority keywords that indicate important context
         priority_keywords = {
-            "error", "failure", "success", "task", "goal", "objective", 
+            "error", "failure", "success", "task", "goal", "objective",
             "user", "current", "active", "status", "result", "output"
         }
-        
+
         items = list(short_term.items())
-        
+
         # Sort by priority (items with priority keywords first)
         def priority_score(item):
             key, value = item
             score = 0
             key_lower = key.lower()
             value_str = str(value).lower()
-            
+
             # Boost score for priority keywords
             for keyword in priority_keywords:
                 if keyword in key_lower or keyword in value_str:
                     score += 1
-            
+
             # Boost score for recent timestamps or numeric values
-            if isinstance(value, (int, float)):
+            if isinstance(value, int | float):
                 score += 0.5
-                
+
             return score
-        
+
         sorted_items = sorted(items, key=priority_score, reverse=True)
-        
+
         # Return top 3 most relevant items
         return sorted_items[:3]
 
     def _extract_relevant_long_term(self, long_term: dict[str, Any]) -> str:
         """Extract relevant information from long-term memory."""
         relevant_items = []
-        
+
         # Extract user preferences and settings
         for key, value in long_term.items():
             if key in ["user_preferences", "settings", "constraints", "requirements"]:
                 relevant_items.append(f"{key}: {value}")
-        
+
         return ", ".join(relevant_items) if relevant_items else ""
 
     def _optimize_for_model(self, prompt: str, model: str) -> str:
@@ -237,11 +237,11 @@ class DynamicPromptGenerator:
     def _optimize_for_cost(self, prompt: str) -> str:
         """Apply intelligent token reduction while preserving meaning."""
         # Enhanced cost optimization techniques following agent-os best practices
-        
+
         # Remove excessive whitespace and empty lines
         lines = [line.strip() for line in prompt.split("\n") if line.strip()]
         optimized = "\n".join(lines)
-        
+
         # Intelligent abbreviation of common words/phrases
         abbreviations = {
             "please provide": "provide",
@@ -256,17 +256,17 @@ class DynamicPromptGenerator:
             "at this point in time": "now",
             "for the purpose of": "for",
         }
-        
+
         for verbose, concise in abbreviations.items():
             optimized = optimized.replace(verbose, concise)
-        
+
         # Remove redundant filler words while preserving meaning
         filler_patterns = [
             r'\b(actually|basically|essentially|literally)\b',
             r'\b(really|quite|very|extremely) (\w+)',  # Replace with just the word
             r'\b(please note that|it should be noted that|it is worth noting that)\b',
         ]
-        
+
         import re
         for pattern in filler_patterns:
             if r'(\w+)' in pattern:
@@ -274,15 +274,15 @@ class DynamicPromptGenerator:
                 optimized = re.sub(pattern, r'\2', optimized, flags=re.IGNORECASE)
             else:
                 optimized = re.sub(pattern, '', optimized, flags=re.IGNORECASE)
-        
+
         # Clean up any double spaces created by removals
         optimized = re.sub(r'\s+', ' ', optimized).strip()
-        
+
         # Log optimization results
         original_length = len(prompt)
         optimized_length = len(optimized)
         token_savings = original_length - optimized_length
-        
+
         if token_savings > 50:
             logger.debug(
                 "Applied cost optimization",
@@ -291,14 +291,14 @@ class DynamicPromptGenerator:
                 savings_tokens=(token_savings // 4),
                 savings_percent=f"{(token_savings/original_length)*100:.1f}%"
             )
-        
+
         return optimized
 
     def enhance_context_compression(self, context: ContextualMemory, max_tokens: int = 500) -> None:
         """Enhanced context compression with semantic preservation."""
         # Estimate current context size (rough: 1 token ≈ 4 characters)
         current_size = 0
-        
+
         # Calculate size of all context components
         if context.short_term:
             current_size += sum(len(str(v)) for v in context.short_term.values())
@@ -306,44 +306,44 @@ class DynamicPromptGenerator:
             current_size += sum(len(str(v)) for v in context.long_term.values())
         if context.summary:
             current_size += sum(len(str(v)) for v in context.summary.values())
-        
+
         estimated_tokens = current_size // 4
-        
+
         if estimated_tokens <= max_tokens:
             return  # No compression needed
-        
+
         logger.info(
             "Starting enhanced context compression",
             current_tokens=estimated_tokens,
             target_tokens=max_tokens
         )
-        
+
         # 1. Compress short-term memory using semantic clustering
         if context.short_term:
             context.short_term = self._compress_short_term_semantically(
                 context.short_term, max_items=5
             )
-        
+
         # 2. Create intelligent summary from historical data
         if context.long_term:
             summary_text = self._create_intelligent_summary(context.long_term)
             if summary_text:
                 context.summary["intelligent_summary"] = summary_text
-        
+
         # 3. Prioritize and compress summary
         if context.summary:
             context.summary = self._compress_summary(context.summary, max_tokens // 4)
-        
+
         # 4. Calculate final compression ratio
         final_size = 0
         if context.short_term:
             final_size += sum(len(str(v)) for v in context.short_term.values())
         if context.summary:
             final_size += sum(len(str(v)) for v in context.summary.values())
-        
+
         final_tokens = final_size // 4
         compression_ratio = 1 - (final_tokens / estimated_tokens) if estimated_tokens > 0 else 0
-        
+
         logger.info(
             "Context compression completed",
             original_tokens=estimated_tokens,
@@ -356,7 +356,7 @@ class DynamicPromptGenerator:
     ) -> dict[str, Any]:
         """Compress short-term memory using semantic clustering."""
         # Group related items together to preserve relationships
-        
+
         # Define semantic categories
         categories = {
             "actions": ["action", "execute", "run", "perform", "do"],
@@ -365,16 +365,16 @@ class DynamicPromptGenerator:
             "context": ["context", "background", "setting", "environment"],
             "goals": ["goal", "objective", "target", "aim", "purpose"],
         }
-        
+
         categorized = {}
         uncategorized = {}
-        
+
         # Categorize items
         for key, value in short_term.items():
             categorized_item = False
             key_lower = key.lower()
             value_str = str(value).lower()
-            
+
             for category, keywords in categories.items():
                 if any(keyword in key_lower or keyword in value_str for keyword in keywords):
                     if category not in categorized:
@@ -382,13 +382,13 @@ class DynamicPromptGenerator:
                     categorized[category].append((key, value))
                     categorized_item = True
                     break
-            
+
             if not categorized_item:
                 uncategorized[key] = value
-        
+
         # Compress within categories
         compressed = {}
-        
+
         for category, items in categorized.items():
             if len(items) == 1:
                 # Single item, keep as-is
@@ -404,9 +404,9 @@ class DynamicPromptGenerator:
                     else:
                         # Truncate long values
                         summary_parts.append(f"{key}: {str(value)[:47]}...")
-                
+
                 compressed[f"{category}_summary"] = " | ".join(summary_parts)
-        
+
         # Add most important uncategorized items
         remaining_slots = max_items - len(compressed)
         if remaining_slots > 0:
@@ -416,16 +416,16 @@ class DynamicPromptGenerator:
                 key=lambda x: len(str(x[1])),
                 reverse=True
             )
-            
+
             for key, value in sorted_uncategorized[:remaining_slots]:
                 compressed[key] = value
-        
+
         return compressed
 
     def _create_intelligent_summary(self, long_term: dict[str, Any]) -> str:
         """Create an intelligent summary of long-term context."""
         summary_parts = []
-        
+
         # Extract key patterns and frequently mentioned items
         key_patterns = {}
         for key, value in long_term.items():
@@ -437,7 +437,7 @@ class DynamicPromptGenerator:
                 key_patterns[pattern].append((key, value))
             else:
                 summary_parts.append(f"{key}: {value}")
-        
+
         # Summarize patterns
         for pattern, items in key_patterns.items():
             if len(items) > 1:
@@ -448,7 +448,7 @@ class DynamicPromptGenerator:
                 # Single item
                 key, value = items[0]
                 summary_parts.append(f"{key}: {value}")
-        
+
         return " | ".join(summary_parts[:5])  # Limit to 5 most important items
 
     def _compress_summary(self, summary: dict[str, Any], max_tokens: int) -> dict[str, Any]:
@@ -456,21 +456,21 @@ class DynamicPromptGenerator:
         # Priority order for summary components
         priority_keys = [
             "intelligent_summary",
-            "main_points", 
+            "main_points",
             "current_objective",
             "recent_context",
             "user_preferences",
             "constraints"
         ]
-        
+
         compressed = {}
         token_budget = max_tokens
-        
+
         for key in priority_keys:
             if key in summary and token_budget > 0:
                 value = str(summary[key])
                 value_tokens = len(value) // 4
-                
+
                 if value_tokens <= token_budget:
                     compressed[key] = value
                     token_budget -= value_tokens
@@ -480,17 +480,17 @@ class DynamicPromptGenerator:
                     if max_chars > 20:  # Only include if meaningful
                         compressed[key] = value[:max_chars-3] + "..."
                     break
-        
+
         # Add any remaining important keys if budget allows
         for key, value in summary.items():
             if key not in compressed and token_budget > 10:
                 value_str = str(value)
                 value_tokens = len(value_str) // 4
-                
+
                 if value_tokens <= token_budget:
                     compressed[key] = value_str
                     token_budget -= value_tokens
-        
+
         return compressed
 
 

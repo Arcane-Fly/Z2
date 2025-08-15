@@ -2,27 +2,23 @@
 Test configuration and fixtures for Z2 backend tests.
 """
 
+import os
+from unittest.mock import AsyncMock
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-import os
 
-from app.main import create_application
 from app.database.session import Base, get_db
-from tests.utils import (
-    create_mock_user,
-    create_test_client_with_auth,
-    MockRedisClient
-)
-
+from app.main import create_application
+from tests.utils import MockRedisClient, create_mock_user, create_test_client_with_auth
 
 # Test database URL
 TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL", 
+    "TEST_DATABASE_URL",
     "sqlite+aiosqlite:///:memory:"
 )
 
@@ -46,16 +42,16 @@ async def test_db():
         class_=AsyncSession,
         expire_on_commit=False
     )
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     async with TestSessionLocal() as session:
         yield session
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    
+
     await engine.dispose()
 
 
@@ -63,16 +59,16 @@ async def test_db():
 def client(test_db):
     """Create a test client for the FastAPI application."""
     app = create_application()
-    
+
     # Override the dependency to use test database
     async def override_get_db():
         yield test_db
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     # Clean up overrides
     app.dependency_overrides.clear()
 
@@ -136,21 +132,21 @@ def sample_a2a_handshake_request():
 def mock_session_service():
     """Mock session service for testing."""
     mock = AsyncMock()
-    
+
     # Mock MCP session methods
     mock.create_mcp_session = AsyncMock()
     mock.get_mcp_session = AsyncMock()
     mock.update_mcp_session_activity = AsyncMock()
     mock.close_mcp_session = AsyncMock()
     mock.list_active_mcp_sessions = AsyncMock(return_value=[])
-    
+
     # Mock A2A session methods
     mock.create_a2a_session = AsyncMock()
     mock.get_a2a_session = AsyncMock()
     mock.update_a2a_session_activity = AsyncMock()
     mock.close_a2a_session = AsyncMock()
     mock.list_active_a2a_sessions = AsyncMock(return_value=[])
-    
+
     # Mock task execution methods
     mock.create_task_execution = AsyncMock()
     mock.get_task_execution = AsyncMock()
@@ -158,7 +154,7 @@ def mock_session_service():
     mock.complete_task = AsyncMock()
     mock.cancel_task = AsyncMock()
     mock.list_running_tasks = AsyncMock(return_value=[])
-    
+
     # Mock statistics
     mock.get_session_statistics = AsyncMock(return_value={
         "active_mcp_sessions": 0,
@@ -166,7 +162,7 @@ def mock_session_service():
         "active_websocket_connections": 0,
         "running_tasks": 0,
     })
-    
+
     return mock
 
 
@@ -174,7 +170,7 @@ def mock_session_service():
 def mock_consent_service():
     """Mock consent service for testing."""
     mock = AsyncMock()
-    
+
     # Mock consent methods
     mock.create_consent_request = AsyncMock()
     mock.get_consent_request = AsyncMock()
@@ -187,7 +183,7 @@ def mock_consent_service():
     mock.get_audit_logs = AsyncMock(return_value=[])
     mock.get_user_active_consents = AsyncMock(return_value=[])
     mock.cleanup_expired_consents = AsyncMock(return_value=0)
-    
+
     return mock
 
 

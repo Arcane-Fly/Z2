@@ -9,7 +9,7 @@ import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
@@ -42,9 +42,9 @@ class ModelInfo:
     context_window: int
     input_cost_per_million_tokens: float
     output_cost_per_million_tokens: float
-    max_tokens_per_minute: Optional[int] = None
-    avg_latency_ms: Optional[float] = None
-    quality_score: Optional[float] = None  # 0-1 rating
+    max_tokens_per_minute: int | None = None
+    avg_latency_ms: float | None = None
+    quality_score: float | None = None  # 0-1 rating
 
     def has_capability(self, capability: ModelCapability) -> bool:
         """Check if this model has a specific capability."""
@@ -56,13 +56,13 @@ class LLMRequest:
     """Standardized request format for all LLM providers."""
 
     prompt: str
-    model_id: Optional[str] = None  # If None, will be routed dynamically
-    max_tokens: Optional[int] = None
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    stop_sequences: Optional[list[str]] = None
-    functions: Optional[list[dict[str, Any]]] = None
-    response_format: Optional[str] = None  # "json", "text", etc.
+    model_id: str | None = None  # If None, will be routed dynamically
+    max_tokens: int | None = None
+    temperature: float | None = None
+    top_p: float | None = None
+    stop_sequences: list[str] | None = None
+    functions: list[dict[str, Any]] | None = None
+    response_format: str | None = None  # "json", "text", etc.
     metadata: dict[str, Any] = None
 
 
@@ -77,7 +77,7 @@ class LLMResponse:
     cost_usd: float
     latency_ms: float
     finish_reason: str
-    function_calls: Optional[list[dict[str, Any]]] = None
+    function_calls: list[dict[str, Any]] | None = None
     metadata: dict[str, Any] = None
 
 
@@ -559,10 +559,10 @@ class GoogleAIProvider(LLMProvider):
         """Generate response using Google AI (Gemini)."""
         try:
             start_time = time.time()
-            
+
             # Configure model
             model = self.genai.GenerativeModel(request.model)
-            
+
             # Prepare messages
             messages = []
             for msg in request.messages:
@@ -570,7 +570,7 @@ class GoogleAIProvider(LLMProvider):
                     "role": msg.role,
                     "parts": [msg.content]
                 })
-            
+
             # Generate response
             response = await model.generate_content_async(
                 messages,
@@ -779,9 +779,9 @@ class RoutingPolicy:
     cost_weight: float = 0.3  # Weight for cost optimization
     latency_weight: float = 0.4  # Weight for latency optimization
     quality_weight: float = 0.3  # Weight for quality optimization
-    prefer_provider: Optional[str] = None  # Preferred provider
-    max_cost_per_request: Optional[float] = None  # Cost limit
-    max_latency_ms: Optional[float] = None  # Latency limit
+    prefer_provider: str | None = None  # Preferred provider
+    max_cost_per_request: float | None = None  # Cost limit
+    max_latency_ms: float | None = None  # Latency limit
     required_capabilities: list[ModelCapability] = None  # Required capabilities
 
 
@@ -1071,7 +1071,7 @@ class ModelIntegrationLayer:
     async def generate_response(
         self,
         request: LLMRequest,
-        policy: Optional[RoutingPolicy] = None,
+        policy: RoutingPolicy | None = None,
     ) -> LLMResponse:
         """Generate response using optimal model routing."""
 

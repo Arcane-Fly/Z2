@@ -6,12 +6,12 @@ This script helps diagnose and fix storage-related issues in Railway deployments
 It can be run independently or integrated into the application startup.
 """
 
+import json
 import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, UTC
-from typing import List, Dict, Any
-import json
+from typing import Any
 
 # Add the backend directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,16 +27,16 @@ except ImportError:
 
 class StorageDiagnostic:
     """Comprehensive storage diagnostic and repair utility."""
-    
+
     CRITICAL_PATHS = [
         "/app/storage",
-        "/data", 
+        "/data",
         "/storage",
         "/workspace/storage",
         "/opt/app/storage",
         "/tmp/storage"
     ]
-    
+
     def __init__(self):
         self.results = {
             "timestamp": datetime.now(UTC).isoformat(),
@@ -46,33 +46,33 @@ class StorageDiagnostic:
             "actions_taken": [],
             "final_status": "unknown"
         }
-    
-    def run_full_diagnostic(self) -> Dict[str, Any]:
+
+    def run_full_diagnostic(self) -> dict[str, Any]:
         """Run complete storage diagnostic."""
         print("🔍 Running Z2 Storage Diagnostic...")
         print("=" * 50)
-        
+
         # Test all potential storage paths
         self._test_all_paths()
-        
+
         # Check Railway environment
         self._check_railway_environment()
-        
+
         # Test current configuration
         self._test_current_config()
-        
+
         # Generate recommendations
         self._generate_recommendations()
-        
+
         # Attempt automatic fixes
         self._attempt_fixes()
-        
+
         # Print results
         self._print_results()
-        
+
         return self.results
-    
-    def _get_environment_info(self) -> Dict[str, Any]:
+
+    def _get_environment_info(self) -> dict[str, Any]:
         """Get environment information."""
         env_info = {
             "platform": os.name,
@@ -81,35 +81,35 @@ class StorageDiagnostic:
             "user": os.getenv("USER", "unknown"),
             "home": os.getenv("HOME", "unknown"),
         }
-        
+
         # Railway-specific variables
         railway_vars = {}
         for key in os.environ:
             if key.startswith("RAILWAY_"):
                 railway_vars[key] = os.environ[key]
         env_info["railway_variables"] = railway_vars
-        
-        # Storage-related variables  
+
+        # Storage-related variables
         storage_vars = {}
         for key in os.environ:
             if "STORAGE" in key.upper():
                 storage_vars[key] = os.environ[key]
         env_info["storage_variables"] = storage_vars
-        
+
         return env_info
-    
+
     def _test_all_paths(self):
         """Test all potential storage paths."""
         print("🧪 Testing storage paths...")
-        
+
         for path in self.CRITICAL_PATHS:
             result = self._test_path(path)
             self.results["path_tests"][path] = result
-            
+
             status_icon = "✅" if result["accessible"] else "❌"
             print(f"  {status_icon} {path}: {result['status']}")
-    
-    def _test_path(self, path: str) -> Dict[str, Any]:
+
+    def _test_path(self, path: str) -> dict[str, Any]:
         """Test a specific storage path."""
         path_obj = Path(path)
         result = {
@@ -120,23 +120,23 @@ class StorageDiagnostic:
             "status": "",
             "error": None
         }
-        
+
         try:
             # Test existence
             result["exists"] = path_obj.exists()
-            
+
             # Test accessibility (try to create if not exists)
             path_obj.mkdir(parents=True, exist_ok=True)
             result["accessible"] = True
-            
+
             # Test write access
             test_file = path_obj / f".test_{int(datetime.now(UTC).timestamp())}"
             test_file.write_text("test")
             test_file.unlink()
             result["writable"] = True
-            
+
             result["status"] = "Fully accessible and writable"
-            
+
         except PermissionError as e:
             result["error"] = str(e)
             result["status"] = "Permission denied"
@@ -146,32 +146,32 @@ class StorageDiagnostic:
         except Exception as e:
             result["error"] = str(e)
             result["status"] = f"Unexpected error: {str(e)}"
-        
+
         return result
-    
+
     def _check_railway_environment(self):
         """Check Railway-specific environment."""
         print("🚂 Checking Railway environment...")
-        
+
         railway_vars = self.results["environment"]["railway_variables"]
-        
+
         if not railway_vars:
             print("  ⚠️  Not running in Railway environment")
             return
-        
-        print(f"  ✅ Railway environment detected")
+
+        print("  ✅ Railway environment detected")
         print(f"     Project ID: {railway_vars.get('RAILWAY_PROJECT_ID', 'N/A')}")
         print(f"     Service ID: {railway_vars.get('RAILWAY_SERVICE_ID', 'N/A')}")
         print(f"     Environment: {railway_vars.get('RAILWAY_ENVIRONMENT', 'N/A')}")
-    
+
     def _test_current_config(self):
         """Test current application configuration."""
         print("⚙️  Testing current configuration...")
-        
+
         if settings:
             current_path = settings.storage_path
             print(f"  📁 Configured storage path: {current_path}")
-            
+
             if current_path in self.results["path_tests"]:
                 result = self.results["path_tests"][current_path]
                 if result["accessible"]:
@@ -182,21 +182,21 @@ class StorageDiagnostic:
                 # Test the configured path separately
                 result = self._test_path(current_path)
                 self.results["path_tests"][current_path] = result
-                
+
                 status_icon = "✅" if result["accessible"] else "❌"
                 print(f"  {status_icon} {result['status']}")
         else:
             print("  ⚠️  Could not load application configuration")
-    
+
     def _generate_recommendations(self):
         """Generate recommendations based on test results."""
         print("💡 Generating recommendations...")
-        
+
         working_paths = [
             path for path, result in self.results["path_tests"].items()
             if result["accessible"]
         ]
-        
+
         if not working_paths:
             self.results["recommendations"].extend([
                 "❌ No storage paths are accessible",
@@ -216,19 +216,19 @@ class StorageDiagnostic:
                 "🔧 Redeploy the service after making changes"
             ])
             self.results["final_status"] = "needs_attention"
-        
+
         for rec in self.results["recommendations"]:
             print(f"  {rec}")
-    
+
     def _attempt_fixes(self):
         """Attempt automatic fixes where possible."""
         print("🔧 Attempting automatic fixes...")
-        
+
         working_paths = [
             path for path, result in self.results["path_tests"].items()
             if result["accessible"]
         ]
-        
+
         if working_paths:
             # Initialize working storage paths
             for path in working_paths[:2]:  # Initialize top 2 working paths
@@ -238,7 +238,7 @@ class StorageDiagnostic:
                     print(f"  ✅ Initialized storage at {path}")
                 except Exception as e:
                     print(f"  ❌ Failed to initialize {path}: {str(e)}")
-        
+
         # Create Railway configuration file
         try:
             self._create_railway_config_file()
@@ -246,15 +246,15 @@ class StorageDiagnostic:
             print("  ✅ Created Railway configuration guide")
         except Exception as e:
             print(f"  ❌ Failed to create config guide: {str(e)}")
-    
+
     def _initialize_storage_structure(self, base_path: str):
         """Initialize storage directory structure."""
         base = Path(base_path)
         subdirs = ["uploads", "temp", "cache", "logs", "backups"]
-        
+
         for subdir in subdirs:
             (base / subdir).mkdir(exist_ok=True)
-        
+
         # Create marker file
         marker = base / ".z2_storage_initialized"
         marker.write_text(json.dumps({
@@ -263,17 +263,17 @@ class StorageDiagnostic:
             "service_id": os.getenv("RAILWAY_SERVICE_ID", "unknown"),
             "diagnostic_version": "1.0"
         }, indent=2))
-    
+
     def _create_railway_config_file(self):
         """Create Railway configuration guide file."""
         working_paths = [
             path for path, result in self.results["path_tests"].items()
             if result["accessible"]
         ]
-        
+
         if not working_paths:
             return
-        
+
         config_guide = {
             "railway_storage_configuration": {
                 "recommended_mount_path": working_paths[0],
@@ -293,7 +293,7 @@ class StorageDiagnostic:
                 ],
                 "troubleshooting_steps": [
                     "1. Update Railway service volume mount path",
-                    "2. Set STORAGE_PATH environment variable", 
+                    "2. Set STORAGE_PATH environment variable",
                     "3. Redeploy the service",
                     "4. Check /api/v1/debug/storage endpoint",
                     "5. Monitor application logs for storage errors"
@@ -301,36 +301,36 @@ class StorageDiagnostic:
             },
             "diagnostic_results": self.results
         }
-        
+
         config_file = Path("/tmp/railway_storage_config.json")
         config_file.write_text(json.dumps(config_guide, indent=2))
-    
+
     def _print_results(self):
         """Print final diagnostic results."""
         print("\n" + "=" * 50)
         print("📊 DIAGNOSTIC SUMMARY")
         print("=" * 50)
-        
+
         status_emoji = {
             "good": "✅",
-            "needs_attention": "⚠️", 
+            "needs_attention": "⚠️",
             "critical": "❌",
             "unknown": "❓"
         }
-        
+
         final_status = self.results["final_status"]
         print(f"Status: {status_emoji.get(final_status, '❓')} {final_status.upper()}")
-        
+
         working_count = sum(1 for result in self.results["path_tests"].values() if result["accessible"])
         total_count = len(self.results["path_tests"])
         print(f"Working paths: {working_count}/{total_count}")
-        
+
         if self.results["actions_taken"]:
             print("\nActions taken:")
             for action in self.results["actions_taken"]:
                 print(f"  • {action}")
-        
-        print(f"\nDetailed results saved to: /tmp/railway_storage_config.json")
+
+        print("\nDetailed results saved to: /tmp/railway_storage_config.json")
         print("=" * 50)
 
 
@@ -339,7 +339,7 @@ def main():
     try:
         diagnostic = StorageDiagnostic()
         results = diagnostic.run_full_diagnostic()
-        
+
         # Exit with appropriate code
         if results["final_status"] == "critical":
             sys.exit(1)
@@ -347,7 +347,7 @@ def main():
             sys.exit(2)
         else:
             sys.exit(0)
-            
+
     except Exception as e:
         print(f"❌ Diagnostic failed: {str(e)}")
         sys.exit(3)

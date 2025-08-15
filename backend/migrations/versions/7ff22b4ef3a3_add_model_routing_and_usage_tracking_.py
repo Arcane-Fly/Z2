@@ -5,17 +5,16 @@ Revises: f8a9c2d4e5b6
 Create Date: 2025-08-05 02:40:25.858573
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '7ff22b4ef3a3'
-down_revision: Union[str, Sequence[str], None] = 'f8a9c2d4e5b6'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = 'f8a9c2d4e5b6'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -81,7 +80,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_model_usage_tracking_model_id'), table_name='model_usage_tracking')
     op.drop_index(op.f('ix_model_usage_tracking_id'), table_name='model_usage_tracking')
     op.drop_table('model_usage_tracking')
-    
+
     op.drop_index(op.f('ix_model_routing_policies_created_at'), table_name='model_routing_policies')
     op.drop_index(op.f('ix_model_routing_policies_task_type'), table_name='model_routing_policies')
     op.drop_index(op.f('ix_model_routing_policies_name'), table_name='model_routing_policies')

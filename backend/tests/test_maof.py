@@ -3,8 +3,9 @@ Tests for the Multi-Agent Orchestration Framework (MAOF) Core Module
 """
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from app.agents.die import ContextualMemory, DynamicIntelligenceEngine
 from app.agents.maof import (
@@ -46,24 +47,24 @@ class TestTask:
         task = Task(name="Test Task")
 
         assert not task.is_cancellation_requested()
-        
+
         task.request_cancellation()
-        
+
         assert task.is_cancellation_requested()
         assert task.status == TaskStatus.CANCELLED
 
     def test_task_retry_logic(self):
         """Test task retry logic."""
         task = Task(name="Test Task", max_retries=2)
-        
+
         # Initially can retry
         task.status = TaskStatus.FAILED
         assert task.can_retry()
-        
+
         # After max retries, cannot retry
         task.retry_count = 2
         assert not task.can_retry()
-        
+
         # Completed tasks cannot retry
         task.status = TaskStatus.COMPLETED
         task.retry_count = 0
@@ -130,9 +131,9 @@ class TestWorkflowDefinition:
         workflow = WorkflowDefinition(name="Test Workflow")
 
         assert not workflow.is_stop_requested()
-        
+
         workflow.request_stop()
-        
+
         assert workflow.is_stop_requested()
         assert workflow.status == WorkflowStatus.STOPPING
 
@@ -140,7 +141,7 @@ class TestWorkflowDefinition:
         """Test getting task by ID."""
         task1 = Task(name="Task 1")
         task2 = Task(name="Task 2")
-        
+
         workflow = WorkflowDefinition(
             name="Test Workflow",
             tasks=[task1, task2]
@@ -148,7 +149,7 @@ class TestWorkflowDefinition:
 
         found_task = workflow.get_task_by_id(task1.id)
         assert found_task == task1
-        
+
         # Non-existent task
         from uuid import uuid4
         non_existent_task = workflow.get_task_by_id(uuid4())
@@ -163,11 +164,11 @@ class TestAgent:
         """Set up test fixtures."""
         self.mock_die = MagicMock(spec=DynamicIntelligenceEngine)
         self.mock_mil = MagicMock(spec=ModelIntegrationLayer)
-        
+
         # Mock DIE methods
         self.mock_die.generate_contextual_prompt.return_value = "Test prompt"
         self.mock_die.update_interaction_context = MagicMock()
-        
+
         # Mock MIL response
         self.mock_response = LLMResponse(
             content='{"result": "success"}',
@@ -186,9 +187,9 @@ class TestAgent:
             name="Test Agent",
             role=AgentRole.ANALYST
         )
-        
+
         agent = Agent(agent_def, self.mock_die, self.mock_mil)
-        
+
         assert agent.definition == agent_def
         assert agent.die == self.mock_die
         assert agent.mil == self.mock_mil
@@ -202,17 +203,17 @@ class TestAgent:
             timeout_seconds=30
         )
         agent = Agent(agent_def, self.mock_die, self.mock_mil)
-        
+
         task = Task(
             name="Test Task",
             description="Analyze data",
             input_data={"data": "test"}
         )
-        
+
         context = {"workflow_id": "test-workflow"}
-        
+
         result = await agent.execute_task(task, context)
-        
+
         assert task.status == TaskStatus.COMPLETED
         assert task.tokens_used == 100
         assert task.cost_usd == 0.01
@@ -223,13 +224,13 @@ class TestAgent:
         """Test task execution with cancellation."""
         agent_def = AgentDefinition(name="Test Agent")
         agent = Agent(agent_def, self.mock_die, self.mock_mil)
-        
+
         task = Task(name="Test Task")
         task.request_cancellation()  # Cancel before execution
-        
+
         with pytest.raises(asyncio.CancelledError):
             await agent.execute_task(task, {})
-        
+
         assert task.status == TaskStatus.CANCELLED
 
     async def test_agent_execute_task_timeout(self):
@@ -239,19 +240,19 @@ class TestAgent:
             timeout_seconds=1  # Very short timeout
         )
         agent = Agent(agent_def, self.mock_die, self.mock_mil)
-        
+
         # Mock a slow response
         async def slow_response(*args, **kwargs):
             await asyncio.sleep(2)  # Longer than timeout
             return self.mock_response
-        
+
         self.mock_mil.generate_response = slow_response
-        
+
         task = Task(name="Test Task")
-        
+
         with pytest.raises(asyncio.TimeoutError):
             await agent.execute_task(task, {})
-        
+
         assert task.status == TaskStatus.FAILED
         assert "timed out" in task.error_message
 
@@ -259,7 +260,7 @@ class TestAgent:
         """Test task execution with retry logic."""
         agent_def = AgentDefinition(name="Test Agent")
         agent = Agent(agent_def, self.mock_die, self.mock_mil)
-        
+
         # Mock failure then success
         call_count = 0
         async def mock_response_with_failure(*args, **kwargs):
@@ -268,13 +269,13 @@ class TestAgent:
             if call_count == 1:
                 raise Exception("Temporary failure")
             return self.mock_response
-        
+
         self.mock_mil.generate_response = mock_response_with_failure
-        
+
         task = Task(name="Test Task")
-        
-        result = await agent.execute_task(task, {})
-        
+
+        await agent.execute_task(task, {})
+
         assert task.status == TaskStatus.COMPLETED
         assert task.retry_count > 0  # Should have retried
         assert call_count == 2  # Failed once, succeeded on retry
@@ -288,7 +289,7 @@ class TestWorkflowOrchestrator:
         """Set up test fixtures."""
         self.mock_die = MagicMock(spec=DynamicIntelligenceEngine)
         self.mock_mil = MagicMock(spec=ModelIntegrationLayer)
-        
+
         # Mock responses
         self.mock_response = LLMResponse(
             content='{"output": "Task completed"}',
@@ -301,7 +302,7 @@ class TestWorkflowOrchestrator:
         )
         self.mock_mil.generate_response = AsyncMock(return_value=self.mock_response)
         self.mock_die.generate_contextual_prompt.return_value = "Test prompt"
-        
+
         self.orchestrator = WorkflowOrchestrator(self.mock_die, self.mock_mil)
 
     async def test_orchestrator_initialization(self):
@@ -318,14 +319,14 @@ class TestWorkflowOrchestrator:
             name="Test Agent",
             role=AgentRole.EXECUTOR
         )
-        
+
         # Create task
         task = Task(
             name="Simple Task",
             description="Do something simple",
             assigned_agent=agent.id
         )
-        
+
         # Create workflow
         workflow = WorkflowDefinition(
             name="Simple Workflow",
@@ -333,9 +334,9 @@ class TestWorkflowOrchestrator:
             agents=[agent],
             tasks=[task]
         )
-        
+
         result = await self.orchestrator.execute_workflow(workflow)
-        
+
         assert workflow.status == WorkflowStatus.COMPLETED
         assert len(workflow.completed_tasks) == 1
         assert len(workflow.failed_tasks) == 0
@@ -347,21 +348,21 @@ class TestWorkflowOrchestrator:
         # Create agents
         agent1 = AgentDefinition(name="Agent 1", role=AgentRole.PLANNER)
         agent2 = AgentDefinition(name="Agent 2", role=AgentRole.EXECUTOR)
-        
+
         # Create tasks with dependencies
         task1 = Task(
             name="Planning Task",
             description="Plan the work",
             assigned_agent=agent1.id
         )
-        
+
         task2 = Task(
             name="Execution Task",
             description="Execute the plan",
             assigned_agent=agent2.id,
             dependencies=[task1.id]  # Depends on task1
         )
-        
+
         # Create workflow
         workflow = WorkflowDefinition(
             name="Dependent Workflow",
@@ -369,9 +370,9 @@ class TestWorkflowOrchestrator:
             agents=[agent1, agent2],
             tasks=[task1, task2]
         )
-        
-        result = await self.orchestrator.execute_workflow(workflow)
-        
+
+        await self.orchestrator.execute_workflow(workflow)
+
         assert workflow.status == WorkflowStatus.COMPLETED
         assert len(workflow.completed_tasks) == 2
         assert task1.end_time <= task2.start_time  # task1 should complete before task2 starts
@@ -381,30 +382,30 @@ class TestWorkflowOrchestrator:
         # Create a workflow that takes some time
         agent = AgentDefinition(name="Test Agent")
         task = Task(name="Long Task", assigned_agent=agent.id)
-        
+
         workflow = WorkflowDefinition(
             name="Cancellable Workflow",
             agents=[agent],
             tasks=[task]
         )
-        
+
         # Mock a slow LLM response
         async def slow_response(*args, **kwargs):
             await asyncio.sleep(1)
             return self.mock_response
-        
+
         self.mock_mil.generate_response = slow_response
-        
+
         # Start workflow execution
         execution_task = asyncio.create_task(
             self.orchestrator.execute_workflow(workflow)
         )
-        
+
         # Cancel after a short delay
         await asyncio.sleep(0.1)
         workflow.request_stop()
         execution_task.cancel()
-        
+
         with pytest.raises(asyncio.CancelledError):
             await execution_task
 
@@ -412,14 +413,14 @@ class TestWorkflowOrchestrator:
         """Test workflow cost limit enforcement."""
         agent = AgentDefinition(name="Expensive Agent")
         task = Task(name="Expensive Task", assigned_agent=agent.id)
-        
+
         workflow = WorkflowDefinition(
             name="Cost Limited Workflow",
             agents=[agent],
             tasks=[task],
             max_cost_usd=0.001  # Very low limit
         )
-        
+
         # Mock expensive response
         expensive_response = LLMResponse(
             content="Expensive result",
@@ -431,9 +432,9 @@ class TestWorkflowOrchestrator:
             finish_reason="stop"
         )
         self.mock_mil.generate_response = AsyncMock(return_value=expensive_response)
-        
-        result = await self.orchestrator.execute_workflow(workflow)
-        
+
+        await self.orchestrator.execute_workflow(workflow)
+
         # Workflow should have exceeded cost limit and stopped
         assert workflow.total_cost_usd >= workflow.max_cost_usd
 
@@ -446,28 +447,28 @@ class TestWorkflowOrchestrator:
             skills=["research", "analysis"],
             knowledge_domains=["science"]
         )
-        
+
         coder = AgentDefinition(
             name="Coder",
             role=AgentRole.CODER,
             skills=["python", "javascript"],
             knowledge_domains=["programming"]
         )
-        
+
         # Create research task
         research_task = Task(
             name="Research Task",
             description="Conduct scientific research on climate change"
         )
-        
+
         # Create coding task
         coding_task = Task(
             name="Coding Task",
             description="Implement a Python script for data analysis"
         )
-        
-        workflow = WorkflowDefinition(agents=[researcher, coder])
-        
+
+        WorkflowDefinition(agents=[researcher, coder])
+
         # Test scoring
         researcher_research_score = self.orchestrator._calculate_agent_task_score(
             researcher, research_task
@@ -481,7 +482,7 @@ class TestWorkflowOrchestrator:
         coder_coding_score = self.orchestrator._calculate_agent_task_score(
             coder, coding_task
         )
-        
+
         # Researcher should score higher on research task
         assert researcher_research_score > researcher_coding_score
         # Coder should score higher on coding task
@@ -497,7 +498,7 @@ class TestMultiAgentOrchestrationFramework:
     def test_maof_initialization(self):
         """Test MAOF initialization."""
         maof = MultiAgentOrchestrationFramework()
-        
+
         assert isinstance(maof.die, DynamicIntelligenceEngine)
         assert isinstance(maof.mil, ModelIntegrationLayer)
         assert isinstance(maof.orchestrator, WorkflowOrchestrator)
@@ -506,10 +507,10 @@ class TestMultiAgentOrchestrationFramework:
     def test_workflow_templates(self):
         """Test that workflow templates are created."""
         maof = MultiAgentOrchestrationFramework()
-        
+
         assert "research_analysis" in maof.workflow_templates
         assert "code_development" in maof.workflow_templates
-        
+
         research_template = maof.workflow_templates["research_analysis"]
         assert research_template.name == "Research and Analysis Workflow"
         assert len(research_template.agents) == 3  # researcher, analyst, writer
@@ -519,18 +520,18 @@ class TestMultiAgentOrchestrationFramework:
     async def test_goal_oriented_workflow_with_template(self):
         """Test goal-oriented workflow execution with template."""
         maof = MultiAgentOrchestrationFramework()
-        
+
         # Mock the orchestrator
         maof.orchestrator.execute_workflow = AsyncMock(return_value={
             "status": "completed",
             "results": {"test": "success"}
         })
-        
+
         result = await maof.execute_goal_oriented_workflow(
             goal="Research artificial intelligence trends",
             template_name="research_analysis"
         )
-        
+
         assert result["status"] == "completed"
         assert maof.orchestrator.execute_workflow.called
 
@@ -538,17 +539,17 @@ class TestMultiAgentOrchestrationFramework:
     async def test_dynamic_workflow_creation(self):
         """Test dynamic workflow creation."""
         maof = MultiAgentOrchestrationFramework()
-        
+
         # Mock the orchestrator
         maof.orchestrator.execute_workflow = AsyncMock(return_value={
             "status": "completed",
             "results": {"dynamic": "workflow"}
         })
-        
+
         result = await maof.execute_goal_oriented_workflow(
             goal="Create a custom solution",
             template_name=None  # Should trigger dynamic creation
         )
-        
+
         assert result["status"] == "completed"
         assert maof.orchestrator.execute_workflow.called

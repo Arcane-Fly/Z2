@@ -2,12 +2,12 @@
 Tests for user management endpoints.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from app.api.v1.endpoints.users import router
-from app.schemas import UserUpdate, UserProfile
+import pytest
+
+from app.schemas import UserProfile, UserUpdate
 
 
 class TestUserEndpoints:
@@ -18,7 +18,7 @@ class TestUserEndpoints:
         """Test successful user update."""
         from app.api.v1.endpoints.users import update_user
         from app.models.user import User
-        
+
         # Create mock user
         user_id = uuid4()
         mock_user = MagicMock(spec=User)
@@ -60,7 +60,7 @@ class TestUserEndpoints:
         assert result.id == user_id
         assert result.username == "testuser"
         assert result.email == "updated@example.com"  # Should be updated
-        
+
         # Verify database operations
         mock_db.commit.assert_called_once()
         mock_db.refresh.assert_called_once_with(mock_user)
@@ -68,15 +68,16 @@ class TestUserEndpoints:
     @pytest.mark.asyncio
     async def test_user_update_authorization_check(self):
         """Test that users can't update other users unless admin."""
+        from fastapi import HTTPException
+
         from app.api.v1.endpoints.users import update_user
         from app.models.user import User
-        from fastapi import HTTPException
-        
+
         # Create mock target user
         target_user_id = uuid4()
         mock_target_user = MagicMock(spec=User)
         mock_target_user.id = target_user_id
-        
+
         # Create mock current user (different user, not admin)
         current_user_id = uuid4()
         mock_current_user = MagicMock(spec=User)
@@ -100,17 +101,18 @@ class TestUserEndpoints:
                 current_user=mock_current_user,
                 db=mock_db
             )
-        
+
         assert exc_info.value.status_code == 403
         assert "Not authorized" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_user_update_email_uniqueness(self):
         """Test email uniqueness validation during update."""
+        from fastapi import HTTPException
+
         from app.api.v1.endpoints.users import update_user
         from app.models.user import User
-        from fastapi import HTTPException
-        
+
         # Create mock user
         user_id = uuid4()
         mock_user = MagicMock(spec=User)
@@ -126,15 +128,15 @@ class TestUserEndpoints:
 
         # Create mock database session
         mock_db = AsyncMock()
-        
+
         # First query returns the user to update
         mock_result1 = AsyncMock()
         mock_result1.scalar_one_or_none.return_value = mock_user
-        
+
         # Second query returns existing user with email
         mock_result2 = AsyncMock()
         mock_result2.scalar_one_or_none.return_value = mock_existing_user
-        
+
         mock_db.execute.side_effect = [mock_result1, mock_result2]
 
         # Create update request with existing email
@@ -148,7 +150,7 @@ class TestUserEndpoints:
                 current_user=mock_current_user,
                 db=mock_db
             )
-        
+
         assert exc_info.value.status_code == 400
         assert "Email already registered" in exc_info.value.detail
 
@@ -157,7 +159,7 @@ class TestUserEndpoints:
         """Test that admin users can update user_type and is_active."""
         from app.api.v1.endpoints.users import update_user
         from app.models.user import User
-        
+
         # Create mock target user
         target_user_id = uuid4()
         mock_target_user = MagicMock(spec=User)
@@ -185,7 +187,7 @@ class TestUserEndpoints:
         )
 
         # Execute update
-        result = await update_user(
+        await update_user(
             user_id=target_user_id,
             user_update=user_update,
             current_user=mock_admin_user,

@@ -5,19 +5,13 @@ Database service layer for MCP and A2A session management.
 Handles session creation, tracking, and cleanup operations.
 """
 
-from datetime import datetime, timedelta, UTC
-from typing import Optional, Any
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import select, and_, or_, func, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.session import (
-    MCPSession,
-    A2ASession, 
-    A2ANegotiation,
-    TaskExecution
-)
+from app.models.session import A2ANegotiation, A2ASession, MCPSession, TaskExecution
 
 
 class SessionService:
@@ -32,16 +26,16 @@ class SessionService:
         session_id: str,
         protocol_version: str,
         client_info: dict,
-        client_capabilities: Optional[dict] = None,
-        server_capabilities: Optional[dict] = None,
+        client_capabilities: dict | None = None,
+        server_capabilities: dict | None = None,
         expires_in_minutes: int = 30,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> MCPSession:
         """Create a new MCP session."""
-        
+
         expires_at = datetime.now(UTC) + timedelta(minutes=expires_in_minutes)
-        
+
         session = MCPSession(
             session_id=session_id,
             protocol_version=protocol_version,
@@ -54,11 +48,11 @@ class SessionService:
             ip_address=ip_address,
             user_agent=user_agent,
         )
-        
+
         self.db.add(session)
         return session
 
-    async def get_mcp_session(self, session_id: str) -> Optional[MCPSession]:
+    async def get_mcp_session(self, session_id: str) -> MCPSession | None:
         """Get an MCP session by session ID."""
         result = await self.db.execute(
             select(MCPSession).where(MCPSession.session_id == session_id)
@@ -92,7 +86,7 @@ class SessionService:
         result = await self.db.execute(
             select(MCPSession).where(
                 and_(
-                    MCPSession.is_active == True,
+                    MCPSession.is_active is True,
                     or_(
                         MCPSession.expires_at.is_(None),
                         MCPSession.expires_at > now
@@ -111,14 +105,14 @@ class SessionService:
         agent_capabilities: list[str],
         protocol_version: str,
         expires_in_hours: int = 1,
-        public_key: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        public_key: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> A2ASession:
         """Create a new A2A session."""
-        
+
         expires_at = datetime.now(UTC) + timedelta(hours=expires_in_hours)
-        
+
         session = A2ASession(
             session_id=session_id,
             agent_id=agent_id,
@@ -130,11 +124,11 @@ class SessionService:
             ip_address=ip_address,
             user_agent=user_agent,
         )
-        
+
         self.db.add(session)
         return session
 
-    async def get_a2a_session(self, session_id: str) -> Optional[A2ASession]:
+    async def get_a2a_session(self, session_id: str) -> A2ASession | None:
         """Get an A2A session by session ID."""
         result = await self.db.execute(
             select(A2ASession).where(A2ASession.session_id == session_id)
@@ -142,13 +136,13 @@ class SessionService:
         return result.scalar_one_or_none()
 
     async def update_a2a_session_activity(
-        self, session_id: str, has_websocket: Optional[bool] = None
+        self, session_id: str, has_websocket: bool | None = None
     ) -> bool:
         """Update the last activity timestamp for an A2A session."""
         values = {"last_activity": datetime.now(UTC)}
         if has_websocket is not None:
             values["has_websocket"] = has_websocket
-            
+
         result = await self.db.execute(
             update(A2ASession)
             .where(A2ASession.session_id == session_id)
@@ -175,7 +169,7 @@ class SessionService:
         result = await self.db.execute(
             select(A2ASession).where(
                 and_(
-                    A2ASession.is_active == True,
+                    A2ASession.is_active is True,
                     A2ASession.expires_at > now
                 )
             )
@@ -190,16 +184,16 @@ class SessionService:
         requested_skills: list[str],
         available_skills: list[str],
         task_description: str,
-        task_parameters: Optional[dict] = None,
+        task_parameters: dict | None = None,
         accepted: bool = False,
-        proposed_workflow: Optional[dict] = None,
-        estimated_duration: Optional[int] = None,
-        cost_estimate: Optional[str] = None,
+        proposed_workflow: dict | None = None,
+        estimated_duration: int | None = None,
+        cost_estimate: str | None = None,
         priority: int = 5,
-        timeout_seconds: Optional[int] = None,
+        timeout_seconds: int | None = None,
     ) -> A2ANegotiation:
         """Create a new A2A negotiation."""
-        
+
         negotiation = A2ANegotiation(
             negotiation_id=negotiation_id,
             session_id=session_id,
@@ -215,11 +209,11 @@ class SessionService:
             timeout_seconds=timeout_seconds,
             status="accepted" if accepted else "pending",
         )
-        
+
         self.db.add(negotiation)
         return negotiation
 
-    async def get_a2a_negotiation(self, negotiation_id: str) -> Optional[A2ANegotiation]:
+    async def get_a2a_negotiation(self, negotiation_id: str) -> A2ANegotiation | None:
         """Get an A2A negotiation by negotiation ID."""
         result = await self.db.execute(
             select(A2ANegotiation).where(A2ANegotiation.negotiation_id == negotiation_id)
@@ -230,7 +224,7 @@ class SessionService:
         self,
         negotiation_id: str,
         status: str,
-        completed_at: Optional[datetime] = None,
+        completed_at: datetime | None = None,
     ) -> bool:
         """Update the status of a negotiation."""
         values = {"status": status}
@@ -238,7 +232,7 @@ class SessionService:
             values["completed_at"] = completed_at
         elif status in ["completed", "failed"]:
             values["completed_at"] = datetime.now(UTC)
-            
+
         result = await self.db.execute(
             update(A2ANegotiation)
             .where(A2ANegotiation.negotiation_id == negotiation_id)
@@ -253,12 +247,12 @@ class SessionService:
         session_id: str,
         task_type: str,
         task_name: str,
-        task_parameters: Optional[dict] = None,
-        negotiation_id: Optional[str] = None,
+        task_parameters: dict | None = None,
+        negotiation_id: str | None = None,
         can_cancel: bool = True,
     ) -> TaskExecution:
         """Create a new task execution record."""
-        
+
         task = TaskExecution(
             task_id=task_id,
             session_id=session_id,
@@ -268,11 +262,11 @@ class SessionService:
             task_parameters=task_parameters,
             can_cancel=can_cancel,
         )
-        
+
         self.db.add(task)
         return task
 
-    async def get_task_execution(self, task_id: str) -> Optional[TaskExecution]:
+    async def get_task_execution(self, task_id: str) -> TaskExecution | None:
         """Get a task execution by task ID."""
         result = await self.db.execute(
             select(TaskExecution).where(TaskExecution.task_id == task_id)
@@ -283,18 +277,18 @@ class SessionService:
         self,
         task_id: str,
         progress: float,
-        status: Optional[str] = None,
+        status: str | None = None,
     ) -> bool:
         """Update task progress and optionally status."""
         values = {"progress": str(progress)}
-        
+
         if status:
             values["status"] = status
             if status == "running" and not await self._task_has_started(task_id):
                 values["started_at"] = datetime.now(UTC)
             elif status in ["completed", "failed", "cancelled"]:
                 values["completed_at"] = datetime.now(UTC)
-                
+
         result = await self.db.execute(
             update(TaskExecution)
             .where(TaskExecution.task_id == task_id)
@@ -305,25 +299,25 @@ class SessionService:
     async def complete_task(
         self,
         task_id: str,
-        result: Optional[dict] = None,
-        error_message: Optional[str] = None,
-        error_details: Optional[dict] = None,
+        result: dict | None = None,
+        error_message: str | None = None,
+        error_details: dict | None = None,
     ) -> bool:
         """Complete a task with result or error."""
         status = "failed" if error_message else "completed"
-        
+
         values = {
             "status": status,
             "completed_at": datetime.now(UTC),
         }
-        
+
         if result:
             values["result"] = result
         if error_message:
             values["error_message"] = error_message
         if error_details:
             values["error_details"] = error_details
-            
+
         result = await self.db.execute(
             update(TaskExecution)
             .where(TaskExecution.task_id == task_id)
@@ -335,13 +329,13 @@ class SessionService:
         self,
         task_id: str,
         cancelled_by: str,
-        cancellation_reason: Optional[str] = None,
+        cancellation_reason: str | None = None,
     ) -> bool:
         """Cancel a running task."""
         task = await self.get_task_execution(task_id)
         if not task or not task.can_cancel or task.status in ["completed", "failed", "cancelled"]:
             return False
-            
+
         result = await self.db.execute(
             update(TaskExecution)
             .where(TaskExecution.task_id == task_id)
@@ -356,16 +350,16 @@ class SessionService:
         return result.rowcount > 0
 
     async def list_session_tasks(
-        self, session_id: str, status: Optional[str] = None
+        self, session_id: str, status: str | None = None
     ) -> list[TaskExecution]:
         """List tasks for a session."""
         query = select(TaskExecution).where(TaskExecution.session_id == session_id)
-        
+
         if status:
             query = query.where(TaskExecution.status == status)
-            
+
         query = query.order_by(TaskExecution.created_at.desc())
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
@@ -380,13 +374,13 @@ class SessionService:
     async def cleanup_expired_sessions(self) -> dict[str, int]:
         """Clean up expired sessions and return counts."""
         now = datetime.now(UTC)
-        
+
         # Close expired MCP sessions
         mcp_result = await self.db.execute(
             update(MCPSession)
             .where(
                 and_(
-                    MCPSession.is_active == True,
+                    MCPSession.is_active is True,
                     MCPSession.expires_at <= now
                 )
             )
@@ -395,13 +389,13 @@ class SessionService:
                 closed_at=now
             )
         )
-        
+
         # Close expired A2A sessions
         a2a_result = await self.db.execute(
             update(A2ASession)
             .where(
                 and_(
-                    A2ASession.is_active == True,
+                    A2ASession.is_active is True,
                     A2ASession.expires_at <= now
                 )
             )
@@ -411,7 +405,7 @@ class SessionService:
                 closed_at=now
             )
         )
-        
+
         return {
             "mcp_sessions_closed": mcp_result.rowcount,
             "a2a_sessions_closed": a2a_result.rowcount,
@@ -420,7 +414,7 @@ class SessionService:
     async def cleanup_old_negotiations(self, days_old: int = 7) -> int:
         """Clean up old completed negotiations."""
         cutoff_date = datetime.now(UTC) - timedelta(days=days_old)
-        
+
         result = await self.db.execute(
             select(A2ANegotiation).where(
                 and_(
@@ -429,17 +423,17 @@ class SessionService:
                 )
             )
         )
-        
+
         negotiations = result.scalars().all()
         for negotiation in negotiations:
             await self.db.delete(negotiation)
-            
+
         return len(negotiations)
 
     async def cleanup_old_tasks(self, days_old: int = 30) -> int:
         """Clean up old completed task executions."""
         cutoff_date = datetime.now(UTC) - timedelta(days=days_old)
-        
+
         result = await self.db.execute(
             select(TaskExecution).where(
                 and_(
@@ -448,11 +442,11 @@ class SessionService:
                 )
             )
         )
-        
+
         tasks = result.scalars().all()
         for task in tasks:
             await self.db.delete(task)
-            
+
         return len(tasks)
 
     # Helper methods
@@ -467,12 +461,12 @@ class SessionService:
     async def get_session_statistics(self) -> dict[str, Any]:
         """Get session statistics."""
         now = datetime.now(UTC)
-        
+
         # Count active MCP sessions
         mcp_count = await self.db.execute(
             select(func.count(MCPSession.id)).where(
                 and_(
-                    MCPSession.is_active == True,
+                    MCPSession.is_active is True,
                     or_(
                         MCPSession.expires_at.is_(None),
                         MCPSession.expires_at > now
@@ -480,35 +474,35 @@ class SessionService:
                 )
             )
         )
-        
+
         # Count active A2A sessions
         a2a_count = await self.db.execute(
             select(func.count(A2ASession.id)).where(
                 and_(
-                    A2ASession.is_active == True,
+                    A2ASession.is_active is True,
                     A2ASession.expires_at > now
                 )
             )
         )
-        
+
         # Count WebSocket connections
         ws_count = await self.db.execute(
             select(func.count(A2ASession.id)).where(
                 and_(
-                    A2ASession.is_active == True,
-                    A2ASession.has_websocket == True,
+                    A2ASession.is_active is True,
+                    A2ASession.has_websocket is True,
                     A2ASession.expires_at > now
                 )
             )
         )
-        
+
         # Count running tasks
         running_tasks = await self.db.execute(
             select(func.count(TaskExecution.id)).where(
                 TaskExecution.status == "running"
             )
         )
-        
+
         return {
             "active_mcp_sessions": mcp_count.scalar(),
             "active_a2a_sessions": a2a_count.scalar(),

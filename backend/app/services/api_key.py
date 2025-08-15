@@ -4,15 +4,14 @@ Provides secure API key generation, validation, and usage tracking.
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_key import APIKey, APIKeyUsage
-from app.models.user import User
 
 logger = structlog.get_logger(__name__)
 
@@ -27,23 +26,23 @@ class APIKeyService:
         self,
         user_id: UUID,
         name: str,
-        description: Optional[str] = None,
-        permissions: Optional[List[str]] = None,
-        allowed_endpoints: Optional[List[str]] = None,
+        description: str | None = None,
+        permissions: list[str] | None = None,
+        allowed_endpoints: list[str] | None = None,
         rate_limit_per_hour: int = 1000,
-        expires_in_days: Optional[int] = None,
+        expires_in_days: int | None = None,
     ) -> tuple[APIKey, str]:
         """Create a new API key and return the key and model."""
-        
+
         # Generate secure API key
         api_key_string, key_hash = APIKey.generate_key()
         key_prefix = api_key_string[:10]  # Store first 10 chars for identification
-        
+
         # Set expiration if specified
         expires_at = None
         if expires_in_days:
             expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
-        
+
         # Create API key model
         api_key = APIKey(
             name=name,
@@ -56,11 +55,11 @@ class APIKeyService:
             rate_limit_per_hour=rate_limit_per_hour,
             expires_at=expires_at,
         )
-        
+
         self.db.add(api_key)
         await self.db.commit()
         await self.db.refresh(api_key)
-        
+
         logger.info(
             "Created API key",
             api_key_id=str(api_key.id),
@@ -69,39 +68,39 @@ class APIKeyService:
             permissions=permissions,
             expires_at=expires_at.isoformat() if expires_at else None,
         )
-        
+
         return api_key, api_key_string
 
-    async def validate_api_key(self, api_key_string: str) -> Optional[APIKey]:
+    async def validate_api_key(self, api_key_string: str) -> APIKey | None:
         """Validate an API key and return the associated key model if valid."""
         if not api_key_string or not api_key_string.startswith("z2_"):
             return None
-        
+
         # Hash the provided key
         key_hash = APIKey.hash_key(api_key_string)
-        
+
         # Find the API key in database
         result = await self.db.execute(
             select(APIKey).where(
                 and_(
                     APIKey.key_hash == key_hash,
-                    APIKey.is_active == True,
+                    APIKey.is_active is True,
                 )
             )
         )
         api_key = result.scalar_one_or_none()
-        
+
         if not api_key or not api_key.is_valid():
             return None
-        
+
         # Update last used timestamp
         api_key.last_used_at = datetime.utcnow()
         api_key.usage_count += 1
         await self.db.commit()
-        
+
         return api_key
 
-    async def list_user_api_keys(self, user_id: UUID) -> List[APIKey]:
+    async def list_user_api_keys(self, user_id: UUID) -> list[APIKey]:
         """List all API keys for a user."""
         result = await self.db.execute(
             select(APIKey)
@@ -110,7 +109,7 @@ class APIKeyService:
         )
         return list(result.scalars().all())
 
-    async def get_api_key(self, api_key_id: UUID, user_id: UUID) -> Optional[APIKey]:
+    async def get_api_key(self, api_key_id: UUID, user_id: UUID) -> APIKey | None:
         """Get a specific API key belonging to a user."""
         result = await self.db.execute(
             select(APIKey).where(
@@ -127,7 +126,7 @@ class APIKeyService:
         api_key_id: UUID,
         user_id: UUID,
         **updates: Any,
-    ) -> Optional[APIKey]:
+    ) -> APIKey | None:
         """Update an API key."""
         api_key = await self.get_api_key(api_key_id, user_id)
         if not api_key:
@@ -164,15 +163,15 @@ class APIKeyService:
         method: str,
         status_code: int,
         response_time_ms: int,
-        user_agent: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        request_size_bytes: Optional[int] = None,
-        response_size_bytes: Optional[int] = None,
-        error_type: Optional[str] = None,
-        error_message: Optional[str] = None,
+        user_agent: str | None = None,
+        ip_address: str | None = None,
+        request_size_bytes: int | None = None,
+        response_size_bytes: int | None = None,
+        error_type: str | None = None,
+        error_message: str | None = None,
     ) -> APIKeyUsage:
         """Record API key usage for monitoring and rate limiting."""
-        
+
         usage = APIKeyUsage(
             api_key_id=api_key.id,
             endpoint=endpoint,
@@ -203,14 +202,14 @@ class APIKeyService:
 
     async def check_rate_limit(
         self, api_key: APIKey, window_hours: int = 1
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Check if API key is within rate limits."""
         if not api_key.rate_limit_per_hour:
             return {"allowed": True, "limit": None, "usage": 0, "remaining": None}
 
         # Count usage in the last window
         cutoff_time = datetime.utcnow() - timedelta(hours=window_hours)
-        
+
         result = await self.db.execute(
             select(func.count(APIKeyUsage.id))
             .where(
@@ -240,9 +239,9 @@ class APIKeyService:
         api_key_id: UUID,
         user_id: UUID,
         days_back: int = 7,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get usage statistics for an API key."""
-        
+
         # Verify ownership
         api_key = await self.get_api_key(api_key_id, user_id)
         if not api_key:
@@ -320,12 +319,12 @@ class APIKeyService:
 
     async def cleanup_expired_keys(self) -> int:
         """Clean up expired API keys by deactivating them."""
-        
+
         # Find expired keys that are still active
         result = await self.db.execute(
             select(APIKey).where(
                 and_(
-                    APIKey.is_active == True,
+                    APIKey.is_active is True,
                     APIKey.expires_at < datetime.utcnow(),
                 )
             )

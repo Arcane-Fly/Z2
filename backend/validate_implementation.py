@@ -7,23 +7,22 @@ without requiring a full database setup.
 """
 
 import asyncio
-import json
-from datetime import datetime, UTC
 from unittest.mock import AsyncMock
-from app.services.session_service import SessionService
-from app.services.consent_service import ConsentService
-from app.api.v1.endpoints.mcp import MCPInitializeRequest, MCPCapabilities
+
 from app.api.v1.endpoints.a2a import A2AHandshakeRequest
+from app.api.v1.endpoints.mcp import MCPCapabilities, MCPInitializeRequest
+from app.services.consent_service import ConsentService
+from app.services.session_service import SessionService
 
 
 async def test_session_service():
     """Test the session service functionality."""
     print("🔧 Testing Session Service...")
-    
+
     # Mock database
     mock_db = AsyncMock()
     service = SessionService(mock_db)
-    
+
     # Test MCP session creation
     mcp_session = await service.create_mcp_session(
         session_id="test-mcp-123",
@@ -32,9 +31,9 @@ async def test_session_service():
         client_capabilities={"resources": {"subscribe": True}},
         server_capabilities={"tools": {"progress": True}},
     )
-    
+
     print(f"✅ MCP Session created: {mcp_session.session_id}")
-    
+
     # Test A2A session creation
     a2a_session = await service.create_a2a_session(
         session_id="test-a2a-456",
@@ -43,9 +42,9 @@ async def test_session_service():
         agent_capabilities=["reasoning", "analysis"],
         protocol_version="1.0.0",
     )
-    
+
     print(f"✅ A2A Session created: {a2a_session.session_id}")
-    
+
     # Test task execution
     task = await service.create_task_execution(
         task_id="test-task-789",
@@ -54,13 +53,13 @@ async def test_session_service():
         task_name="execute_agent",
         task_parameters={"agent_id": "test", "task": "analyze data"},
     )
-    
+
     print(f"✅ Task created: {task.task_id}")
-    
+
     # Test progress update
     await service.update_task_progress("test-task-789", 0.5, "running")
     print("✅ Task progress updated")
-    
+
     # Test task completion
     await service.complete_task(
         "test-task-789",
@@ -72,11 +71,11 @@ async def test_session_service():
 async def test_consent_service():
     """Test the consent service functionality."""
     print("\n🔐 Testing Consent Service...")
-    
+
     # Mock database
     mock_db = AsyncMock()
     service = ConsentService(mock_db)
-    
+
     # Test consent request creation
     request = await service.create_consent_request(
         user_id="test-user-123",
@@ -86,9 +85,9 @@ async def test_consent_service():
         permissions=["agent:execute"],
         expires_in_hours=24,
     )
-    
+
     print(f"✅ Consent request created: {request.id}")
-    
+
     # Test access policy creation
     policy = await service.create_or_update_access_policy(
         resource_type="tool",
@@ -98,9 +97,9 @@ async def test_consent_service():
         max_usage_per_hour=10,
         description="Agent execution tool",
     )
-    
+
     print(f"✅ Access policy created: {policy.policy_key}")
-    
+
     # Test audit log creation
     audit_log = await service.create_audit_log(
         user_id="test-user-123",
@@ -109,14 +108,14 @@ async def test_consent_service():
         resource_name="execute_agent",
         details={"test": "validation"},
     )
-    
+
     print(f"✅ Audit log created: {audit_log.id}")
 
 
 def test_protocol_models():
     """Test the protocol model validation."""
     print("\n📋 Testing Protocol Models...")
-    
+
     # Test MCP models
     mcp_request = MCPInitializeRequest(
         protocolVersion="2025-03-26",
@@ -128,9 +127,9 @@ def test_protocol_models():
         ),
         clientInfo={"name": "test-client", "version": "1.0.0"},
     )
-    
+
     print(f"✅ MCP Initialize Request: {mcp_request.protocolVersion}")
-    
+
     # Test A2A models
     a2a_request = A2AHandshakeRequest(
         agent_id="test-agent-456",
@@ -138,23 +137,23 @@ def test_protocol_models():
         capabilities=["reasoning", "analysis", "coordination"],
         protocol_version="1.0.0",
     )
-    
+
     print(f"✅ A2A Handshake Request: {a2a_request.agent_id}")
 
 
 def test_feature_showcase():
     """Showcase the key features implemented."""
     print("\n🎯 Feature Showcase...")
-    
+
     features = {
         "Database Persistence": [
             "✅ ConsentRequest, ConsentGrant, AccessPolicy, ConsentAuditLog models",
-            "✅ MCPSession, A2ASession, A2ANegotiation, TaskExecution models", 
+            "✅ MCPSession, A2ASession, A2ANegotiation, TaskExecution models",
             "✅ ConsentService and SessionService for database operations",
         ],
         "MCP Protocol Enhancements": [
             "✅ Dynamic resource and tool discovery",
-            "✅ Streaming responses with Server-Sent Events", 
+            "✅ Streaming responses with Server-Sent Events",
             "✅ Progress tracking and task cancellation",
             "✅ Enhanced sampling API with context awareness",
             "✅ Session persistence and management",
@@ -181,7 +180,7 @@ def test_feature_showcase():
             "✅ Error handling and recovery scenarios",
         ],
     }
-    
+
     for category, items in features.items():
         print(f"\n{category}:")
         for item in items:
@@ -192,13 +191,13 @@ async def main():
     """Run the validation tests."""
     print("🚀 Z2 Phase 5 - A2A & MCP Protocol Compliance Validation")
     print("=" * 60)
-    
+
     try:
         await test_session_service()
         await test_consent_service()
         test_protocol_models()
         test_feature_showcase()
-        
+
         print("\n" + "=" * 60)
         print("🎉 All validation tests completed successfully!")
         print("\n📊 Implementation Summary:")
@@ -208,9 +207,9 @@ async def main():
         print("  • Consent and access control: ✅ Complete")
         print("  • Integration testing: ✅ Complete")
         print("  • Protocol compliance: ✅ Complete")
-        
+
         print("\n🔧 Ready for production deployment!")
-        
+
     except Exception as e:
         print(f"\n❌ Validation failed: {e}")
         import traceback

@@ -10,17 +10,17 @@ from pydantic import BaseModel, Field
 
 # Import quantum schemas
 from .quantum import (
+    MetricsConfiguration,
+    QuantumError,
     QuantumTaskCreate,
-    QuantumTaskUpdate,
-    QuantumTaskResponse,
     QuantumTaskDetailResponse,
-    QuantumTaskListResponse,
     QuantumTaskExecutionRequest,
+    QuantumTaskListResponse,
+    QuantumTaskResponse,
+    QuantumTaskUpdate,
     QuantumThreadResultResponse,
     VariationCreate,
     VariationResponse,
-    MetricsConfiguration,
-    QuantumError,
 )
 
 
@@ -29,7 +29,7 @@ class BaseResponse(BaseModel):
     """Base response schema."""
 
     success: bool = True
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class PaginationParams(BaseModel):
@@ -64,7 +64,7 @@ class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: str = Field(..., pattern=r"^[^@]+@[^@]+\.[^@]+$")
     password: str = Field(..., min_length=6)
-    full_name: Optional[str] = Field(None, max_length=255)
+    full_name: str | None = Field(None, max_length=255)
     user_type: str = Field(default="operator", pattern="^(developer|operator)$")
 
 
@@ -72,25 +72,25 @@ class TokenResponse(BaseModel):
     """Token response."""
 
     access_token: str
-    refresh_token: Optional[str] = None
+    refresh_token: str | None = None
     token_type: str = "bearer"
     expires_in: int
 
 
 class RefreshTokenRequest(BaseModel):
     """Refresh token request."""
-    
+
     refresh_token: str
 
 
-# User update schema  
+# User update schema
 class UserUpdate(BaseModel):
     """User update request."""
-    
-    full_name: Optional[str] = Field(None, max_length=255)
-    email: Optional[str] = Field(None, pattern=r"^[^@]+@[^@]+\.[^@]+$")
-    user_type: Optional[str] = Field(None, pattern="^(developer|operator)$")
-    is_active: Optional[bool] = None
+
+    full_name: str | None = Field(None, max_length=255)
+    email: str | None = Field(None, pattern=r"^[^@]+@[^@]+\.[^@]+$")
+    user_type: str | None = Field(None, pattern="^(developer|operator)$")
+    is_active: bool | None = None
 
 
 class UserProfile(BaseModel):
@@ -99,12 +99,12 @@ class UserProfile(BaseModel):
     id: UUID
     username: str
     email: str
-    full_name: Optional[str]
+    full_name: str | None
     user_type: str
     is_active: bool
     is_superuser: bool
     created_at: datetime
-    last_login: Optional[datetime]
+    last_login: datetime | None
 
     class Config:
         from_attributes = True
@@ -115,7 +115,7 @@ class AgentCreate(BaseModel):
     """Agent creation request."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: str | None = Field(None, max_length=1000)
     role: str = Field(
         ...,
         pattern="^(researcher|analyst|writer|coder|reviewer|planner|executor|coordinator|validator)$",
@@ -136,12 +136,12 @@ class AgentCreate(BaseModel):
 class AgentUpdate(BaseModel):
     """Agent update request."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=1000)
-    system_prompt: Optional[str] = Field(None, min_length=10)
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1, le=32000)
-    timeout_seconds: Optional[int] = Field(None, ge=30, le=3600)
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=1000)
+    system_prompt: str | None = Field(None, min_length=10)
+    temperature: float | None = Field(None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(None, ge=1, le=32000)
+    timeout_seconds: int | None = Field(None, ge=30, le=3600)
 
 
 class AgentResponse(BaseModel):
@@ -149,7 +149,7 @@ class AgentResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     role: str
     system_prompt: str
     status: str
@@ -162,13 +162,13 @@ class AgentResponse(BaseModel):
     # Metrics
     total_executions: int
     total_tokens_used: int
-    average_response_time: Optional[float]
+    average_response_time: float | None
 
     # Metadata
     created_by: UUID
     created_at: datetime
     updated_at: datetime
-    last_used: Optional[datetime]
+    last_used: datetime | None
 
     class Config:
         from_attributes = True
@@ -180,8 +180,8 @@ class AgentExecutionRequest(BaseModel):
     task_description: str = Field(..., min_length=10)
     input_data: dict[str, Any] = Field(default_factory=dict)
     expected_output_format: str = Field(default="json")
-    max_tokens: Optional[int] = Field(None, ge=1, le=32000)
-    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: int | None = Field(None, ge=1, le=32000)
+    temperature: float | None = Field(None, ge=0.0, le=2.0)
 
 
 class AgentExecutionResponse(BaseModel):
@@ -202,7 +202,7 @@ class TaskCreate(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=10)
-    assigned_agent: Optional[UUID] = None
+    assigned_agent: UUID | None = None
     dependencies: list[UUID] = Field(default_factory=list)
     input_data: dict[str, Any] = Field(default_factory=dict)
     expected_output: dict[str, Any] = Field(default_factory=dict)
@@ -213,7 +213,7 @@ class WorkflowCreate(BaseModel):
     """Workflow creation request."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: str | None = Field(None, max_length=1000)
     goal: str = Field(..., min_length=10)
 
     # Configuration
@@ -231,11 +231,11 @@ class WorkflowCreate(BaseModel):
 class WorkflowUpdate(BaseModel):
     """Workflow update request."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=1000)
-    goal: Optional[str] = Field(None, min_length=10)
-    max_duration_seconds: Optional[int] = Field(None, ge=60, le=86400)
-    max_cost_usd: Optional[float] = Field(None, ge=0.1, le=1000.0)
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=1000)
+    goal: str | None = Field(None, min_length=10)
+    max_duration_seconds: int | None = Field(None, ge=60, le=86400)
+    max_cost_usd: float | None = Field(None, ge=0.1, le=1000.0)
 
 
 class WorkflowResponse(BaseModel):
@@ -243,7 +243,7 @@ class WorkflowResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     goal: str
     status: str
 
@@ -253,7 +253,7 @@ class WorkflowResponse(BaseModel):
     require_human_approval: bool
 
     # Execution state
-    current_step: Optional[str]
+    current_step: str | None
     progress_percentage: float = 0.0
 
     # Metrics
@@ -262,8 +262,8 @@ class WorkflowResponse(BaseModel):
 
     # Timing
     created_at: datetime
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    started_at: datetime | None
+    completed_at: datetime | None
 
     # Relationships
     created_by: UUID
@@ -289,7 +289,7 @@ class WorkflowExecutionResponse(BaseModel):
     workflow_id: UUID
     status: str
     started_at: datetime
-    estimated_completion: Optional[datetime]
+    estimated_completion: datetime | None
     progress: dict[str, Any]
 
 
@@ -305,8 +305,8 @@ class ModelInfo(BaseModel):
     context_window: int
     input_cost_per_million_tokens: float
     output_cost_per_million_tokens: float
-    avg_latency_ms: Optional[float]
-    quality_score: Optional[float]
+    avg_latency_ms: float | None
+    quality_score: float | None
 
 
 class ModelTestRequest(BaseModel):
@@ -335,9 +335,9 @@ class RoutingPolicyUpdate(BaseModel):
     cost_weight: float = Field(default=0.3, ge=0.0, le=1.0)
     latency_weight: float = Field(default=0.4, ge=0.0, le=1.0)
     quality_weight: float = Field(default=0.3, ge=0.0, le=1.0)
-    prefer_provider: Optional[str] = None
-    max_cost_per_request: Optional[float] = Field(None, ge=0.001)
-    max_latency_ms: Optional[float] = Field(None, ge=100)
+    prefer_provider: str | None = None
+    max_cost_per_request: float | None = Field(None, ge=0.001)
+    max_latency_ms: float | None = Field(None, ge=100)
 
 
 class ModelMetricsResponse(BaseModel):
@@ -350,7 +350,7 @@ class ModelMetricsResponse(BaseModel):
     total_cost_usd: float
     avg_latency_ms: float
     success_rate: float
-    last_used: Optional[datetime]
+    last_used: datetime | None
 
 
 # System schemas
@@ -369,5 +369,5 @@ class ErrorResponse(BaseModel):
 
     success: bool = False
     error: str
-    detail: Optional[str] = None
+    detail: str | None = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)

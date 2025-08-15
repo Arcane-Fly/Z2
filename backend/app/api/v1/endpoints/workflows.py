@@ -3,7 +3,6 @@ Workflow orchestration endpoints for Z2 API.
 """
 
 from datetime import UTC, datetime
-from typing import Optional
 from uuid import UUID
 
 import structlog
@@ -11,7 +10,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth_dependencies import get_current_active_user, RequireWorkflowWrite, RequireWorkflowRead
+from app.core.auth_dependencies import (
+    get_current_active_user,
+)
 from app.database.session import get_db
 from app.models.user import User
 from app.models.workflow import Workflow, WorkflowExecution
@@ -33,11 +34,11 @@ router = APIRouter()
 async def list_workflows(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    search: Optional[str] = Query(None, description="Search by name or description"),
-    status: Optional[str] = Query(None, description="Filter by workflow status"),
-    created_by: Optional[UUID] = Query(None, description="Filter by creator"),
-    is_template: Optional[bool] = Query(None, description="Filter by template status"),
-    template_category: Optional[str] = Query(None, description="Filter by template category"),
+    search: str | None = Query(None, description="Search by name or description"),
+    status: str | None = Query(None, description="Filter by workflow status"),
+    created_by: UUID | None = Query(None, description="Filter by creator"),
+    is_template: bool | None = Query(None, description="Filter by template status"),
+    template_category: str | None = Query(None, description="Filter by template category"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -368,17 +369,22 @@ async def start_workflow(
         )
 
     # Create and execute workflow using MAOF
-    from app.agents.maof import WorkflowOrchestrator, WorkflowDefinition, Task as MAOFTask, AgentDefinition, AgentRole
-    from app.agents.die import DynamicIntelligenceEngine
-    from app.agents.mil import ModelIntegrationLayer
     import time
-    
+
+    from app.agents.die import DynamicIntelligenceEngine
+    from app.agents.maof import Task as MAOFTask
+    from app.agents.maof import (
+        WorkflowDefinition,
+        WorkflowOrchestrator,
+    )
+    from app.agents.mil import ModelIntegrationLayer
+
     try:
         # Initialize the orchestration components
         die = DynamicIntelligenceEngine()
         mil = ModelIntegrationLayer()
         orchestrator = WorkflowOrchestrator(die, mil)
-        
+
         # Convert database workflow to MAOF WorkflowDefinition
         workflow_def = WorkflowDefinition(
             id=workflow.id,
@@ -389,7 +395,7 @@ async def start_workflow(
             max_cost_usd=workflow.max_cost_usd,
             tasks=[]  # Will be populated from database or auto-generated
         )
-        
+
         # Auto-generate basic tasks if none exist
         if not workflow_def.tasks:
             # Create a simple task structure for the workflow goal
@@ -401,25 +407,25 @@ async def start_workflow(
                 expected_output=execution_request.input_data
             )
             workflow_def.tasks.append(task)
-        
+
         # Update workflow status
         workflow.status = "running"
         workflow.started_at = datetime.now(UTC)
         await db.commit()
-        
+
         # Execute workflow in background (simplified for now)
         # In production, this would be handled by a task queue
         start_time = time.time()
         execution_result = await orchestrator.execute_workflow(workflow_def)
         execution_time = time.time() - start_time
-        
+
         # Update workflow with results
         workflow.status = "completed"
         workflow.completed_at = datetime.now(UTC)
         workflow.total_tokens_used = execution_result.get("total_tokens", 0)
         workflow.total_cost_usd = execution_result.get("total_cost", 0.0)
         await db.commit()
-        
+
         from uuid import uuid4
         return WorkflowExecutionResponse(
             execution_id=uuid4(),
@@ -436,15 +442,15 @@ async def start_workflow(
                 "result": execution_result
             }
         )
-        
+
     except Exception as e:
         # Handle execution failure
         workflow.status = "failed"
         workflow.completed_at = datetime.now(UTC)
         await db.commit()
-        
+
         logger.error("Workflow execution failed", workflow_id=workflow_id, error=str(e))
-        
+
         from uuid import uuid4
         return WorkflowExecutionResponse(
             execution_id=uuid4(),
@@ -453,7 +459,7 @@ async def start_workflow(
             started_at=workflow.started_at,
             estimated_completion=None,
             progress={
-                "current_step": "failed", 
+                "current_step": "failed",
                 "completion_percentage": 0,
                 "error": str(e),
                 "steps_completed": 0,

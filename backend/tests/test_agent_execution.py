@@ -2,9 +2,10 @@
 Tests for agent execution integration.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
+
+import pytest
 
 from app.schemas import AgentExecutionRequest, AgentExecutionResponse
 
@@ -18,7 +19,7 @@ class TestAgentExecution:
         from app.api.v1.endpoints.agents import execute_agent_task
         from app.models.agent import Agent
         from app.models.user import User
-        
+
         # Create mock agent
         agent_id = uuid4()
         mock_agent = MagicMock(spec=Agent)
@@ -82,10 +83,11 @@ class TestAgentExecution:
     @pytest.mark.asyncio
     async def test_agent_execution_not_found(self):
         """Test agent execution with non-existent agent."""
+        from fastapi import HTTPException
+
         from app.api.v1.endpoints.agents import execute_agent_task
         from app.models.user import User
-        from fastapi import HTTPException
-        
+
         # Create mock user
         mock_user = MagicMock(spec=User)
         mock_user.id = uuid4()
@@ -109,18 +111,19 @@ class TestAgentExecution:
                 current_user=mock_user,
                 db=mock_db
             )
-        
+
         assert exc_info.value.status_code == 404
         assert "Agent not found" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_agent_execution_error_handling(self):
         """Test agent execution error handling."""
+        from fastapi import HTTPException
+
         from app.api.v1.endpoints.agents import execute_agent_task
         from app.models.agent import Agent
         from app.models.user import User
-        from fastapi import HTTPException
-        
+
         # Create mock agent
         agent_id = uuid4()
         mock_agent = MagicMock(spec=Agent)
@@ -157,7 +160,7 @@ class TestAgentExecution:
                     current_user=mock_user,
                     db=mock_db
                 )
-            
+
             assert exc_info.value.status_code == 500
             assert "Agent execution failed" in exc_info.value.detail
 

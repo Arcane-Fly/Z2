@@ -6,8 +6,9 @@ including JSON arrays and comma-separated strings.
 """
 
 import os
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from app.core.config import Settings
 
@@ -24,7 +25,7 @@ class TestCORSConfiguration:
     def test_json_array_format(self):
         """Test parsing CORS origins from JSON array format."""
         cors_value = '["https://frontend.com","https://app.domain.com","http://localhost:3000"]'
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://frontend.com", "https://app.domain.com", "http://localhost:3000"]
@@ -33,7 +34,7 @@ class TestCORSConfiguration:
     def test_comma_separated_format(self):
         """Test parsing CORS origins from comma-separated format."""
         cors_value = "https://frontend.com,https://app.domain.com,http://localhost:3000"
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://frontend.com", "https://app.domain.com", "http://localhost:3000"]
@@ -42,7 +43,7 @@ class TestCORSConfiguration:
     def test_comma_separated_with_spaces(self):
         """Test parsing CORS origins from comma-separated format with spaces."""
         cors_value = "https://frontend.com, https://app.domain.com, http://localhost:3000"
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://frontend.com", "https://app.domain.com", "http://localhost:3000"]
@@ -51,7 +52,7 @@ class TestCORSConfiguration:
     def test_single_origin(self):
         """Test parsing single CORS origin."""
         cors_value = "https://frontend.com"
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://frontend.com"]
@@ -60,7 +61,7 @@ class TestCORSConfiguration:
     def test_empty_string(self):
         """Test handling empty CORS origins string."""
         cors_value = ""
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             # Should fallback to defaults
@@ -69,7 +70,7 @@ class TestCORSConfiguration:
     def test_whitespace_only(self):
         """Test handling whitespace-only CORS origins string."""
         cors_value = "   "
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             # Should fallback to defaults
@@ -78,7 +79,7 @@ class TestCORSConfiguration:
     def test_railway_production_format(self):
         """Test Railway production JSON format with domain variables."""
         cors_value = '["https://z2f-production.up.railway.app"]'
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://z2f-production.up.railway.app"]
@@ -87,7 +88,7 @@ class TestCORSConfiguration:
     def test_mixed_protocol_origins(self):
         """Test mixed HTTP and HTTPS origins."""
         cors_value = "https://secure.domain.com,http://localhost:3000,http://localhost:5173"
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://secure.domain.com", "http://localhost:3000", "http://localhost:5173"]
@@ -97,7 +98,7 @@ class TestCORSConfiguration:
         """Test that malformed JSON falls back to comma-separated parsing."""
         # This is a malformed JSON but valid comma-separated string
         cors_value = '["https://frontend.com","missing-quote]'
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             # Should parse as comma-separated when JSON parsing fails
@@ -107,7 +108,7 @@ class TestCORSConfiguration:
     def test_empty_json_array(self):
         """Test empty JSON array."""
         cors_value = "[]"
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             # Should fallback to defaults when empty
@@ -116,7 +117,7 @@ class TestCORSConfiguration:
     def test_json_array_with_empty_strings(self):
         """Test JSON array with empty strings (should be filtered out)."""
         cors_value = '["https://frontend.com","","http://localhost:3000"]'
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://frontend.com", "http://localhost:3000"]
@@ -125,7 +126,7 @@ class TestCORSConfiguration:
     def test_comma_separated_with_empty_values(self):
         """Test comma-separated with empty values (should be filtered out)."""
         cors_value = "https://frontend.com,,http://localhost:3000,"
-        
+
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings = Settings()
             expected = ["https://frontend.com", "http://localhost:3000"]
@@ -141,7 +142,7 @@ class TestCORSConfiguration:
             '[]',
             'https://app1.com, https://app2.com',
         ]
-        
+
         for cors_value in test_cases:
             with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
                 # This should not raise any exceptions
@@ -157,7 +158,7 @@ class TestCORSIntegration:
     def test_application_starts_with_comma_separated_cors(self):
         """Test that the FastAPI application starts successfully with comma-separated CORS."""
         from app.main import create_application
-        
+
         cors_value = "https://frontend.com,http://localhost:3000"
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             # This should not raise any exceptions during app creation
@@ -167,7 +168,7 @@ class TestCORSIntegration:
     def test_application_starts_with_json_cors(self):
         """Test that the FastAPI application starts successfully with JSON CORS."""
         from app.main import create_application
-        
+
         cors_value = '["https://frontend.com","http://localhost:3000"]'
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             # This should not raise any exceptions during app creation
@@ -176,13 +177,12 @@ class TestCORSIntegration:
 
     def test_cors_middleware_gets_correct_origins(self):
         """Test that CORS middleware receives the correct origins list."""
-        from app.core.config import settings
-        
+
         cors_value = "https://frontend.com,http://localhost:3000"
         with patch.dict(os.environ, {"CORS_ORIGINS": cors_value}):
             settings_instance = Settings()
             cors_list = settings_instance.cors_origins_list
-            
+
             # Verify the list is properly formatted for middleware
             assert isinstance(cors_list, list)
             assert "https://frontend.com" in cors_list

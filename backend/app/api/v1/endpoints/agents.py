@@ -2,7 +2,6 @@
 Agent management endpoints for Z2 API.
 """
 
-from typing import Optional
 from uuid import UUID
 
 import structlog
@@ -10,7 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth_dependencies import get_current_active_user, RequireAgentWrite, RequireAgentRead
+from app.core.auth_dependencies import (
+    get_current_active_user,
+)
 from app.database.session import get_db
 from app.models.agent import Agent
 from app.models.user import User
@@ -32,10 +33,10 @@ router = APIRouter()
 async def list_agents(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Items per page"),
-    search: Optional[str] = Query(None, description="Search by name or description"),
-    role: Optional[str] = Query(None, description="Filter by agent role"),
-    status: Optional[str] = Query(None, description="Filter by agent status"),
-    created_by: Optional[UUID] = Query(None, description="Filter by creator"),
+    search: str | None = Query(None, description="Search by name or description"),
+    role: str | None = Query(None, description="Filter by agent role"),
+    status: str | None = Query(None, description="Filter by agent status"),
+    created_by: UUID | None = Query(None, description="Filter by creator"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -306,22 +307,23 @@ async def execute_agent_task(
         )
 
     # Create a BasicAIAgent instance from the database agent
-    from app.agents.basic_agent import BasicAIAgent
     import time
     from datetime import UTC, datetime
-    
+
+    from app.agents.basic_agent import BasicAIAgent
+
     basic_agent = BasicAIAgent(
         name=agent.name,
         role=agent.role
     )
-    
+
     # Configure agent with database settings
     basic_agent.temperature = execution_request.temperature or agent.temperature
     basic_agent.max_tokens = execution_request.max_tokens or agent.max_tokens
-    
+
     # Execute the task
     start_time = time.time()
-    
+
     try:
         # Create enhanced context for the task
         task_context = {
@@ -334,34 +336,34 @@ async def execute_agent_task(
                 "temperature": execution_request.temperature or agent.temperature
             }
         }
-        
+
         # Use enhanced prompt processing for superior results
         response = await basic_agent.process_message_enhanced(
             user_message=execution_request.task_description,
             context=task_context,
             model_preference=execution_request.preferred_model
         )
-        
+
         execution_time_ms = (time.time() - start_time) * 1000
-        
+
         # Update agent statistics in database
         agent.total_executions += 1
         agent.last_used = datetime.now(UTC)
-        
+
         # Estimate token usage and cost (basic estimation)
-        estimated_tokens = len(task_prompt.split()) + len(response.split())
+        estimated_tokens = len(execution_request.task_description.split()) + len(response.split())
         estimated_cost = estimated_tokens * 0.00001  # Rough estimate
-        
+
         agent.total_tokens_used += estimated_tokens
-        
+
         # Update average response time
         if agent.average_response_time:
             agent.average_response_time = (agent.average_response_time + execution_time_ms) / 2
         else:
             agent.average_response_time = execution_time_ms
-            
+
         await db.commit()
-        
+
         from uuid import uuid4
         return AgentExecutionResponse(
             task_id=uuid4(),
@@ -376,7 +378,7 @@ async def execute_agent_task(
             execution_time_ms=execution_time_ms,
             model_used="dynamic"  # Would be set by actual MIL integration
         )
-        
+
     except Exception as e:
         logger.error("Agent execution failed", agent_id=agent_id, error=str(e))
         raise HTTPException(

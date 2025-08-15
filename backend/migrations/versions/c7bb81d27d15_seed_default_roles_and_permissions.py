@@ -5,20 +5,19 @@ Revises: b32d1e47ba53
 Create Date: 2025-07-27 00:34:37.296933
 
 """
-from typing import Sequence, Union
 import uuid
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-
 
 # revision identifiers, used by Alembic.
 revision: str = 'c7bb81d27d15'
-down_revision: Union[str, Sequence[str], None] = 'b32d1e47ba53'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = 'b32d1e47ba53'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -33,7 +32,7 @@ def upgrade() -> None:
         sa.column('created_at', sa.DateTime),
         sa.column('updated_at', sa.DateTime),
     )
-    
+
     # Define roles table for inserts
     roles_table = sa.table('roles',
         sa.column('id', postgresql.UUID),
@@ -51,7 +50,7 @@ def upgrade() -> None:
         sa.column('permission_id', postgresql.UUID),
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Insert default permissions
     permissions_data = [
@@ -59,19 +58,19 @@ def upgrade() -> None:
         ('users:read', 'Read user information', 'users', 'read'),
         ('users:write', 'Create and update users', 'users', 'write'),
         ('users:delete', 'Delete users', 'users', 'delete'),
-        
+
         # Agent permissions
         ('agents:read', 'Read agent information', 'agents', 'read'),
         ('agents:write', 'Create and update agents', 'agents', 'write'),
         ('agents:delete', 'Delete agents', 'agents', 'delete'),
         ('agents:execute', 'Execute agent tasks', 'agents', 'execute'),
-        
+
         # Workflow permissions
         ('workflows:read', 'Read workflow information', 'workflows', 'read'),
         ('workflows:write', 'Create and update workflows', 'workflows', 'write'),
         ('workflows:delete', 'Delete workflows', 'workflows', 'delete'),
         ('workflows:execute', 'Execute workflows', 'workflows', 'execute'),
-        
+
         # System permissions
         ('system:admin', 'Full system administration', 'system', 'admin'),
         ('system:manage', 'System management', 'system', 'manage'),
@@ -166,9 +165,9 @@ def downgrade() -> None:
     """Downgrade schema."""
     # Clean up role-permission relationships
     op.execute("DELETE FROM role_permissions")
-    
+
     # Clean up roles
     op.execute("DELETE FROM roles WHERE is_system_role = true")
-    
+
     # Clean up permissions
     op.execute("DELETE FROM permissions")
