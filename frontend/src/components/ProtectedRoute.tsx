@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
   requiredRole?: string;
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps): JSX.Element {
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps): React.JSX.Element {
   const { authState } = useAuth();
   const location = useLocation();
 
