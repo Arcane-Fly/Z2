@@ -1,0 +1,36 @@
+name: Validate Lockfiles
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    paths:
+      - 'frontend/package.json'
+      - 'frontend/yarn.lock'
+      - 'backend/pyproject.toml'
+      - 'backend/poetry.lock'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Validate Frontend
+        working-directory: ./frontend
+        run: |
+          corepack prepare yarn@4.3.1 --activate
+          yarn install --immutable --check-cache
+      - name: Validate Backend
+        working-directory: ./backend
+        run: |
+          python3 -c "
+          with open('pyproject.toml', 'r') as f:
+              content = f.read()
+          if '[tool.poetry]' not in content:
+              raise ValueError('Missing [tool.poetry] section')
+          print('✅ Backend pyproject.toml is valid')
+          "
