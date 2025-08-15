@@ -1,13 +1,21 @@
 import { useState } from 'react';
 
+type UserType = 'developer' | 'operator' | 'admin';
+
 interface RoleSelectorProps {
-  value: string;
-  onChange: (role: string) => void;
+  value: UserType;
+  onChange: (role: UserType) => void;
   error?: string;
   disabled?: boolean;
+  availableRoles?: UserType[];
 }
 
-const ROLES = [
+const ALL_ROLES: Array<{
+  value: UserType;
+  label: string;
+  description: string;
+  icon: string;
+}> = [
   { 
     value: 'developer', 
     label: 'Developer', 
@@ -28,8 +36,11 @@ const ROLES = [
   }
 ];
 
-export function RoleSelector({ value, onChange, error, disabled = false }: RoleSelectorProps) {
+export function RoleSelector({ value, onChange, error, disabled = false, availableRoles }: RoleSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const availableRoleValues = availableRoles || ['developer', 'operator', 'admin'];
+  const ROLES = ALL_ROLES.filter(role => availableRoleValues.includes(role.value));
 
   const selectedRole = ROLES.find(r => r.value === value);
 
