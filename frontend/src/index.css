@@ -67,3 +67,27 @@
     transform: rotate(360deg);
   }
 }
+
+/* Global icon size constraints for safety */
+@layer components {
+  /* Ensure HeroIcons have reasonable default constraints */
+  svg[data-testid*="Icon"],
+  svg[class*="Icon"] {
+    @apply max-w-[2rem] max-h-[2rem];
+  }
+  
+  /* Ensure icons in buttons are properly sized */
+  button svg {
+    @apply w-5 h-5;
+  }
+  
+  /* Navigation icons get standard sizing */
+  nav svg {
+    @apply w-6 h-6;
+  }
+  
+  /* Small action buttons get smaller icons */
+  .inline-flex svg {
+    @apply w-4 h-4;
+  }
+}
