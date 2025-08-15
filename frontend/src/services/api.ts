@@ -4,26 +4,19 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { ApiResponse, User, Agent, Workflow, AuthToken, LoginRequest } from '../types';
+import { API_CONFIG } from './apiConfig';
 
 class ApiService {
   private client: AxiosInstance;
   private baseURL: string;
 
   constructor() {
-    // Protocol-aware fallback for production environments
-    const defaultURL = (() => {
-      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-        // In production HTTPS, use HTTPS with backend domain
-        return `https://${window.location.hostname.replace('z2-production', 'z2-backend-production')}`;
-      }
-      return 'http://localhost:8000';
-    })();
-    
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || defaultURL;
+    this.baseURL = API_CONFIG.baseURL;
     
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
+      timeout: API_CONFIG.timeout,
+      withCredentials: API_CONFIG.withCredentials,
       headers: {
         'Content-Type': 'application/json',
       },
