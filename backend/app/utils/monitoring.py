@@ -461,6 +461,60 @@ class MetricsCollector:
         return generate_latest()
 
 
+class PerformanceMetrics:
+    """Simple performance metrics tracking."""
+    
+    def __init__(self):
+        self.request_count = 0
+        self.total_response_time = 0.0
+        self.error_count = 0
+        self.response_times = []
+        self.memory_usage = []
+        
+    def add_request(self, response_time: float, is_error: bool = False):
+        """Add a request to the metrics."""
+        self.request_count += 1
+        self.total_response_time += response_time
+        self.response_times.append(response_time)
+        
+        if is_error:
+            self.error_count += 1
+            
+    @property
+    def average_response_time(self) -> float:
+        """Calculate average response time."""
+        if self.request_count == 0:
+            return 0.0
+        return self.total_response_time / self.request_count
+        
+    @property 
+    def error_rate(self) -> float:
+        """Calculate error rate as percentage."""
+        if self.request_count == 0:
+            return 0.0
+        return (self.error_count / self.request_count) * 100
+
+
+def format_performance_summary(metrics: PerformanceMetrics) -> str:
+    """Format performance metrics into a summary string."""
+    return f"""Performance Summary:
+- Requests: {metrics.request_count}
+- Average Response Time: {metrics.average_response_time:.3f}s
+- Error Rate: {metrics.error_rate:.2f}%
+- Total Errors: {metrics.error_count}"""
+
+
+def get_system_metrics() -> dict:
+    """Get current system metrics."""
+    return {
+        "cpu_percent": psutil.cpu_percent(),
+        "memory_percent": psutil.virtual_memory().percent,
+        "memory_available_gb": psutil.virtual_memory().available / (1024**3),
+        "disk_percent": psutil.disk_usage('/').percent,
+        "disk_free_gb": psutil.disk_usage('/').free / (1024**3),
+    }
+
+
 # Global instances
 sentry_config = SentryConfig()
 health_checker = HealthChecker()

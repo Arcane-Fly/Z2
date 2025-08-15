@@ -8,44 +8,55 @@ from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 import os
 
 from app.main import create_application
 from app.database.session import Base, get_db
+from tests.utils import (
+    create_mock_user,
+    create_test_client_with_auth,
+    MockRedisClient
+)
 
 
 # Test database URL
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL", 
-    "sqlite+aiosqlite:///./test.db"
+    "sqlite+aiosqlite:///:memory:"
 )
 
-# Create test engine
-test_engine = create_async_engine(
-    TEST_DATABASE_URL,
-    echo=False,
-    future=True
-)
-
-# Create test session factory
-TestSessionLocal = sessionmaker(
-    bind=test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+# Create test engine with unique database per test
+def create_test_engine():
+    return create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        echo=False,
+        future=True,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False}
+    )
 
 
 @pytest_asyncio.fixture
 async def test_db():
     """Create test database and clean up after tests."""
-    async with test_engine.begin() as conn:
+    engine = create_test_engine()
+    TestSessionLocal = sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+    
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
     async with TestSessionLocal() as session:
         yield session
     
-    async with test_engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    
+    await engine.dispose()
 
 
 @pytest.fixture
@@ -266,3 +277,27 @@ def malicious_payloads():
             "`cat /etc/passwd`",
         ]
     }
+
+
+@pytest.fixture
+def sample_user():
+    """Provide a sample user for testing."""
+    return create_mock_user()
+
+
+@pytest.fixture
+def authenticated_client(test_db, sample_user):
+    """Provide an authenticated test client."""
+    return create_test_client_with_auth(test_db, sample_user)
+
+
+@pytest.fixture
+def unauthenticated_client(test_db):
+    """Provide an unauthenticated test client."""
+    return create_test_client_with_auth(test_db, None)
+
+
+@pytest.fixture
+def mock_redis():
+    """Provide a mock Redis client for testing."""
+    return MockRedisClient()
