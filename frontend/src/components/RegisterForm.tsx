@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { RegisterRequest } from '../types/auth';
+import { RoleSelector } from './auth/RoleSelector';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -153,20 +154,12 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps):
             </div>
 
             <div>
-              <label htmlFor="user_type" className="block text-sm font-medium text-gray-700">
-                User Type
-              </label>
-              <select
-                id="user_type"
-                name="user_type"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              <RoleSelector
                 value={formData.user_type}
-                onChange={handleChange}
+                onChange={(role) => setFormData(prev => ({ ...prev, user_type: role as 'developer' | 'operator' }))}
                 disabled={isLoading}
-              >
-                <option value="operator">Operator - Execute workflows and agents</option>
-                <option value="developer">Developer - Create and manage agents/workflows</option>
-              </select>
+                availableRoles={['developer', 'operator']}
+              />
             </div>
 
             <div>
