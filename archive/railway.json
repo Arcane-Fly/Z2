@@ -4,10 +4,8 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT",
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 30,
-    "restartPolicyType": "ALWAYS",
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
 }

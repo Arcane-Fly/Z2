@@ -5,7 +5,10 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 
-// Create a client
+// Apply theme BEFORE React renders (persisted preference or default)
+document.documentElement.className =
+  localStorage.getItem('theme') || 'dark'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
