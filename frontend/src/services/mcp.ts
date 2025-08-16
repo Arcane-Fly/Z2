@@ -80,6 +80,10 @@ export interface MCPStatistics {
     progress_tracking: boolean;
     session_persistence: boolean;
   };
+  // Add execution statistics for dashboard
+  totalExecutions?: number;
+  successfulExecutions?: number;
+  failedExecutions?: number;
 }
 
 class MCPService {
@@ -399,6 +403,7 @@ class MCPService {
     workflows: any[];
     metrics: any;
     activity: any[];
+    systemHealth?: string; // Add systemHealth property
   }> {
     const [agentResource, workflowResource, metricsResource] = await Promise.all([
       this.getResource('agent://default'),
@@ -410,7 +415,8 @@ class MCPService {
       agents: [agentResource.content],
       workflows: workflowResource.content?.workflows || [],
       metrics: metricsResource.content,
-      activity: await this.getActivity(20) // Get real activity data
+      activity: await this.getActivity(20), // Get real activity data
+      systemHealth: 'healthy' // Default system health status
     };
   }
 
