@@ -2499,9 +2499,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.199":
-  version: 1.5.202
-  resolution: "electron-to-chromium@npm:1.5.202"
-  checksum: 10/817489b2856f65e2d0bbe03d64a01999bf47dda3637f3a895b4cec13aecbe5c50ba17279aa0a33a592853fd0e002ada9aa72d1e57151ff75561fdd775d0c31c3
+  version: 1.5.203
+  resolution: "electron-to-chromium@npm:1.5.203"
+  checksum: 10/ccf4f434c02c1da715917535cc1100e52ab5118a919bbc98ff147eed17cd1d78ffbdef9444e5ce80f113b245dedd4ca03b1aeb5eea69d7883d866d2a315834cb
   languageName: node
   linkType: hard
 
@@ -5052,20 +5052,20 @@ __metadata:
   linkType: hard
 
 "react-router-dom@npm:^7.8.0":
-  version: 7.8.0
-  resolution: "react-router-dom@npm:7.8.0"
+  version: 7.8.1
+  resolution: "react-router-dom@npm:7.8.1"
   dependencies:
-    react-router: "npm:7.8.0"
+    react-router: "npm:7.8.1"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10/32126c1eda4b4d6be8a01bd4e0fb2cb8cff4ca7b14d18a55a0d25008b11c3254b1001c8e82f85bd111a4dd9e16f7049084a6a15b3de76fa9d88356a5a35dd482
+  checksum: 10/bda70525cd93106f71e67425a87dd0e1ac3f4ccfe21435bf5eb66d8ee632a6b218cf5e4b1a0d7d0f2c2e62285b0159cfbc849674e94c17e7879b3394328fd26b
   languageName: node
   linkType: hard
 
-"react-router@npm:7.8.0":
-  version: 7.8.0
-  resolution: "react-router@npm:7.8.0"
+"react-router@npm:7.8.1":
+  version: 7.8.1
+  resolution: "react-router@npm:7.8.1"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -5075,7 +5075,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10/bb46458bd15f73749a82d8ba0818d9ea98088378d569fd500aa4477cd08c1e359241b97de579f29e8bc78f8b81c76f660255b27a6249c305e4c66399f073e4df
+  checksum: 10/70ccac82d7e63f7775ea8b13fd48d20b34f078850e80bbf6dfd5a4985c33b41f11c72e23bfdfe90fb073fd08fa2d99205ee6abe123525f2b74addd3454f88423
   languageName: node
   linkType: hard
 
@@ -6052,11 +6052,11 @@ __metadata:
 
 "typescript@patch:typescript@npm%3A~5.7.0#optional!builtin<compat/typescript>":
   version: 5.7.3
-  resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=379a07"
+  resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/3ac7b7e3e899273d2fbdce6e24b93d4d53a705ad7a7e4cc83b4c57bcb6d25948abcd2a21994f6b9c73ab03960f395aae95f0458de292a66ce0134233261714c3
+  checksum: 10/dc58d777eb4c01973f7fbf1fd808aad49a0efdf545528dab9b07d94fdcb65b8751742804c3057e9619a4627f2d9cc85547fdd49d9f4326992ad0181b49e61d81
   languageName: node
   linkType: hard
 
@@ -6495,9 +6495,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"z2-frontend@workspace:.":
+"z2-frontend@workspace:frontend":
   version: 0.0.0-use.local
-  resolution: "z2-frontend@workspace:."
+  resolution: "z2-frontend@workspace:frontend"
   dependencies:
     "@axe-core/react": "npm:^4.10.2"
     "@heroicons/react": "npm:^2.2.0"
@@ -6539,5 +6539,11 @@ __metadata:
     typescript: "npm:~5.7.0"
     vite: "npm:^7.1.2"
     vitest: "npm:^3.2.4"
+  languageName: unknown
+  linkType: soft
+
+"z2-workspace@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "z2-workspace@workspace:."
   languageName: unknown
   linkType: soft

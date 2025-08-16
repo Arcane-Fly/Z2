@@ -5,7 +5,7 @@
  * and workflow orchestration insights through the MCP protocol.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   useMCPSession, 
   useMCPDashboard, 
@@ -32,7 +32,7 @@ interface ActivityItem {
 
 export const EnhancedMCPDashboard: React.FC = () => {
   const { data: session, isLoading: sessionLoading } = useMCPSession();
-  const { data: dashboard, isLoading: dashboardLoading } = useMCPDashboard();
+  const { data: dashboard } = useMCPDashboard();
   const { agents, isLoading: agentsLoading } = useMCPAgents();
   const { activeWorkflows, isLoading: workflowsLoading } = useMCPWorkflows();
   const { data: stats } = useMCPStatistics();
@@ -64,23 +64,23 @@ export const EnhancedMCPDashboard: React.FC = () => {
     },
     {
       title: 'Success Rate',
-      value: `${Math.round((stats?.successfulExecutions / (stats?.totalExecutions || 1)) * 100)}%`,
+      value: `${Math.round(((stats?.successfulExecutions || 0) / (stats?.totalExecutions || 1)) * 100)}%`,
       change: '+5%',
-      status: stats?.successfulExecutions / (stats?.totalExecutions || 1) > 0.9 ? 'good' : 'warning',
+      status: ((stats?.successfulExecutions || 0) / (stats?.totalExecutions || 1)) > 0.9 ? 'good' : 'warning',
       description: 'Execution success rate'
     }
   ];
 
   // Generate activity feed
   const activities: ActivityItem[] = [
-    ...agents?.map(agent => ({
+    ...agents?.map((agent: any) => ({
       id: `agent-${agent.id}`,
       type: 'agent_execution' as const,
       message: `Agent ${agent.name} completed task`,
       timestamp: agent.lastActivity,
       status: 'success' as const
     })) || [],
-    ...activeWorkflows?.map(workflow => ({
+    ...activeWorkflows?.map((workflow: any) => ({
       id: `workflow-${workflow.id}`,
       type: workflow.status === 'completed' ? 'workflow_complete' as const : 'workflow_start' as const,
       message: `Workflow ${workflow.name} ${workflow.status}`,
@@ -200,7 +200,7 @@ export const EnhancedMCPDashboard: React.FC = () => {
             <div className="text-gray-500">Loading workflows...</div>
           ) : (
             <div className="space-y-3">
-              {activeWorkflows?.map(workflow => (
+              {activeWorkflows?.map((workflow: any) => (
                 <div key={workflow.id} className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-medium text-gray-900">{workflow.name}</p>
