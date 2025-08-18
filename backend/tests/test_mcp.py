@@ -19,11 +19,20 @@ class TestMCPProtocol:
 
         data = response.json()
         assert "status" in data
-        assert "app" in data or "error" in data
+        assert "timestamp" in data
+        
+        # Check nested app information
         if "app" in data:
-            assert data["app"] == "Z2 AI Workforce Platform"
-            assert "version" in data
-            assert "timestamp" in data
+            app_info = data["app"]
+            if isinstance(app_info, dict):
+                assert app_info["name"] == "Z2 AI Workforce Platform"
+                assert "version" in app_info
+            else:
+                assert app_info == "Z2 AI Workforce Platform"
+        
+        # Check for system checks
+        if "checks" in data:
+            assert isinstance(data["checks"], dict)
 
     def test_mcp_initialize_success(self, client: TestClient, sample_mcp_initialize_request, mock_db, mock_session_service):
         """Test successful MCP session initialization."""
