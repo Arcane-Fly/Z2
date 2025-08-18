@@ -61,13 +61,20 @@ class TestA2AProtocol:
 
     def test_a2a_negotiate_success(self, mock_db, mock_session_service):
         """Test successful A2A skill negotiation."""
+        from datetime import datetime, timezone
+        from app.api.v1.endpoints.a2a import get_db, get_session_service
+        
         # Mock session existence
         mock_session = AsyncMock()
         mock_session.is_active = True
-        mock_session.expires_at = AsyncMock()
-        mock_session.expires_at.__gt__ = lambda self, other: True  # Not expired
+        # Set expires_at to a future datetime
+        mock_session.expires_at = datetime.now(timezone.utc).replace(year=2030)
         mock_session_service.get_a2a_session.return_value = mock_session
-        mock_session_service.create_a2a_negotiation.return_value = AsyncMock()
+        
+        # Mock the negotiation creation
+        mock_negotiation = AsyncMock()
+        mock_negotiation.id = "test-negotiation-456"
+        mock_session_service.create_a2a_negotiation.return_value = mock_negotiation
         
         session_id = "test-session-123"
 
@@ -79,15 +86,20 @@ class TestA2AProtocol:
             "priority": 7
         }
 
-        with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
-             patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+        # Override dependencies
+        app.dependency_overrides[get_db] = lambda: mock_db
+        app.dependency_overrides[get_session_service] = lambda: mock_session_service
+        
+        try:
             response = self.client.post("/api/v1/a2a/negotiate", json=negotiation_data)
 
             assert response.status_code == 200
             data = response.json()
 
             assert "negotiation_id" in data
+        finally:
+            # Clean up overrides
+            app.dependency_overrides.clear()
             assert "available_skills" in data
             assert "proposed_workflow" in data
             assert "estimated_duration" in data
