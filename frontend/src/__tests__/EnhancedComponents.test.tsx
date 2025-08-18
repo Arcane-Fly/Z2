@@ -33,15 +33,9 @@ const TestWrapper = ({ children }: { children: ReactNode }) => {
 };
 
 describe('Enhanced UI Components', () => {
-  let queryClient: QueryClient;
-
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
-    });
+    // Reset any global state before each test
+    vi.clearAllMocks();
   });
 
   describe('Error Boundary Testing', () => {
@@ -86,13 +80,9 @@ describe('Enhanced UI Components', () => {
       render(<TestComponent />, { wrapper: TestWrapper });
       
       const firstButton = screen.getByText('First Button');
-      const secondButton = screen.getByText('Second Button');
-      
+      // Test keyboard navigation
       firstButton.focus();
       expect(document.activeElement).toBe(firstButton);
-      
-      fireEvent.keyDown(firstButton, { key: 'Tab' });
-      // In real test, would check focus moved to second button
     });
 
     it('should have proper ARIA labels', () => {
@@ -350,7 +340,7 @@ describe('Enhanced UI Components', () => {
 
       const Parent = () => {
         const [count, setCount] = React.useState(1);
-        const [otherState, setOtherState] = React.useState(0);
+        const [, setOtherState] = React.useState(0);
         
         return (
           <div>
