@@ -5,10 +5,9 @@ Security utilities for the Z2 platform.
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Optional
+
 import bcrypt
 import jwt
-
 
 # JWT Configuration
 SECRET_KEY = "your-secret-key-change-in-production"  # Should be from environment
@@ -57,13 +56,13 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(pwd_bytes, hash_bytes)
 
 
-def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(user_id: str, expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token.
-    
+
     Args:
         user_id: User identifier
         expires_delta: Optional custom expiration time
-        
+
     Returns:
         JWT token string
     """
@@ -71,7 +70,7 @@ def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None)
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        
+
     to_encode = {"sub": user_id, "exp": expire}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -79,13 +78,13 @@ def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None)
 
 def verify_access_token(token: str) -> str:
     """Verify and decode a JWT access token.
-    
+
     Args:
         token: JWT token string
-        
+
     Returns:
         User ID from token
-        
+
     Raises:
         Exception: If token is invalid or expired
     """
@@ -99,7 +98,7 @@ def verify_access_token(token: str) -> str:
         raise Exception(f"Invalid token: {e}")
 
 
-def hash_password_legacy(password: str, salt: Optional[str] = None) -> tuple[str, str]:
+def hash_password_legacy(password: str, salt: str | None = None) -> tuple[str, str]:
     """Legacy hash a password with salt (for backward compatibility).
 
     Args:

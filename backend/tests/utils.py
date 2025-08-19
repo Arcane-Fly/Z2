@@ -2,14 +2,15 @@
 Test utilities for Z2 backend tests.
 """
 
+from typing import Any
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from typing import Dict, Any, Optional
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.main import create_application
 from app.database.session import get_db
+from app.main import create_application
 from app.models.user import User
 
 
@@ -32,29 +33,29 @@ def create_mock_user(
     return user
 
 
-def create_test_client_with_auth(test_db: AsyncSession, user: Optional[User] = None) -> TestClient:
+def create_test_client_with_auth(test_db: AsyncSession, user: User | None = None) -> TestClient:
     """Create a test client with authenticated user."""
     app = create_application()
-    
+
     # Override database dependency
     async def override_get_db():
         yield test_db
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     # Mock authentication if user provided
     if user:
         from app.api.auth import get_current_user
-        
+
         async def override_get_current_user():
             return user
-        
+
         app.dependency_overrides[get_current_user] = override_get_current_user
-    
+
     return TestClient(app)
 
 
-def create_sample_agent_data() -> Dict[str, Any]:
+def create_sample_agent_data() -> dict[str, Any]:
     """Create sample agent data for testing."""
     return {
         "name": "Test Agent",
@@ -70,7 +71,7 @@ def create_sample_agent_data() -> Dict[str, Any]:
     }
 
 
-def create_sample_workflow_data() -> Dict[str, Any]:
+def create_sample_workflow_data() -> dict[str, Any]:
     """Create sample workflow data for testing."""
     return {
         "name": "Test Workflow",
@@ -83,7 +84,7 @@ def create_sample_workflow_data() -> Dict[str, Any]:
                 "dependencies": []
             },
             {
-                "name": "Step 2", 
+                "name": "Step 2",
                 "agent_id": "test-agent-id-2",
                 "prompt": "Perform step 2",
                 "dependencies": ["Step 1"]
@@ -106,7 +107,7 @@ def create_mock_mcp_session() -> MagicMock:
     return mock_session
 
 
-def create_mock_ai_response(content: str = "Test AI response") -> Dict[str, Any]:
+def create_mock_ai_response(content: str = "Test AI response") -> dict[str, Any]:
     """Create a mock AI model response."""
     return {
         "content": content,
@@ -122,23 +123,23 @@ def create_mock_ai_response(content: str = "Test AI response") -> Dict[str, Any]
 
 class MockRedisClient:
     """Mock Redis client for testing."""
-    
+
     def __init__(self):
         self.data = {}
-        
-    async def get(self, key: str) -> Optional[str]:
+
+    async def get(self, key: str) -> str | None:
         return self.data.get(key)
-        
-    async def set(self, key: str, value: str, ex: Optional[int] = None) -> bool:
+
+    async def set(self, key: str, value: str, ex: int | None = None) -> bool:
         self.data[key] = value
         return True
-        
+
     async def delete(self, key: str) -> int:
         if key in self.data:
             del self.data[key]
             return 1
         return 0
-        
+
     async def exists(self, key: str) -> int:
         return 1 if key in self.data else 0
 
