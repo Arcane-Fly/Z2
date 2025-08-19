@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     auth,
     consent,
     debug,
+    heavy_analysis,
     mcp,
     models,
     quantum,
@@ -31,6 +32,7 @@ api_router.include_router(api_keys.router, prefix="/api-keys", tags=["api-keys"]
 api_router.include_router(agents.router, prefix="/agents", tags=["agents"])
 api_router.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
 api_router.include_router(models.router, prefix="/models", tags=["models"])
+api_router.include_router(heavy_analysis.router, tags=["heavy-analysis"])
 api_router.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
 api_router.include_router(consent.router, prefix="/consent", tags=["consent"])
 api_router.include_router(a2a.router, prefix="/a2a", tags=["a2a"])
