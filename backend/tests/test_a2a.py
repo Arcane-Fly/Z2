@@ -2,8 +2,8 @@
 Tests for A2A (Agent-to-Agent) protocol endpoints.
 """
 
-import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -20,7 +20,7 @@ class TestA2AProtocol:
         """Test successful A2A handshake."""
         # Mock session creation
         mock_session_service.create_a2a_session.return_value = AsyncMock()
-        
+
         handshake_data = {
             "agent_id": "test-agent-123",
             "agent_name": "Test Agent",
@@ -30,7 +30,7 @@ class TestA2AProtocol:
 
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.post("/api/v1/a2a/handshake", json=handshake_data)
 
             assert response.status_code == 200
@@ -53,7 +53,7 @@ class TestA2AProtocol:
 
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.post("/api/v1/a2a/handshake", json=handshake_data)
 
             assert response.status_code == 400
@@ -61,21 +61,14 @@ class TestA2AProtocol:
 
     def test_a2a_negotiate_success(self, mock_db, mock_session_service):
         """Test successful A2A skill negotiation."""
-        from datetime import datetime, timezone
-        from app.api.v1.endpoints.a2a import get_db, get_session_service
-        
         # Mock session existence
         mock_session = AsyncMock()
         mock_session.is_active = True
-        # Set expires_at to a future datetime
-        mock_session.expires_at = datetime.now(timezone.utc).replace(year=2030)
+        mock_session.expires_at = AsyncMock()
+        mock_session.expires_at.__gt__ = lambda self, other: True  # Not expired
         mock_session_service.get_a2a_session.return_value = mock_session
-        
-        # Mock the negotiation creation
-        mock_negotiation = AsyncMock()
-        mock_negotiation.id = "test-negotiation-456"
-        mock_session_service.create_a2a_negotiation.return_value = mock_negotiation
-        
+        mock_session_service.create_a2a_negotiation.return_value = AsyncMock()
+
         session_id = "test-session-123"
 
         negotiation_data = {
@@ -86,20 +79,15 @@ class TestA2AProtocol:
             "priority": 7
         }
 
-        # Override dependencies
-        app.dependency_overrides[get_db] = lambda: mock_db
-        app.dependency_overrides[get_session_service] = lambda: mock_session_service
-        
-        try:
+        with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
+             patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
+
             response = self.client.post("/api/v1/a2a/negotiate", json=negotiation_data)
 
             assert response.status_code == 200
             data = response.json()
 
             assert "negotiation_id" in data
-        finally:
-            # Clean up overrides
-            app.dependency_overrides.clear()
             assert "available_skills" in data
             assert "proposed_workflow" in data
             assert "estimated_duration" in data
@@ -109,7 +97,7 @@ class TestA2AProtocol:
         """Test A2A negotiation with invalid session."""
         # Mock session not found
         mock_session_service.get_a2a_session.return_value = None
-        
+
         negotiation_data = {
             "session_id": "invalid-session-id",
             "requested_skills": ["reasoning"],
@@ -119,7 +107,7 @@ class TestA2AProtocol:
 
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.post("/api/v1/a2a/negotiate", json=negotiation_data)
 
             assert response.status_code == 404
@@ -134,7 +122,7 @@ class TestA2AProtocol:
         mock_session.expires_at.__gt__ = lambda self, other: True  # Not expired
         mock_session_service.get_a2a_session.return_value = mock_session
         mock_session_service.create_task_execution.return_value = AsyncMock()
-        
+
         session_id = "test-session-123"
 
         message_data = {
@@ -145,7 +133,7 @@ class TestA2AProtocol:
 
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.post("/api/v1/a2a/communicate", json=message_data)
 
             assert response.status_code == 200
@@ -160,7 +148,7 @@ class TestA2AProtocol:
         """Test A2A communication with invalid session."""
         # Mock session not found
         mock_session_service.get_a2a_session.return_value = None
-        
+
         message_data = {
             "session_id": "invalid-session-id",
             "message_type": "task_request",
@@ -169,7 +157,7 @@ class TestA2AProtocol:
 
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.post("/api/v1/a2a/communicate", json=message_data)
 
             assert response.status_code == 404
@@ -179,7 +167,7 @@ class TestA2AProtocol:
         """Test listing active A2A sessions."""
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.get("/api/v1/a2a/sessions")
 
             assert response.status_code == 200
@@ -193,10 +181,10 @@ class TestA2AProtocol:
         """Test terminating an A2A session."""
         session_id = "test-session-123"
         mock_session_service.close_a2a_session.return_value = True
-        
+
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.delete(f"/api/v1/a2a/sessions/{session_id}")
 
             assert response.status_code == 200
@@ -208,10 +196,10 @@ class TestA2AProtocol:
     def test_a2a_terminate_invalid_session(self, mock_db, mock_session_service):
         """Test terminating invalid session."""
         mock_session_service.close_a2a_session.return_value = False
-        
+
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.delete("/api/v1/a2a/sessions/invalid-session-id")
 
             assert response.status_code == 404
@@ -223,7 +211,7 @@ class TestA2AProtocol:
 
         # May return error if file doesn't exist in test environment
         assert response.status_code in [200, 500]
-        
+
         if response.status_code == 200:
             data = response.json()
             assert "agent" in data or "error" in data
@@ -248,13 +236,13 @@ class TestA2AProtocol:
         mock_session.expires_at.__gt__ = lambda self, other: True
         mock_session_service.get_a2a_session.return_value = mock_session
         mock_session_service.create_task_execution.return_value = AsyncMock()
-        
+
         session_id = "test-session-123"
 
         # Test different message types
         message_types = [
             "task_request",
-            "status_inquiry", 
+            "status_inquiry",
             "result_request",
             "heartbeat",
             "capability_inquiry",
@@ -270,7 +258,7 @@ class TestA2AProtocol:
 
             with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
                  patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-                
+
                 response = self.client.post("/api/v1/a2a/communicate", json=message_data)
                 assert response.status_code == 200
 
@@ -286,7 +274,7 @@ class TestA2AProtocol:
         """Test A2A statistics endpoint."""
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.get("/api/v1/a2a/statistics")
             assert response.status_code == 200
 
@@ -300,7 +288,7 @@ class TestA2AProtocol:
     def test_negotiation_status(self, mock_db, mock_session_service):
         """Test getting negotiation status."""
         negotiation_id = "test-negotiation-123"
-        
+
         # Mock negotiation
         mock_negotiation = AsyncMock()
         mock_negotiation.negotiation_id = negotiation_id
@@ -310,10 +298,10 @@ class TestA2AProtocol:
         mock_negotiation.updated_at = AsyncMock()
         mock_negotiation.completed_at = None
         mock_session_service.get_a2a_negotiation.return_value = mock_negotiation
-        
+
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             response = self.client.get(f"/api/v1/a2a/negotiations/{negotiation_id}")
             assert response.status_code == 200
 
@@ -324,7 +312,7 @@ class TestA2AProtocol:
     def test_task_status_and_cancellation(self, mock_db, mock_session_service):
         """Test task status checking and cancellation."""
         task_id = "test-task-123"
-        
+
         # Mock task
         mock_task = AsyncMock()
         mock_task.task_id = task_id
@@ -334,23 +322,23 @@ class TestA2AProtocol:
         mock_task.created_at = AsyncMock()
         mock_session_service.get_task_execution.return_value = mock_task
         mock_session_service.cancel_task.return_value = True
-        
+
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
-            
+
             # Test status check
             response = self.client.get(f"/api/v1/a2a/tasks/{task_id}")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["task_id"] == task_id
             assert "status" in data
             assert "progress" in data
-            
+
             # Test cancellation
             response = self.client.post(f"/api/v1/a2a/tasks/{task_id}/cancel")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["task_id"] == task_id
             assert data["status"] == "cancelled"
