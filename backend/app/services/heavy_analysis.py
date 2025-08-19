@@ -15,7 +15,7 @@ from uuid import uuid4
 
 import structlog
 
-from app.agents.basic_agent import BasicAIAgent
+from app.agents.heavy_analysis_agent import HeavyAnalysisAgent
 from app.agents.mil import ModelIntegrationLayer, LLMRequest, RoutingPolicy
 from app.core.config import settings
 
@@ -150,7 +150,7 @@ Simply provide the final synthesized answer directly as your response."""
             progress.update_agent_progress(agent_id, "INITIALIZING...")
             
             # Create a specialized agent for this subtask
-            agent = BasicAIAgent(
+            agent = HeavyAnalysisAgent(
                 agent_name=f"HeavyAnalysis-Agent-{agent_id}",
                 role="research_analyst"
             )
