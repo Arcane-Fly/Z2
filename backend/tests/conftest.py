@@ -59,8 +59,8 @@ async def test_db():
     await engine.dispose()
 
 
-@pytest.fixture
-def client(test_db):
+@pytest_asyncio.fixture
+async def client(test_db):
     """Create a test client for the FastAPI application."""
     app = create_application()
     
@@ -285,14 +285,14 @@ def sample_user():
     return create_mock_user()
 
 
-@pytest.fixture
-def authenticated_client(test_db, sample_user):
+@pytest_asyncio.fixture
+async def authenticated_client(test_db, sample_user):
     """Provide an authenticated test client."""
     return create_test_client_with_auth(test_db, sample_user)
 
 
-@pytest.fixture
-def unauthenticated_client(test_db):
+@pytest_asyncio.fixture 
+async def unauthenticated_client(test_db):
     """Provide an unauthenticated test client."""
     return create_test_client_with_auth(test_db, None)
 
