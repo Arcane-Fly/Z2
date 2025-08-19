@@ -99,13 +99,14 @@ class HealthChecker:
     async def check_database(self) -> dict[str, Any]:
         """Check database connectivity and performance."""
         try:
-            from app.database.session import async_session_maker
+            from app.database.session import SessionLocal
+            from sqlalchemy import text
 
             start_time = time.time()
-            async with async_session_maker() as session:
+            async with SessionLocal() as session:
                 # Simple query to test connectivity
-                result = await session.execute("SELECT 1 as test")
-                await result.fetchone()
+                result = await session.execute(text("SELECT 1 as test"))
+                result.fetchone()  # Remove await here since fetchone() is not async
 
             duration = time.time() - start_time
 

@@ -45,7 +45,7 @@ def create_test_client_with_auth(test_db: AsyncSession, user: User | None = None
 
     # Mock authentication if user provided
     if user:
-        from app.api.auth import get_current_user
+        from app.core.auth_dependencies import get_current_user
 
         async def override_get_current_user():
             return user
