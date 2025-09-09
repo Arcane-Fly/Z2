@@ -64,7 +64,7 @@
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.12",
     "typescript": "^5.9.2",
-    "vite": "^7.1.2",
+    "vite": "^7.1.5",
     "vitest": "^3.2.4"
   },
   "packageManager": "yarn@4.9.2+sha512.d6095709ca16b5eed6fb4f7a6e6b2b62cf9d8d2b4b75b2736c3c71de03f04743bb8b3bb987df9abea9e2c14b1b0b5c47c7b79e3f17e4bd8b8c2a4c3b4e5b44f1"
