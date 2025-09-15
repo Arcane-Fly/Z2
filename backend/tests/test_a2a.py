@@ -3,20 +3,12 @@ Tests for A2A (Agent-to-Agent) protocol endpoints.
 """
 
 from unittest.mock import AsyncMock, patch
-
-from fastapi.testclient import TestClient
-
-from app.main import app
-
+import pytest
 
 class TestA2AProtocol:
     """Test A2A protocol implementation."""
 
-    def setup_method(self):
-        """Set up test client."""
-        self.client = TestClient(app)
-
-    def test_a2a_handshake_success(self, mock_db, mock_session_service):
+    def test_a2a_handshake_success(self, unauthenticated_client, mock_db, mock_session_service):
         """Test successful A2A handshake."""
         # Mock session creation
         mock_session_service.create_a2a_session.return_value = AsyncMock()
@@ -31,8 +23,7 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.post("/api/v1/a2a/handshake", json=handshake_data)
-
+            response = unauthenticated_client.post("/api/v1/a2a/handshake", json=handshake_data)
             assert response.status_code == 200
             data = response.json()
 
@@ -42,7 +33,7 @@ class TestA2AProtocol:
             assert data["protocol_version"] == "1.0.0"
             assert "expires_at" in data
 
-    def test_a2a_handshake_invalid_version(self, mock_db, mock_session_service):
+    def test_a2a_handshake_invalid_version(self, unauthenticated_client, mock_db, mock_session_service):
         """Test A2A handshake with invalid protocol version."""
         handshake_data = {
             "agent_id": "test-agent-123",
@@ -54,12 +45,12 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.post("/api/v1/a2a/handshake", json=handshake_data)
+            response = unauthenticated_client.post("/api/v1/a2a/handshake", json=handshake_data)
 
             assert response.status_code == 400
             assert "Unsupported protocol version" in response.json()["detail"]
 
-    def test_a2a_negotiate_success(self, mock_db, mock_session_service):
+    def test_a2a_negotiate_success(self, unauthenticated_client, mock_db, mock_session_service):
         """Test successful A2A skill negotiation."""
         # Mock session existence
         mock_session = AsyncMock()
@@ -82,7 +73,7 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.post("/api/v1/a2a/negotiate", json=negotiation_data)
+            response = unauthenticated_client.post("/api/v1/a2a/negotiate", json=negotiation_data)
 
             assert response.status_code == 200
             data = response.json()
@@ -93,7 +84,7 @@ class TestA2AProtocol:
             assert "estimated_duration" in data
             assert data["accepted"] is True
 
-    def test_a2a_negotiate_invalid_session(self, mock_db, mock_session_service):
+    def test_a2a_negotiate_invalid_session(self, unauthenticated_client, mock_db, mock_session_service):
         """Test A2A negotiation with invalid session."""
         # Mock session not found
         mock_session_service.get_a2a_session.return_value = None
@@ -108,12 +99,12 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.post("/api/v1/a2a/negotiate", json=negotiation_data)
+            response = unauthenticated_client.post("/api/v1/a2a/negotiate", json=negotiation_data)
 
             assert response.status_code == 404
             assert "Session not found" in response.json()["detail"]
 
-    def test_a2a_communicate_success(self, mock_db, mock_session_service):
+    def test_a2a_communicate_success(self, unauthenticated_client, mock_db, mock_session_service):
         """Test successful A2A communication."""
         # Mock session existence
         mock_session = AsyncMock()
@@ -134,8 +125,7 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.post("/api/v1/a2a/communicate", json=message_data)
-
+            response = unauthenticated_client.post("/api/v1/a2a/communicate", json=message_data)
             assert response.status_code == 200
             data = response.json()
 
@@ -144,7 +134,7 @@ class TestA2AProtocol:
             assert "payload" in data
             assert data["status"] == "processed"
 
-    def test_a2a_communicate_invalid_session(self, mock_db, mock_session_service):
+    def test_a2a_communicate_invalid_session(self, unauthenticated_client, mock_db, mock_session_service):
         """Test A2A communication with invalid session."""
         # Mock session not found
         mock_session_service.get_a2a_session.return_value = None
@@ -158,17 +148,17 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.post("/api/v1/a2a/communicate", json=message_data)
+            response = unauthenticated_client.post("/api/v1/a2a/communicate", json=message_data)
 
             assert response.status_code == 404
             assert "Session not found" in response.json()["detail"]
 
-    def test_a2a_list_sessions(self, mock_db, mock_session_service):
+    def test_a2a_list_sessions(self, unauthenticated_client, mock_db, mock_session_service):
         """Test listing active A2A sessions."""
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.get("/api/v1/a2a/sessions")
+            response = unauthenticated_client.get("/api/v1/a2a/sessions")
 
             assert response.status_code == 200
             data = response.json()
@@ -177,7 +167,7 @@ class TestA2AProtocol:
             assert "active_streams" in data
             assert "sessions" in data
 
-    def test_a2a_terminate_session(self, mock_db, mock_session_service):
+    def test_a2a_terminate_session(self, unauthenticated_client, mock_db, mock_session_service):
         """Test terminating an A2A session."""
         session_id = "test-session-123"
         mock_session_service.close_a2a_session.return_value = True
@@ -185,7 +175,7 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.delete(f"/api/v1/a2a/sessions/{session_id}")
+            response = unauthenticated_client.delete(f"/api/v1/a2a/sessions/{session_id}")
 
             assert response.status_code == 200
             data = response.json()
@@ -193,21 +183,21 @@ class TestA2AProtocol:
             assert data["status"] == "terminated"
             assert data["session_id"] == session_id
 
-    def test_a2a_terminate_invalid_session(self, mock_db, mock_session_service):
+    def test_a2a_terminate_invalid_session(self, unauthenticated_client, mock_db, mock_session_service):
         """Test terminating invalid session."""
         mock_session_service.close_a2a_session.return_value = False
 
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.delete("/api/v1/a2a/sessions/invalid-session-id")
+            response = unauthenticated_client.delete("/api/v1/a2a/sessions/invalid-session-id")
 
             assert response.status_code == 404
             assert "Session not found" in response.json()["detail"]
 
-    def test_agent_discovery_endpoint(self):
+    def test_agent_discovery_endpoint(self, unauthenticated_client):
         """Test the .well-known/agent.json discovery endpoint."""
-        response = self.client.get("/.well-known/agent.json")
+        response = unauthenticated_client.get("/.well-known/agent.json")
 
         # May return error if file doesn't exist in test environment
         assert response.status_code in [200, 500]
@@ -216,9 +206,9 @@ class TestA2AProtocol:
             data = response.json()
             assert "agent" in data or "error" in data
 
-    def test_health_check_endpoint(self):
+    def test_health_check_endpoint(self, unauthenticated_client):
         """Test the health check endpoint."""
-        response = self.client.get("/health")
+        response = unauthenticated_client.get("/health")
 
         assert response.status_code in [200, 503]  # May be unhealthy in test environment
         data = response.json()
@@ -227,7 +217,7 @@ class TestA2AProtocol:
         if "app" in data:
             assert "name" in data["app"]
 
-    def test_a2a_message_types(self, mock_db, mock_session_service):
+    def test_a2a_message_types(self, unauthenticated_client, mock_db, mock_session_service):
         """Test different A2A message types."""
         # Mock session existence
         mock_session = AsyncMock()
@@ -259,7 +249,7 @@ class TestA2AProtocol:
             with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
                  patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-                response = self.client.post("/api/v1/a2a/communicate", json=message_data)
+                response = unauthenticated_client.post("/api/v1/a2a/communicate", json=message_data)
                 assert response.status_code == 200
 
                 data = response.json()
@@ -270,12 +260,12 @@ class TestA2AProtocol:
                 else:
                     assert "status" in data["payload"]
 
-    def test_a2a_statistics(self, mock_db, mock_session_service):
+    def test_a2a_statistics(self, unauthenticated_client, mock_db, mock_session_service):
         """Test A2A statistics endpoint."""
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.get("/api/v1/a2a/statistics")
+            response = unauthenticated_client.get("/api/v1/a2a/statistics")
             assert response.status_code == 200
 
             data = response.json()
@@ -285,7 +275,7 @@ class TestA2AProtocol:
             assert "capabilities" in data
             assert "features" in data
 
-    def test_negotiation_status(self, mock_db, mock_session_service):
+    def test_negotiation_status(self, unauthenticated_client, mock_db, mock_session_service):
         """Test getting negotiation status."""
         negotiation_id = "test-negotiation-123"
 
@@ -302,14 +292,14 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.get(f"/api/v1/a2a/negotiations/{negotiation_id}")
+            response = unauthenticated_client.get(f"/api/v1/a2a/negotiations/{negotiation_id}")
             assert response.status_code == 200
 
             data = response.json()
             assert data["negotiation_id"] == negotiation_id
             assert "status" in data
 
-    def test_task_status_and_cancellation(self, mock_db, mock_session_service):
+    def test_task_status_and_cancellation(self, unauthenticated_client, mock_db, mock_session_service):
         """Test task status checking and cancellation."""
         task_id = "test-task-123"
 
@@ -327,7 +317,7 @@ class TestA2AProtocol:
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
             # Test status check
-            response = self.client.get(f"/api/v1/a2a/tasks/{task_id}")
+            response = unauthenticated_client.get(f"/api/v1/a2a/tasks/{task_id}")
             assert response.status_code == 200
 
             data = response.json()
@@ -336,7 +326,7 @@ class TestA2AProtocol:
             assert "progress" in data
 
             # Test cancellation
-            response = self.client.post(f"/api/v1/a2a/tasks/{task_id}/cancel")
+            response = unauthenticated_client.post(f"/api/v1/a2a/tasks/{task_id}/cancel")
             assert response.status_code == 200
 
             data = response.json()
