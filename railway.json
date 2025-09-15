@@ -1,11 +1,32 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "DOCKERFILE"
-  },
-  "deploy": {
-    "numReplicas": 1,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3
+  "version": "1.0",
+  "services": {
+    "frontend": {
+      "root": "frontend",
+      "build": {
+        "builder": "DOCKERFILE"
+      },
+      "deploy": {
+        "startCommand": "nginx -g 'daemon off;'",
+        "healthcheckPath": "/",
+        "numReplicas": 1,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 3
+      }
+    },
+    "backend": {
+      "root": "backend",
+      "build": {
+        "builder": "NIXPACKS"
+      },
+      "deploy": {
+        "startCommand": "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+        "healthcheckPath": "/health",
+        "numReplicas": 1,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 5
+      }
+    }
   }
 }
