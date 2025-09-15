@@ -5,7 +5,6 @@ Tests for A2A (Agent-to-Agent) protocol endpoints.
 from unittest.mock import AsyncMock, patch
 import pytest
 
-
 class TestA2AProtocol:
     """Test A2A protocol implementation."""
 
@@ -25,7 +24,6 @@ class TestA2AProtocol:
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
             response = unauthenticated_client.post("/api/v1/a2a/handshake", json=handshake_data)
-
             assert response.status_code == 200
             data = response.json()
 
@@ -128,7 +126,6 @@ class TestA2AProtocol:
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
             response = unauthenticated_client.post("/api/v1/a2a/communicate", json=message_data)
-
             assert response.status_code == 200
             data = response.json()
 
@@ -178,7 +175,7 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.delete(f"/api/v1/a2a/sessions/{session_id}")
+            response = unauthenticated_client.delete(f"/api/v1/a2a/sessions/{session_id}")
 
             assert response.status_code == 200
             data = response.json()
@@ -193,12 +190,12 @@ class TestA2AProtocol:
         with patch('app.api.v1.endpoints.a2a.get_db', return_value=mock_db), \
              patch('app.api.v1.endpoints.a2a.get_session_service', return_value=mock_session_service):
 
-            response = self.client.delete("/api/v1/a2a/sessions/invalid-session-id")
+            response = unauthenticated_client.delete("/api/v1/a2a/sessions/invalid-session-id")
 
             assert response.status_code == 404
             assert "Session not found" in response.json()["detail"]
 
-    def test_agent_discovery_endpoint(self):
+    def test_agent_discovery_endpoint(self, unauthenticated_client):
         """Test the .well-known/agent.json discovery endpoint."""
         response = unauthenticated_client.get("/.well-known/agent.json")
 
@@ -209,7 +206,7 @@ class TestA2AProtocol:
             data = response.json()
             assert "agent" in data or "error" in data
 
-    def test_health_check_endpoint(self):
+    def test_health_check_endpoint(self, unauthenticated_client):
         """Test the health check endpoint."""
         response = unauthenticated_client.get("/health")
 
