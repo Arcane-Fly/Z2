@@ -3201,53 +3201,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"frontend@workspace:frontend":
-  version: 0.0.0-use.local
-  resolution: "frontend@workspace:frontend"
-  dependencies:
-    "@axe-core/react": "npm:^4.10.2"
-    "@heroicons/react": "npm:^2.2.0"
-    "@playwright/test": "npm:^1.54.2"
-    "@tailwindcss/postcss": "npm:^4.1.12"
-    "@tanstack/react-query": "npm:^5.85.3"
-    "@taplo/cli": "npm:^0.7.0"
-    "@testing-library/dom": "npm:^10.4.1"
-    "@testing-library/jest-dom": "npm:^6.7.0"
-    "@testing-library/react": "npm:^16.3.0"
-    "@testing-library/user-event": "npm:^14.6.1"
-    "@types/node": "npm:^24.3.0"
-    "@types/react": "npm:^19.1.10"
-    "@types/react-dom": "npm:^19.1.7"
-    "@typescript-eslint/eslint-plugin": "npm:^8.39.1"
-    "@typescript-eslint/parser": "npm:^8.39.1"
-    "@vitejs/plugin-react": "npm:^5.0.0"
-    "@vitest/coverage-v8": "npm:^3.2.4"
-    "@vitest/ui": "npm:^3.2.4"
-    autoprefixer: "npm:^10.4.21"
-    axios: "npm:^1.11.0"
-    chart.js: "npm:^4.5.0"
-    clsx: "npm:^2.1.1"
-    eslint: "npm:^9.33.0"
-    eslint-plugin-jsx-a11y: "npm:^6.10.2"
-    eslint-plugin-react: "npm:^7.37.5"
-    eslint-plugin-react-hooks: "npm:^5.2.0"
-    eslint-plugin-react-refresh: "npm:^0.4.20"
-    jsdom: "npm:^26.1.0"
-    postcss: "npm:^8.5.6"
-    prettier: "npm:^3.6.2"
-    react: "npm:^19.1.1"
-    react-chartjs-2: "npm:^5.3.0"
-    react-dom: "npm:^19.1.1"
-    react-router-dom: "npm:^7.8.1"
-    serve: "npm:^14.2.4"
-    tailwind-merge: "npm:^3.3.1"
-    tailwindcss: "npm:^4.1.12"
-    typescript: "npm:^5.9.2"
-    vite: "npm:^7.1.5"
-    vitest: "npm:^3.2.4"
-  languageName: unknown
-  linkType: soft
-
 "fs-minipass@npm:^3.0.0":
   version: 3.0.3
   resolution: "fs-minipass@npm:3.0.3"
@@ -6544,6 +6497,53 @@ __metadata:
   checksum: 10/f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700
   languageName: node
   linkType: hard
+
+"z2-frontend@workspace:frontend":
+  version: 0.0.0-use.local
+  resolution: "z2-frontend@workspace:frontend"
+  dependencies:
+    "@axe-core/react": "npm:^4.10.2"
+    "@heroicons/react": "npm:^2.2.0"
+    "@playwright/test": "npm:^1.54.2"
+    "@tailwindcss/postcss": "npm:^4.1.12"
+    "@tanstack/react-query": "npm:^5.85.3"
+    "@taplo/cli": "npm:^0.7.0"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.7.0"
+    "@testing-library/react": "npm:^16.3.0"
+    "@testing-library/user-event": "npm:^14.6.1"
+    "@types/node": "npm:^24.3.0"
+    "@types/react": "npm:^19.1.10"
+    "@types/react-dom": "npm:^19.1.7"
+    "@typescript-eslint/eslint-plugin": "npm:^8.39.1"
+    "@typescript-eslint/parser": "npm:^8.39.1"
+    "@vitejs/plugin-react": "npm:^5.0.0"
+    "@vitest/coverage-v8": "npm:^3.2.4"
+    "@vitest/ui": "npm:^3.2.4"
+    autoprefixer: "npm:^10.4.21"
+    axios: "npm:^1.11.0"
+    chart.js: "npm:^4.5.0"
+    clsx: "npm:^2.1.1"
+    eslint: "npm:^9.33.0"
+    eslint-plugin-jsx-a11y: "npm:^6.10.2"
+    eslint-plugin-react: "npm:^7.37.5"
+    eslint-plugin-react-hooks: "npm:^5.2.0"
+    eslint-plugin-react-refresh: "npm:^0.4.20"
+    jsdom: "npm:^26.1.0"
+    postcss: "npm:^8.5.6"
+    prettier: "npm:^3.6.2"
+    react: "npm:^19.1.1"
+    react-chartjs-2: "npm:^5.3.0"
+    react-dom: "npm:^19.1.1"
+    react-router-dom: "npm:^7.8.1"
+    serve: "npm:^14.2.4"
+    tailwind-merge: "npm:^3.3.1"
+    tailwindcss: "npm:^4.1.12"
+    typescript: "npm:^5.9.2"
+    vite: "npm:^7.1.5"
+    vitest: "npm:^3.2.4"
+  languageName: unknown
+  linkType: soft
 
 "z2-workspace@workspace:.":
   version: 0.0.0-use.local

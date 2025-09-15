@@ -10,7 +10,7 @@ ARG NODE_ENV=production
 
 # Install dependencies
 COPY package.json yarn.lock .yarnrc.yml ./
-RUN corepack enable && corepack prepare yarn@4.3.1 --activate
+RUN corepack enable && corepack prepare yarn@4.9.2 --activate
 RUN yarn install --immutable
 
 # Copy source and build with env vars available
