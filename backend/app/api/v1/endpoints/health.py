@@ -43,7 +43,7 @@ async def detailed_health():
         return {
             "status": "unhealthy",
             "timestamp": datetime.now(UTC).isoformat(),
-            "error": str(e)
+            "error": "An internal error occurred."
         }
 
 
@@ -67,7 +67,7 @@ async def services_health():
         logger.error("Services health check failed", error=str(e))
         return {
             "timestamp": datetime.now(UTC).isoformat(),
-            "error": str(e),
+            "error": "An internal error occurred.",
             "services": {}
         }
 
@@ -91,9 +91,9 @@ async def llm_providers_health():
         logger.error("LLM providers health check failed", error=str(e))
         return {
             "timestamp": datetime.now(UTC).isoformat(),
-            "error": str(e),
+            "error": "An internal error occurred.",
             "llm_providers": {
                 "status": "error",
-                "error": str(e)
+                "error": "An internal error occurred."
             }
         }
