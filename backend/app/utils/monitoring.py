@@ -156,9 +156,11 @@ class HealthChecker:
     async def check_llm_providers(self) -> dict[str, Any]:
         """Check LLM provider API availability."""
         providers = {}
+        any_providers_configured = False
 
         # Check OpenAI
         if settings.openai_api_key:
+            any_providers_configured = True
             try:
                 import openai
                 client = openai.AsyncOpenAI(api_key=settings.openai_api_key)
@@ -177,15 +179,21 @@ class HealthChecker:
                     "status": "unhealthy",
                     "error": str(e)
                 }
+        else:
+            providers["openai"] = {
+                "status": "not_configured",
+                "error": "API key not configured"
+            }
 
         # Check Anthropic
         if settings.anthropic_api_key:
+            any_providers_configured = True
             try:
                 import anthropic
                 client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
                 start_time = time.time()
-                # Simple message to test connectivity
+                # Simple message to test connectivity with minimal tokens
                 await client.messages.create(
                     model="claude-3-haiku-20240307",
                     max_tokens=1,
@@ -202,8 +210,62 @@ class HealthChecker:
                     "status": "unhealthy",
                     "error": str(e)
                 }
+        else:
+            providers["anthropic"] = {
+                "status": "not_configured",
+                "error": "API key not configured"
+            }
 
-        return providers
+        # Check Groq
+        if settings.groq_api_key:
+            any_providers_configured = True
+            try:
+                import groq
+                client = groq.AsyncGroq(api_key=settings.groq_api_key)
+
+                start_time = time.time()
+                models = await client.models.list()
+                duration = time.time() - start_time
+
+                providers["groq"] = {
+                    "status": "healthy",
+                    "response_time_ms": round(duration * 1000, 2),
+                    "models_count": len(models.data)
+                }
+            except Exception as e:
+                providers["groq"] = {
+                    "status": "unhealthy",
+                    "error": str(e)
+                }
+        else:
+            providers["groq"] = {
+                "status": "not_configured",
+                "error": "API key not configured"
+            }
+
+        # Overall status for LLM providers
+        if not any_providers_configured:
+            return {
+                "status": "degraded",
+                "message": "No LLM providers configured",
+                "providers": providers
+            }
+
+        # If any provider is healthy, consider the service operational but potentially degraded
+        healthy_count = sum(1 for p in providers.values() if p.get("status") == "healthy")
+        total_configured = sum(1 for p in providers.values() if p.get("status") != "not_configured")
+        
+        if healthy_count > 0:
+            status = "healthy" if healthy_count == total_configured else "degraded"
+        else:
+            status = "unhealthy"
+
+        return {
+            "status": status,
+            "healthy_providers": healthy_count,
+            "total_configured": total_configured,
+            "providers": providers
+        }
 
     def check_system_resources(self) -> dict[str, Any]:
         """Check system resource usage."""
@@ -299,12 +361,27 @@ class HealthChecker:
             # Determine overall health status
             unhealthy_checks = [
                 name for name, check in health_status["checks"].items()
-                if check.get("status") != "healthy"
+                if check.get("status") == "unhealthy"
+            ]
+
+            degraded_checks = [
+                name for name, check in health_status["checks"].items()
+                if check.get("status") == "degraded"
             ]
 
             if unhealthy_checks:
-                health_status["status"] = "degraded" if len(unhealthy_checks) < 3 else "unhealthy"
-                health_status["unhealthy_services"] = unhealthy_checks
+                # Critical services failing (database, redis) should mark as unhealthy
+                critical_unhealthy = [name for name in unhealthy_checks if name in ["database", "redis"]]
+                if critical_unhealthy:
+                    health_status["status"] = "unhealthy"
+                    health_status["unhealthy_services"] = unhealthy_checks
+                else:
+                    # Non-critical services (like LLM providers) only cause degraded status
+                    health_status["status"] = "degraded"
+                    health_status["unhealthy_services"] = unhealthy_checks
+            elif degraded_checks:
+                health_status["status"] = "degraded" 
+                health_status["degraded_services"] = degraded_checks
 
         except Exception as e:
             logger.error("Health check failed", error=str(e))

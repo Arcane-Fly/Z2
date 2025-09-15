@@ -12,8 +12,9 @@
         "install": {
           "commands": [
             "pip install --upgrade pip",
-            "pip install poetry",
-            "poetry install --no-root",
+            "pip install poetry==1.8.5",
+            "export PATH=\"$HOME/.local/bin:$PATH\"",
+            "poetry install --no-root --only=main",
             "pip install -r requirements.txt"
           ]
         }
@@ -28,8 +29,8 @@
           "PORT": "$PORT",
           "NODE_ENV": "production",
           "PYTHON_VERSION": "3.12",
-          "POETRY_VERSION": "1.6.1",
-          "STORAGE_PATH": "/app/storage",
+          "POETRY_VERSION": "1.8.5",
+          "STORAGE_PATH": "/opt/app/storage",
           "APP_NAME": "Z2 AI Workforce Platform",
           "APP_VERSION": "0.1.0",
           "DEBUG": "false",
@@ -45,11 +46,11 @@
       "volumes": [
         {
           "name": "app_storage",
-          "mountPath": "/app/storage"
+          "mountPath": "/opt/app/storage"
         }
       ],
       "variables": {
-        "STORAGE_PATH": "/app/storage"
+        "STORAGE_PATH": "/opt/app/storage"
       }
     },
     "frontend": {
@@ -85,13 +86,13 @@
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",
-          "STORAGE_PATH": "/app/storage"
+          "STORAGE_PATH": "/opt/app/storage"
         }
       },
       "volumes": [
         {
           "name": "app_storage",
-          "mountPath": "/app/storage"
+          "mountPath": "/opt/app/storage"
         }
       ]
     }
