@@ -1,14 +1,21 @@
 /**
  * Enhanced Card Component with better visual hierarchy and animations
+ * Refactored to use unified design system utilities
  */
 
 import React from 'react';
-import { clsx } from 'clsx';
+import { 
+  cn, 
+  INTERACTIVE, 
+  SPACING, 
+  SHADOWS, 
+  TRANSITIONS
+} from '../../utils/design-system';
 
 interface CardProps {
   children: React.ReactNode;
   variant?: 'default' | 'elevated' | 'outline' | 'filled';
-  size?: 'sm' | 'md' | 'lg';
+  size?: keyof typeof SPACING.component;
   hover?: boolean;
   interactive?: boolean;
   className?: string;
@@ -24,45 +31,40 @@ export const Card: React.FC<CardProps> = ({
   className,
   onClick
 }) => {
-  const baseClasses = 'rounded-lg transition-all duration-200';
-  
   const variantClasses = {
-    default: 'bg-white border border-gray-200 shadow-sm',
-    elevated: 'bg-white shadow-lg border-0',
-    outline: 'bg-transparent border-2 border-gray-300',
-    filled: 'bg-gray-50 border border-gray-200'
+    default: cn(INTERACTIVE.card),
+    elevated: cn('bg-white border-0', SHADOWS.lg),
+    outline: 'bg-transparent border-2 border-gray-300 rounded-lg',
+    filled: 'bg-gray-50 border border-gray-200 rounded-lg'
   };
 
-  const sizeClasses = {
-    sm: 'p-3',
-    md: 'p-4',
-    lg: 'p-6'
-  };
+  const interactiveClasses = interactive || onClick ? cn(
+    'cursor-pointer',
+    'hover:shadow-md',
+    TRANSITIONS.default
+  ) : '';
 
-  const interactiveClasses = interactive || onClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2' : '';
-  const hoverClasses = hover ? 'hover:shadow-md hover:scale-[1.02] hover:border-gray-300' : '';
-
+  const hoverClasses = hover ? cn(
+    'hover:scale-105',
+    TRANSITIONS.transform
+  ) : '';
+  
+  const CardComponent = onClick ? 'button' : 'div';
+  
   return (
-    <div
-      className={clsx(
-        baseClasses,
+    <CardComponent
+      className={cn(
         variantClasses[variant],
-        sizeClasses[size],
+        SPACING.component[size],
         interactiveClasses,
         hoverClasses,
         className
       )}
       onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={(e) => {
-        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
-          onClick();
-        }
-      }}
+      type={onClick ? 'button' : undefined}
     >
       {children}
-    </div>
+    </CardComponent>
   );
 };
 
@@ -107,7 +109,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   if (loading) {
     return (
-      <Card className={clsx('relative', className)}>
+      <Card className={cn('relative', className)}>
         <div className="animate-pulse">
           <div className="flex items-center justify-between mb-2">
             <div className="h-4 bg-gray-200 rounded w-1/3"></div>
@@ -124,7 +126,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     <Card 
       variant="default" 
       hover
-      className={clsx(
+      className={cn(
         'relative overflow-hidden',
         statusClasses[status],
         className
@@ -144,7 +146,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           {typeof value === 'number' ? value.toLocaleString() : value}
         </span>
         {change && (
-          <span className={clsx(
+          <span className={cn(
             'text-sm font-medium flex items-center',
             changeClasses[change.trend]
           )}>
@@ -161,7 +163,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
       )}
 
       {/* Status indicator */}
-      <div className={clsx(
+      <div className={cn(
         'absolute top-0 left-0 w-1 h-full',
         status === 'good' && 'bg-green-500',
         status === 'warning' && 'bg-yellow-500',
@@ -198,7 +200,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
 
   return (
     <div className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-      <div className={clsx(
+      <div className={cn(
         'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
         statusClasses[status]
       )}>
@@ -237,7 +239,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
   };
 
   return (
-    <div className={clsx(
+    <div className={cn(
       'grid gap-4',
       gridClasses[columns],
       className

@@ -1,4 +1,4 @@
-import { API_CONFIG } from '../services/apiConfig';
+import { ENV_CONFIG } from '../config/environment';
 
 const API_ROUTES = [
   '/api/v1/auth/login',
@@ -20,13 +20,13 @@ export interface RouteValidationResult {
 
 export async function validateRoute(route: string): Promise<RouteValidationResult> {
   try {
-    const response = await fetch(`${API_CONFIG.baseURL}${route}`, {
+    const response = await fetch(`${ENV_CONFIG.api.baseURL}${route}`, {
       method: 'OPTIONS',
       headers: { 
-        'Content-Type': 'application/json',
+        ...ENV_CONFIG.api.headers,
         'Origin': window.location.origin 
       },
-      credentials: 'include'
+      credentials: ENV_CONFIG.api.withCredentials ? 'include' : 'omit'
     });
     
     return {
@@ -63,12 +63,10 @@ export async function validateAPIConnection(): Promise<{
   error?: string;
 }> {
   try {
-    const response = await fetch(`${API_CONFIG.baseURL}/health`, {
+    const response = await fetch(`${ENV_CONFIG.api.baseURL}/health`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
+      headers: ENV_CONFIG.api.headers,
+      credentials: ENV_CONFIG.api.withCredentials ? 'include' : 'omit',
       // Short timeout for health check
       signal: AbortSignal.timeout(5000)
     });
@@ -77,20 +75,20 @@ export async function validateAPIConnection(): Promise<{
       const healthData = await response.json();
       return {
         connected: true,
-        baseURL: API_CONFIG.baseURL,
+        baseURL: ENV_CONFIG.api.baseURL,
         healthStatus: healthData
       };
     } else {
       return {
         connected: false,
-        baseURL: API_CONFIG.baseURL,
+        baseURL: ENV_CONFIG.api.baseURL,
         error: `Health check failed with status ${response.status}`
       };
     }
   } catch (error) {
     return {
       connected: false,
-      baseURL: API_CONFIG.baseURL,
+      baseURL: ENV_CONFIG.api.baseURL,
       error: error instanceof Error ? error.message : 'Connection failed'
     };
   }

@@ -1,5 +1,5 @@
 /**
- * Authentication service for Z2 platform
+ * Authentication service for Z2 platform - Refactored with DRY principles
  */
 
 import { 
@@ -9,34 +9,13 @@ import {
   User as AuthUser 
 } from '../types/auth';
 
-// Construct the API base URL. In development we default to the backend running on
-// localhost without an API prefix. In production, VITE_API_BASE_URL should be
-// set to the backend domain without the `/api/v1` suffix. To avoid missing or
-// duplicated prefixes we normalise here.
-
-// Protocol-aware fallback for production environments
-const getApiRoot = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-  
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-    // In production HTTPS, use HTTPS with backend domain
-    return `https://${window.location.hostname.replace('z2-production', 'z2-backend-production')}`;
-  }
-  
-  return 'http://localhost:8000';
-};
-
-const apiRoot = getApiRoot();
-// Append `/api/v1` if not already present
-const API_BASE_URL = apiRoot.endsWith('/api/v1') ? apiRoot : `${apiRoot}/api/v1`;
+import { ENV_CONFIG, getAuthApiUrl } from '../config/environment';
 
 class AuthService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = `${API_BASE_URL}/auth`;
+    this.baseURL = `${getAuthApiUrl()}/auth`;
   }
 
   /**
@@ -77,10 +56,10 @@ class AuthService {
   }
 
   /**
-   * Store authentication tokens
+   * Store authentication tokens using unified config
    */
   private storeTokens(tokenResponse: TokenResponse): void {
-    localStorage.setItem('access_token', tokenResponse.access_token);
+    localStorage.setItem(ENV_CONFIG.auth.tokenKey, tokenResponse.access_token);
     
     if (tokenResponse.refresh_token) {
       localStorage.setItem('refresh_token', tokenResponse.refresh_token);
@@ -92,10 +71,10 @@ class AuthService {
   }
 
   /**
-   * Get stored access token
+   * Get stored access token using unified config
    */
   getToken(): string | null {
-    return localStorage.getItem('access_token');
+    return localStorage.getItem(ENV_CONFIG.auth.tokenKey);
   }
 
   /**
@@ -124,10 +103,10 @@ class AuthService {
   }
 
   /**
-   * Clear all stored tokens
+   * Clear all stored tokens using unified config
    */
   clearTokens(): void {
-    localStorage.removeItem('access_token');
+    localStorage.removeItem(ENV_CONFIG.auth.tokenKey);
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('token_expires_at');
   }

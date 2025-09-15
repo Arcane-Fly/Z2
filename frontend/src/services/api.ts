@@ -1,28 +1,28 @@
 /**
- * API service for Z2 platform
+ * API service for Z2 platform - Refactored with DRY principles
  */
 
 import axios, { AxiosInstance } from 'axios';
 import { ApiResponse, User, Agent, Workflow, AuthToken, LoginRequest } from '../types';
-import API_CONFIG from '../config/api';
+import { ENV_CONFIG } from '../config/environment';
 
 class ApiService {
   private client: AxiosInstance;
   private baseURL: string;
 
   constructor() {
-    this.baseURL = API_CONFIG.baseURL;
+    this.baseURL = ENV_CONFIG.api.baseURL;
     
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: API_CONFIG.timeout,
-      withCredentials: API_CONFIG.withCredentials,
-      headers: API_CONFIG.headers,
+      timeout: ENV_CONFIG.api.timeout,
+      withCredentials: ENV_CONFIG.api.withCredentials,
+      headers: ENV_CONFIG.api.headers,
     });
 
     // Request interceptor to add auth token
     this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'z2_auth_token');
+      const token = localStorage.getItem(ENV_CONFIG.auth.tokenKey);
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -35,7 +35,7 @@ class ApiService {
       (error) => {
         if (error.response?.status === 401) {
           // Handle unauthorized - redirect to login
-          localStorage.removeItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'z2_auth_token');
+          localStorage.removeItem(ENV_CONFIG.auth.tokenKey);
           window.location.href = '/login';
         }
         return Promise.reject(error);

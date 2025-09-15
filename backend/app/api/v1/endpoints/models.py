@@ -1,12 +1,12 @@
 """
-Model Integration Layer endpoints for Z2 API.
+Model Integration Layer endpoints for Z2 API - Refactored with DRY principles.
 """
 
 from datetime import datetime
 from typing import Optional
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth_dependencies import get_current_active_user
@@ -24,6 +24,14 @@ from app.core.models_registry import (
 from app.database.session import get_db
 from app.models.user import User
 from app.services.model_routing import ModelRoutingService
+from app.utils.error_handling import (
+    validation_error,
+    model_not_found_error,
+    invalid_capability_error,
+    handle_exceptions,
+    validate_in_choices,
+    ErrorContext
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -31,6 +39,7 @@ router = APIRouter()
 
 
 @router.get("/")
+@handle_exceptions("Failed to retrieve models")
 async def list_available_models(
     provider: Optional[str] = None,
     capability: Optional[str] = None,
@@ -43,21 +52,29 @@ async def list_available_models(
     """List all available LLM models across providers with filtering options."""
     models = ALL_MODELS.copy()
 
-    # Apply filters
+    # Apply filters with proper validation
     if provider:
         try:
             provider_enum = ProviderType(provider.lower())
             models = get_models_by_provider(provider_enum)
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}")
+            valid_providers = [p.value for p in ProviderType]
+            raise validation_error(
+                f"Invalid provider: {provider}. Valid providers: {', '.join(valid_providers)}",
+                field="provider",
+                value=provider
+            )
 
     if capability:
         try:
             capability_enum = ModelCapability(capability.lower())
             models = get_models_by_capability(capability_enum)
         except ValueError:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid capability: {capability}"
+            valid_capabilities = [c.value for c in ModelCapability]
+            raise validation_error(
+                f"Invalid capability: {capability}. Valid capabilities: {', '.join(valid_capabilities)}",
+                field="capability",
+                value=capability
             )
 
     if reasoning_only:
@@ -110,51 +127,54 @@ async def list_available_models(
 
 
 @router.get("/providers")
+@handle_exceptions("Failed to retrieve providers")
 async def list_providers(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """List all configured LLM providers and their status."""
-    from app.agents.mil import ModelIntegrationLayer
-    
-    providers_info = {}
-    
-    # Try to get real provider status from MIL
-    try:
-        mil = ModelIntegrationLayer()
-        provider_status = mil.get_provider_status()
-    except Exception as e:
-        logger.warning("Could not get MIL provider status", error=str(e))
-        provider_status = {}
-
-    for provider in ProviderType:
-        provider_models = get_models_by_provider(provider)
+    with ErrorContext("retrieving provider status"):
+        from app.agents.mil import ModelIntegrationLayer
         
-        # Get real status from MIL if available
-        status = "unknown"
-        if provider.value in provider_status:
-            status = provider_status[provider.value].get("status", "unknown")
-        elif provider_models:  # If we have models defined, assume configured
-            status = "configured"
-            
-        providers_info[provider.value] = {
-            "name": provider.value.title(),
-            "model_count": len(provider_models),
-            "available_models": list(provider_models.keys()),
-            "capabilities": list(
-                set().union(*[model.capabilities for model in provider_models.values()])
-            ),
-            "status": status,
-        }
+        providers_info = {}
+        
+        # Try to get real provider status from MIL
+        try:
+            mil = ModelIntegrationLayer()
+            provider_status = mil.get_provider_status()
+        except Exception as e:
+            logger.warning("Could not get MIL provider status", error=str(e))
+            provider_status = {}
 
-    return {
-        "providers": providers_info,
-        "total_providers": len(providers_info),
-        "registry_version": MODEL_REGISTRY_VERSION,
-    }
+        for provider in ProviderType:
+            provider_models = get_models_by_provider(provider)
+            
+            # Get real status from MIL if available
+            status = "unknown"
+            if provider.value in provider_status:
+                status = provider_status[provider.value].get("status", "unknown")
+            elif provider_models:  # If we have models defined, assume configured
+                status = "configured"
+                
+            providers_info[provider.value] = {
+                "name": provider.value.title(),
+                "model_count": len(provider_models),
+                "available_models": list(provider_models.keys()),
+                "capabilities": list(
+                    set().union(*[model.capabilities for model in provider_models.values()])
+                ),
+                "status": status,
+            }
+
+        return {
+            "providers": providers_info,
+            "total_providers": len(providers_info),
+            "registry_version": MODEL_REGISTRY_VERSION,
+        }
 
 
 @router.get("/{model_id}")
+@handle_exceptions("Failed to retrieve model information")
 async def get_model_info(
     model_id: str,
     db: AsyncSession = Depends(get_db),
@@ -164,7 +184,7 @@ async def get_model_info(
     spec = get_model_by_id(model_id)
 
     if not spec:
-        raise HTTPException(status_code=404, detail=f"Model '{model_id}' not found")
+        raise model_not_found_error(model_id)
 
     return {
         "model_id": model_id,
