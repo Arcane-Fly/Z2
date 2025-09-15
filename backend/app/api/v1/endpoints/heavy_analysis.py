@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 import structlog
 
 from app.core.auth_dependencies import get_current_user
-from app.models.auth import User
+from app.models.user import User
 from app.services.heavy_analysis import HeavyAnalysisService
 
 logger = structlog.get_logger(__name__)
