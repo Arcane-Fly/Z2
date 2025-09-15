@@ -5,10 +5,10 @@
     "frontend": {
       "root": "frontend",
       "build": {
-        "builder": "DOCKERFILE"
+        "builder": "NIXPACKS"
       },
       "deploy": {
-        "startCommand": "nginx -g 'daemon off;'",
+        "startCommand": "yarn start",
         "healthcheckPath": "/",
         "numReplicas": 1,
         "restartPolicyType": "ON_FAILURE",
