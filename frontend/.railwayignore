@@ -1,0 +1,38 @@
+# Development files
+node_modules/
+.env.local
+.env.development
+
+# Build artifacts (will be regenerated)
+dist/
+build/
+
+# Testing
+coverage/
+*.test.js
+*.spec.js
+__tests__/
+e2e/
+
+# Documentation
+docs/
+*.md
+
+# IDE
+.vscode/
+.idea/
+
+# Version control
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Playwright
+playwright-report/
+test-results/
+
+# Vitest
+vitest.config.ts.timestamp-*

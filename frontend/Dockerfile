@@ -34,9 +34,19 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copy nginx template
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
-# Default port
-ENV PORT=80
+# Remove default nginx config to prevent conflicts
+RUN rm -f /etc/nginx/conf.d/default.conf
 
-# The nginx image automatically runs envsubst on templates
+# Railway compatibility - set default PORT
+ENV PORT=8080
+
+# Health check for Railway
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/ || exit 1
+
+# nginx:alpine automatically processes templates with envsubst on startup
+# The templates in /etc/nginx/templates/ are processed by docker-entrypoint.sh
+# and output to /etc/nginx/conf.d/ before nginx starts
+# Use the default entrypoint for proper template processing
+
 EXPOSE ${PORT}
-CMD ["nginx", "-g", "daemon off;"]
