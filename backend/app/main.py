@@ -38,9 +38,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize monitoring and observability
     initialize_monitoring()
 
-    # Initialize database
-    await init_db()
-    logger.info("Database initialized")
+    # Verify database connection (migrations handled by Alembic in startup command)
+    try:
+        from app.database.session import engine
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        logger.info("Database connection verified")
+    except Exception as e:
+        logger.error("Database connection failed", error=str(e))
+        # In production, we want the app to start even if DB is temporarily unavailable
+        # The health check will catch this
 
     yield
 
