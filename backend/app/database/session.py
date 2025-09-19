@@ -49,26 +49,27 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize database tables."""
+    """Initialize database connection (table creation handled by migrations)."""
     try:
         async with engine.begin() as conn:
-            # Import all models here to ensure they are registered with SQLAlchemy
-            from app.models import (  # noqa: F401
-                agent, 
-                user, 
-                workflow, 
-                consent, 
-                session,
-                model_routing,
-                api_key
-            )
+            # Temporarily comment out model imports to isolate table creation issue
+            # from app.models import (  # noqa: F401
+            #     agent, 
+            #     user, 
+            #     workflow, 
+            #     consent, 
+            #     session,
+            #     model_routing,
+            #     api_key
+            # )
 
-            # Create all tables
-            await conn.run_sync(Base.metadata.create_all)
+            # Verify database connection instead of creating tables
+            from sqlalchemy import text
+            await conn.execute(text("SELECT 1"))
 
-        logger.info("Database tables created successfully")
+        logger.info("Database connection verified successfully")
     except Exception as e:
-        logger.error("Failed to create database tables", error=str(e))
+        logger.error("Failed to connect to database", error=str(e))
         if settings.debug:
             logger.warning(
                 "Database connection failed in debug mode, continuing without database"
