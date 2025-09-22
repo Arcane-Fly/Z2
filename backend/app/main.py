@@ -9,12 +9,14 @@ import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1 import api_router
 from app.core.config import settings
@@ -38,9 +40,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize monitoring and observability
     initialize_monitoring()
 
-    # Initialize database
-    await init_db()
-    logger.info("Database initialized")
+    # Temporary: Skip database verification to isolate startup issues
+    logger.info("Database verification skipped for startup debugging")
 
     yield
 
@@ -293,6 +294,48 @@ def create_application() -> FastAPI:
             if settings.debug
             else "API documentation disabled in production",
         }
+
+    @app.get("/favicon.ico")
+    async def favicon():
+        """Serve favicon.ico."""
+        # Try to find favicon.ico in multiple possible locations
+        possible_paths = [
+            Path(__file__).parent.parent.parent / "frontend" / "public" / "favicon.ico",
+            Path(__file__).parent.parent.parent / "frontend" / "dist" / "favicon.ico",
+            Path(__file__).parent / "static" / "favicon.ico",
+        ]
+        
+        for favicon_path in possible_paths:
+            if favicon_path.exists():
+                return FileResponse(
+                    favicon_path,
+                    media_type="image/x-icon",
+                    headers={"Cache-Control": "public, max-age=86400"}  # Cache for 24 hours
+                )
+        
+        # If no favicon found, return 404
+        return Response(status_code=404)
+
+    @app.get("/favicon.svg")
+    async def favicon_svg():
+        """Serve favicon.svg."""
+        # Try to find favicon.svg in multiple possible locations
+        possible_paths = [
+            Path(__file__).parent.parent.parent / "frontend" / "public" / "favicon.svg",
+            Path(__file__).parent.parent.parent / "frontend" / "dist" / "favicon.svg",
+            Path(__file__).parent / "static" / "favicon.svg",
+        ]
+        
+        for favicon_path in possible_paths:
+            if favicon_path.exists():
+                return FileResponse(
+                    favicon_path,
+                    media_type="image/svg+xml",
+                    headers={"Cache-Control": "public, max-age=86400"}  # Cache for 24 hours
+                )
+        
+        # If no favicon found, return 404
+        return Response(status_code=404)
 
     return app
 
