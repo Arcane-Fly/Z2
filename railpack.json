@@ -14,8 +14,8 @@
             "pip install --upgrade pip",
             "pip install poetry==1.8.5",
             "export PATH=\"$HOME/.local/bin:$PATH\"",
-            "poetry install --no-root --only=main",
-            "pip install -r requirements.txt"
+            "poetry config virtualenvs.create false",
+            "poetry install --no-root --only=main"
           ]
         }
       },
@@ -38,6 +38,9 @@
           "CORS_ORIGINS": "[\"https://${{services.frontend.RAILWAY_PUBLIC_DOMAIN}}\"]",
           "API_V1_PREFIX": "/api/v1",
           "JWT_SECRET": "${{JWT_SECRET}}",
+          "JWT_SECRET_KEY": "${{JWT_SECRET_KEY}}",
+          "JWT_ACCESS_TOKEN_EXPIRE_MINUTES": "30",
+          "JWT_REFRESH_TOKEN_EXPIRE_DAYS": "7",
           "DATABASE_URL": "${{DATABASE_URL}}",
           "DEFAULT_ADMIN_PASSWORD": "${{DEFAULT_ADMIN_PASSWORD}}",
           "_STORAGE_ALTERNATIVES": "Alternative mount paths: /data, /storage, /workspace/storage, /opt/app/storage"
@@ -62,7 +65,8 @@
       "steps": {
         "install": {
           "commands": [
-            "corepack enable && corepack prepare yarn@4.3.1 --activate",
+            "npm install -g corepack@latest && corepack enable",
+            "corepack prepare yarn@4.9.2 --activate",
             "yarn install --immutable"
           ]
         },

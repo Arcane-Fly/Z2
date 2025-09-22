@@ -23,6 +23,21 @@ node_modules/
 .vercel/
 .netlify/
 
+# Additional ignore patterns for clean builds
+.cache/
+coverage/
+.nyc_output/
+.coverage
+htmlcov/
+.pytest_cache/
+.DS_Store
+Thumbs.db
+venv/
+env/
+.venv/
+.tmp/
+tmp/
+
 # Keep essential config files (commented out so they're NOT ignored)
 # railpack.json
 # package.json

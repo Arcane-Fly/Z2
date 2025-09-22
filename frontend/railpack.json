@@ -9,7 +9,8 @@
     "steps": {
       "install": {
         "commands": [
-          "corepack enable && corepack prepare yarn@4.9.2 --activate",
+          "npm install -g corepack@latest && corepack enable",
+          "corepack prepare yarn@4.9.2 --activate", 
           "yarn install --immutable"
         ]
       },

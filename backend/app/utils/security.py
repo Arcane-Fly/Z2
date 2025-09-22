@@ -3,6 +3,7 @@ Security utilities for the Z2 platform.
 """
 
 import hashlib
+import os
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -10,9 +11,10 @@ import bcrypt
 import jwt
 
 # JWT Configuration
-SECRET_KEY = "your-secret-key-change-in-production"  # Should be from environment
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")  # From environment
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 
 def generate_secure_token(length: int = 32) -> str:

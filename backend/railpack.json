@@ -12,7 +12,7 @@
           "pip install --upgrade pip",
           "pip install poetry==1.8.5",
           "poetry config virtualenvs.create false",
-          "poetry install --no-dev --no-interaction --no-ansi"
+          "poetry install --no-root --only=main"
         ]
       }
     },
@@ -29,7 +29,10 @@
     "restartPolicyMaxRetries": 3,
     "env": {
       "NODE_ENV": "production",
-      "STORAGE_PATH": "/opt/app/storage"
+      "STORAGE_PATH": "/opt/app/storage",
+      "JWT_SECRET_KEY": "${{JWT_SECRET_KEY}}",
+      "JWT_ACCESS_TOKEN_EXPIRE_MINUTES": "30",
+      "JWT_REFRESH_TOKEN_EXPIRE_DAYS": "7"
     }
   }
 }
