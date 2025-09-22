@@ -29,6 +29,9 @@ if [ -f "railpack.json" ]; then
     if jq -e '.provider' railpack.json >/dev/null 2>&1; then
         PROVIDER=$(jq -r '.provider' railpack.json)
         echo "✅ Provider configured: $PROVIDER"
+    elif jq -e '.build.provider' railpack.json >/dev/null 2>&1; then
+        PROVIDER=$(jq -r '.build.provider' railpack.json)
+        echo "✅ Provider configured: $PROVIDER (in build section)"
     else
         echo "❌ Error: Missing provider field in railpack.json"
         exit 1
@@ -39,6 +42,15 @@ if [ -f "railpack.json" ]; then
         
         # Check if Poetry installation is included
         if jq -e '.steps.install.commands[] | select(test("poetry"))' railpack.json >/dev/null 2>&1; then
+            echo "✅ Poetry installation command found"
+        else
+            echo "❌ Warning: No Poetry installation command found"
+        fi
+    elif jq -e '.build.steps.install.commands' railpack.json >/dev/null 2>&1; then
+        echo "✅ Install steps configured (in build section)"
+        
+        # Check if Poetry installation is included
+        if jq -e '.build.steps.install.commands[] | select(test("poetry"))' railpack.json >/dev/null 2>&1; then
             echo "✅ Poetry installation command found"
         else
             echo "❌ Warning: No Poetry installation command found"
