@@ -12,8 +12,7 @@
         "install": {
           "commands": [
             "pip install --upgrade pip",
-            "pip install poetry==1.8.5",
-            "export PATH=\"$HOME/.local/bin:$PATH\"",
+            "pip install --user poetry==1.8.5 || pip install poetry==1.8.5",
             "poetry config virtualenvs.create false",
             "poetry install --no-root --only=main"
           ]
@@ -24,7 +23,7 @@
           "...",
           { "step": "install" }
         ],
-        "startCommand": "export PATH=\"$HOME/.local/bin:$PATH\" && python scripts/init_db.py && { poetry run python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT || python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT; }",
+        "startCommand": "python scripts/init_db.py && { poetry run python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT || python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT; }",
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",

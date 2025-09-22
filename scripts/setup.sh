@@ -56,7 +56,18 @@ cd backend
 if ! command -v poetry &> /dev/null; then
     echo "📦 Installing Poetry..."
     curl -sSL https://install.python-poetry.org | python3 -
-    export PATH="$HOME/.local/bin:$PATH"
+    
+    # Add Poetry to PATH for current session
+    if [ -f "$HOME/.local/bin/poetry" ]; then
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    
+    # Verify Poetry installation
+    if ! command -v poetry &> /dev/null; then
+        echo "❌ Poetry installation failed. Please install manually."
+        echo "   Visit: https://python-poetry.org/docs/#installation"
+        exit 1
+    fi
 fi
 
 # Install dependencies
