@@ -87,6 +87,7 @@
           "...",
           { "step": "build" }
         ],
+        "startCommand": "yarn vite preview --host 0.0.0.0 --port $PORT",
         "variables": {
           "PORT": "$PORT",
           "NODE_ENV": "production",
