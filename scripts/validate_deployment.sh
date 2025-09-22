@@ -32,18 +32,21 @@ fi
 
 print_status "info" "Validating project structure..."
 
-# 1. Validate project structure
+# 1. Validate project structure  
 REQUIRED_FILES=(
     "railpack.json"
     "frontend/package.json"
-    "frontend/Dockerfile"
+    "frontend/railpack.json"
+    "frontend/src/config/environment.ts"
     "frontend/src/services/apiConfig.ts"
     "frontend/src/components/ErrorBoundary.tsx"
     "frontend/src/components/auth/RoleSelector.tsx"
     "backend/pyproject.toml"
+    "backend/railpack.json"
     "backend/scripts/init_db.py"
     "backend/app/main.py"
     "backend/app/core/config.py"
+    "backend/app/utils/security.py"
 )
 
 missing_files=0
@@ -213,28 +216,79 @@ cd ..
 
 print_status "info" "Validating Docker configuration..."
 
-# 5. Validate Docker configuration
-if [ -f "frontend/Dockerfile" ]; then
-    # Check if Dockerfile has ARG declarations
-    if grep -q "ARG VITE_API_BASE_URL" frontend/Dockerfile && \
-       grep -q "ARG VITE_WS_BASE_URL" frontend/Dockerfile; then
-        print_status "success" "Frontend Dockerfile has proper ARG declarations"
-    else
-        print_status "error" "Frontend Dockerfile missing required ARG declarations"
-        exit 1
-    fi
+# 5. Validate Docker configuration OR Railpack configuration
+print_status "info" "Validating deployment configuration..."
+
+# Check if using Dockerfiles or Railpack
+if [ -f "frontend/Dockerfile" ] || [ -f "backend/Dockerfile" ]; then
+    print_status "info" "Using Docker-based deployment"
     
-    # Check if ENV declarations are present
-    if grep -q "ENV VITE_API_BASE_URL" frontend/Dockerfile && \
-       grep -q "ENV VITE_WS_BASE_URL" frontend/Dockerfile; then
-        print_status "success" "Frontend Dockerfile has proper ENV declarations"
+    # Docker-specific validations
+    if [ -f "frontend/Dockerfile" ]; then
+        # Check if Dockerfile has ARG declarations
+        if grep -q "ARG VITE_API_BASE_URL" frontend/Dockerfile && \
+           grep -q "ARG VITE_WS_BASE_URL" frontend/Dockerfile; then
+            print_status "success" "Frontend Dockerfile has proper ARG declarations"
+        else
+            print_status "error" "Frontend Dockerfile missing required ARG declarations"
+            exit 1
+        fi
+        
+        # Check if ENV declarations are present
+        if grep -q "ENV VITE_API_BASE_URL" frontend/Dockerfile && \
+           grep -q "ENV VITE_WS_BASE_URL" frontend/Dockerfile; then
+            print_status "success" "Frontend Dockerfile has proper ENV declarations"
+        else
+            print_status "error" "Frontend Dockerfile missing required ENV declarations"
+            exit 1
+        fi
     else
-        print_status "error" "Frontend Dockerfile missing required ENV declarations"
+        print_status "error" "Frontend Dockerfile not found"
         exit 1
     fi
 else
-    print_status "error" "Frontend Dockerfile not found"
-    exit 1
+    print_status "info" "Using Railway Railpack deployment (recommended)"
+    
+    # Railpack-specific validations
+    if [ -f "frontend/railpack.json" ]; then
+        print_status "success" "Frontend railpack.json found"
+        
+        # Check for proper environment variable configuration
+        if grep -q "VITE_API_BASE_URL" frontend/railpack.json && \
+           grep -q "VITE_WS_BASE_URL" frontend/railpack.json; then
+            print_status "success" "Frontend railpack.json has proper environment configuration"
+        else
+            print_status "error" "Frontend railpack.json missing required environment variables"
+            exit 1
+        fi
+    else
+        print_status "error" "Frontend railpack.json not found"
+        exit 1
+    fi
+    
+    if [ -f "backend/railpack.json" ]; then
+        print_status "success" "Backend railpack.json found"
+        
+        # Check for proper JWT configuration
+        if grep -q "JWT_SECRET_KEY" backend/railpack.json; then
+            print_status "success" "Backend railpack.json has proper JWT configuration"
+        else
+            print_status "error" "Backend railpack.json missing JWT configuration"
+            exit 1
+        fi
+    else
+        print_status "error" "Backend railpack.json not found"
+        exit 1
+    fi
+fi
+
+print_status "info" "Running Railway security validation..."
+
+# Run Railway security validation
+if python3 scripts/validate_railway_security.py >/dev/null 2>&1; then
+    print_status "success" "Railway security validation passed"
+else
+    print_status "warning" "Railway security validation warnings - check scripts/validate_railway_security.py"
 fi
 
 print_status "info" "Running production configuration validation..."
