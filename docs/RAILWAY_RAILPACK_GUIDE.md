@@ -1,36 +1,42 @@
-# Builder-Agnostic Deployment Guide
+# Railway Railpack-Only Deployment Guide
 
 ## Overview
 
-This guide documents the builder-agnostic patterns implemented in Z2 to ensure successful deployments across different build systems (Railpack, Nixpacks, Docker, etc.) without relying on builder-specific environment variables.
+This guide documents the Railpack-only deployment configuration implemented in Z2 to ensure reliable Railway deployments following the official Railway/Railpack best practices.
+
+## Railway Build Priority & Critical Rule
+
+Railway checks build configurations in this priority order:
+1. **Dockerfile** (if exists)
+2. **railpack.json** (if exists) 
+3. **railway.json/railway.toml**
+4. **Nixpacks** (auto-detection fallback)
+
+**⚠️ Critical Rule**: Choose ONE build system. For Railpack deployment, competing configurations MUST be removed:
+```bash
+# Remove competing configs to ensure Railpack is used
+rm Dockerfile railway.toml nixpacks.toml Procfile
+```
 
 ## Problem Solved
 
-**Issue**: Build failures due to undefined `$NIXPACKS_PATH` environment variable and builder-specific path dependencies.
+**Issue**: Build failures due to competing build configurations and Railway defaulting to Docker/Nixpacks instead of Railpack.
 
-**Solution**: Implement builder-agnostic executable resolution and path handling.
+**Solution**: Implement Railpack-only configuration following Railway's official guidelines.
 
 ## Key Principles
 
-### 1. Standard PATH Resolution
-✅ **Use**: `python`, `pip`, `node`, `npm`, `yarn`
-❌ **Avoid**: `$NIXPACKS_PATH/bin/python`, explicit PATH exports
+### 1. Railpack-Only Configuration
+✅ **Use**: Only `railpack.json` files for build configuration
+❌ **Remove**: `Dockerfile`, `railway.toml`, `nixpacks.toml`, `Procfile`
 
-### 2. Fallback Installation Patterns
-✅ **Use**: `pip install --user poetry || pip install poetry`
-❌ **Avoid**: Hardcoded installation paths
+### 2. Railway Requirements Compliance
+✅ **Use**: `--host 0.0.0.0` and `--port $PORT` in start commands
+❌ **Avoid**: Hardcoded ports or localhost binding
 
-### 3. Builder Detection (When Needed)
-```bash
-# Only when absolutely necessary
-if [ -n "${NIXPACKS_PATH:-}" ]; then
-    # Nixpacks-specific handling
-elif [ -n "${RAILWAY_ENVIRONMENT:-}" ]; then
-    # Railway-specific handling
-else
-    # Standard/Local handling
-fi
-```
+### 3. Health Check Implementation
+✅ **Required**: Health endpoint that returns 200 status
+✅ **Recommended**: `/api/health` or `/health` endpoint
 
 ## Implementation Details
 

@@ -7,7 +7,7 @@
         "python": "3.12"
       },
       "buildAptPackages": ["libpq-dev", "gcc", "g++"],
-      "rootDirectory": "./backend",
+      "root": "./backend",
       "steps": {
         "install": {
           "commands": [
@@ -60,7 +60,7 @@
       "packages": {
         "node": "20"
       },
-      "rootDirectory": "./frontend",
+      "root": "./frontend",
       "steps": {
         "install": {
           "commands": [
