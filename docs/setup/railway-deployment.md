@@ -491,13 +491,36 @@ LOG_LEVEL=INFO
 
 ## Security Configuration
 
-### Environment Security
+> 🔒 **Important**: The Z2 Platform follows Railway security best practices and is **fully compliant** with Railway's secret management policies. See the complete [Railway Security Guidelines](../security/railway-security-guidelines.md) for detailed information.
 
-#### Secret Management
+### Environment Security ✅
+
+#### Secure Secret Management
+The Z2 Platform uses Railway's secure railpack.json configuration with runtime environment variable injection:
+
+```json
+{
+  "deploy": {
+    "variables": {
+      "JWT_SECRET_KEY": "${{JWT_SECRET_KEY}}",
+      "DATABASE_URL": "${{DATABASE_URL}}"
+    }
+  }
+}
+```
+
+**Security Features**:
+- ✅ No secrets in Dockerfiles (ARG/ENV)
+- ✅ Runtime environment variable injection
+- ✅ No secrets in build artifacts or image layers
+- ✅ Automatic validation with security script
+
+#### Railway Dashboard Configuration
 ```bash
-# Use Railway's secret management
-railway variables:set SECRET_KEY --service=backend
-railway variables:set OPENAI_API_KEY --service=backend
+# Set in Railway Dashboard → Project → Service → Variables:
+JWT_SECRET_KEY = [generate with: openssl rand -base64 32]
+DATABASE_URL = ${{Postgres.DATABASE_URL}}
+DEFAULT_ADMIN_PASSWORD = [your-secure-admin-password]
 
 # Never commit secrets to git
 echo "*.env" >> .gitignore
@@ -515,6 +538,12 @@ echo ".env.local" >> .gitignore
 # Optional: Restrict database access
 DATABASE_SSL_REQUIRE=true
 DATABASE_SSL_MODE=require
+```
+
+#### Security Validation
+Run the automated security check:
+```bash
+python3 scripts/validate_railway_security.py
 ```
 
 ### Application Security
