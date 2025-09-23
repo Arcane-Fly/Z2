@@ -120,10 +120,9 @@ def validate_configuration_consolidation():
     
     issues = []
     
-    # Check for removed competing files
+    # Check for removed competing files (excluding new Railway configurations)
     competing_files = [
-        "backend/railway.toml",
-        "frontend/railway.json"
+        "backend/railway.toml"
     ]
     
     for file_path in competing_files:
@@ -131,6 +130,18 @@ def validate_configuration_consolidation():
             issues.append(f"❌ Competing configuration file still exists: {file_path}")
         else:
             print(f"✅ Competing configuration file removed: {file_path}")
+    
+    # Check for new Railway configurations (these are intentional)
+    railway_configs = [
+        "frontend/railway.json",
+        "backend/railway.json"
+    ]
+    
+    for file_path in railway_configs:
+        if Path(file_path).exists():
+            print(f"✅ Railway configuration properly added: {file_path}")
+        else:
+            print(f"⚠️  Railway configuration missing: {file_path} (optional fallback)")
     
     # Check .railpacignore for proper exclusions
     railpacignore = Path(".railpacignore")
