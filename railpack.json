@@ -1,104 +1,55 @@
 {
-  "$schema": "https://schema.railpack.com",
-  "services": {
-    "backend": {
-      "provider": "python",
-      "packages": {
-        "python": "3.12"
-      },
-      "buildAptPackages": ["libpq-dev", "gcc", "g++"],
-      "root": "./backend",
-      "steps": {
-        "install": {
-          "commands": [
-            "pip install --upgrade pip",
-            "pip install --user poetry==1.8.5 || pip install poetry==1.8.5",
-            "poetry config virtualenvs.create false",
-            "poetry install --no-root --only=main"
-          ]
-        }
-      },
-      "deploy": {
-        "inputs": [
-          "...",
-          { "step": "install" }
-        ],
-        "startCommand": "python scripts/init_db.py && { poetry run python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT || python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT; }",
-        "variables": {
-          "PORT": "$PORT",
-          "NODE_ENV": "production",
-          "PYTHON_VERSION": "3.12",
-          "POETRY_VERSION": "1.8.5",
-          "STORAGE_PATH": "/opt/app/storage",
-          "APP_NAME": "Z2 AI Workforce Platform",
-          "APP_VERSION": "0.1.0",
-          "DEBUG": "false",
-          "LOG_LEVEL": "INFO",
-          "CORS_ORIGINS": "[\"https://${{services.frontend.RAILWAY_PUBLIC_DOMAIN}}\"]",
-          "API_V1_PREFIX": "/api/v1",
-          "JWT_SECRET": "${{JWT_SECRET}}",
-          "JWT_SECRET_KEY": "${{JWT_SECRET_KEY}}",
-          "JWT_ACCESS_TOKEN_EXPIRE_MINUTES": "30",
-          "JWT_REFRESH_TOKEN_EXPIRE_DAYS": "7",
-          "DATABASE_URL": "${{DATABASE_URL}}",
-          "DEFAULT_ADMIN_PASSWORD": "${{DEFAULT_ADMIN_PASSWORD}}",
-          "_STORAGE_ALTERNATIVES": "Alternative mount paths: /data, /storage, /workspace/storage, /opt/app/storage"
-        }
-      },
-      "volumes": [
-        {
-          "name": "app_storage",
-          "mountPath": "/opt/app/storage"
-        }
-      ],
-      "variables": {
-        "STORAGE_PATH": "/opt/app/storage"
-      }
+  "version": "1",
+  "packages": {
+    "python": "3.12.11",
+    "node": "22.11.0",
+    "yarn": "4.9.2"
+  },
+  "install": [
+    {
+      "command": "python -m venv /app/.venv",
+      "cache": "/app/.venv"
     },
-    "frontend": {
-      "provider": "node",
-      "packages": {
-        "node": "20"
-      },
-      "root": "./frontend",
-      "steps": {
-        "install": {
-          "commands": [
-            "npm install -g corepack@latest && corepack enable",
-            "corepack prepare yarn@4.9.2 --activate",
-            "yarn install --immutable"
-          ]
-        },
-        "build": {
-          "inputs": [{ "step": "install" }],
-          "commands": ["yarn build"],
-          "variables": {
-            "NODE_ENV": "production",
-            "VITE_API_BASE_URL": "https://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
-            "VITE_WS_BASE_URL": "wss://${{services.backend.RAILWAY_PUBLIC_DOMAIN}}",
-            "VITE_APP_NAME": "Z2 AI Workforce Platform",
-            "VITE_APP_VERSION": "0.1.0"
-          }
-        }
-      },
-      "deploy": {
-        "inputs": [
-          "...",
-          { "step": "build" }
-        ],
-        "startCommand": "yarn vite preview --host 0.0.0.0 --port $PORT",
-        "variables": {
-          "PORT": "$PORT",
-          "NODE_ENV": "production",
-          "STORAGE_PATH": "/opt/app/storage"
-        }
-      },
-      "volumes": [
-        {
-          "name": "app_storage",
-          "mountPath": "/opt/app/storage"
-        }
-      ]
+    {
+      "command": "source /app/.venv/bin/activate && pip install -r requirements.txt",
+      "dependsOn": ["requirements.txt", "backend/pyproject.toml"]
+    },
+    {
+      "command": "corepack enable && corepack prepare yarn@4.9.2 --activate",
+      "description": "Enable Yarn 4"
+    },
+    {
+      "command": "yarn install",
+      "dependsOn": ["package.json", "yarn.lock"],
+      "cache": "node_modules"
+    },
+    {
+      "command": "yarn workspace z2-frontend build",
+      "dependsOn": ["frontend/"],
+      "output": "frontend/dist"
     }
+  ],
+  "deploy": {
+    "command": "/app/.venv/bin/python /app/run_server.py",
+    "healthcheck": {
+      "path": "/health",
+      "interval": "30s",
+      "timeout": "5s"
+    }
+  },
+  "environment": {
+    "NODE_ENV": "production",
+    "PYTHON_ENV": "production",
+    "PORT": "$PORT",
+    "APP_NAME": "Z2 AI Workforce Platform",
+    "APP_VERSION": "0.1.0",
+    "DEBUG": "false",
+    "LOG_LEVEL": "INFO",
+    "API_V1_PREFIX": "/api/v1",
+    "JWT_SECRET_KEY": "${{JWT_SECRET_KEY}}",
+    "JWT_ACCESS_TOKEN_EXPIRE_MINUTES": "30",
+    "JWT_REFRESH_TOKEN_EXPIRE_DAYS": "7",
+    "DATABASE_URL": "${{DATABASE_URL}}",
+    "STORAGE_PATH": "/opt/app/storage"
   }
 }
