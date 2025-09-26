@@ -7,7 +7,11 @@
     "provider": "node",
     "steps": {
       "install": {
-        "commands": ["yarn install --frozen-lockfile"]
+        "commands": [
+          "corepack enable",
+          "corepack prepare yarn@4.9.2 --activate",
+          "yarn install --immutable"
+        ]
       },
       "build": {
         "commands": ["yarn build"]
@@ -15,7 +19,7 @@
     }
   },
   "deploy": {
-    "startCommand": "yarn start",
+    "startCommand": "yarn preview",
     "healthCheckPath": "/",
     "healthCheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
