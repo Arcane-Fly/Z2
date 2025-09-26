@@ -8,6 +8,8 @@
     "steps": {
       "install": {
         "commands": [
+          "corepack enable",
+          "corepack prepare yarn@4.9.2 --activate",
           "pip install --user poetry || pip install poetry",
           "poetry install --no-root --only=main"
         ]
