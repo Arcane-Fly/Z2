@@ -5,12 +5,13 @@
   },
   "build": {
     "provider": "node",
+    "nodeVersion": "22",
     "steps": {
       "install": {
         "commands": [
           "corepack enable",
-          "corepack prepare yarn@4.9.2 --activate",
-          "yarn install --immutable"
+          "yarn set version stable",
+          "yarn install"
         ]
       },
       "build": {
@@ -19,8 +20,8 @@
     }
   },
   "deploy": {
-    "startCommand": "yarn preview",
-    "healthCheckPath": "/",
+    "startCommand": "yarn start",
+    "healthCheckPath": "/health",
     "healthCheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
