@@ -30,13 +30,15 @@ def validate_frontend_corepack_fix():
             frontend_config = config.get("services", {}).get("frontend", {})
             install_commands = frontend_config.get("steps", {}).get("install", {}).get("commands", [])
         else:
-            # New unified monorepo format
-            install_commands = []
-            for step in config.get("install", []):
-                if isinstance(step, dict) and "command" in step:
-                    install_commands.append(step["command"])
-                elif isinstance(step, str):
-                    install_commands.append(step)
+            # New unified monorepo format - check build.steps.install.commands structure
+            install_commands = config.get("build", {}).get("steps", {}).get("install", {}).get("commands", [])
+            if not install_commands:
+                # Fallback to old top-level install format
+                for step in config.get("install", []):
+                    if isinstance(step, dict) and "command" in step:
+                        install_commands.append(step["command"])
+                    elif isinstance(step, str):
+                        install_commands.append(step)
         
         if any("yarn@4.9.2" in cmd for cmd in install_commands):
             print("✅ Root railpack.json: Yarn 4.9.2 version specified")
@@ -104,7 +106,10 @@ def validate_security_hardening():
         with open(backend_railpack) as f:
             config = json.load(f)
         
-        env_vars = config.get("deploy", {}).get("env", {})
+        env_vars = config.get("deploy", {}).get("variables", {})
+        if not env_vars:
+            # Fallback to old env format
+            env_vars = config.get("deploy", {}).get("env", {})
         
         if "JWT_SECRET_KEY" in env_vars:
             print("✅ Backend railpack.json: JWT_SECRET_KEY environment variable configured")
@@ -175,13 +180,15 @@ def validate_poetry_configuration():
             backend_config = config.get("services", {}).get("backend", {})
             install_commands = backend_config.get("steps", {}).get("install", {}).get("commands", [])
         else:
-            # New unified monorepo format - check if it uses pip or poetry
-            install_commands = []
-            for step in config.get("install", []):
-                if isinstance(step, dict) and "command" in step:
-                    install_commands.append(step["command"])
-                elif isinstance(step, str):
-                    install_commands.append(step)
+            # New unified monorepo format - check build.steps.install.commands structure
+            install_commands = config.get("build", {}).get("steps", {}).get("install", {}).get("commands", [])
+            if not install_commands:
+                # Fallback to old top-level install format
+                for step in config.get("install", []):
+                    if isinstance(step, dict) and "command" in step:
+                        install_commands.append(step["command"])
+                    elif isinstance(step, str):
+                        install_commands.append(step)
         
         # Check for Poetry or accept pip as alternative
         has_poetry = any("poetry==1.8.5" in cmd for cmd in install_commands)
