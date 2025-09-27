@@ -10,8 +10,9 @@
       "install": {
         "commands": [
           "corepack enable",
-          "yarn set version stable",
-          "yarn install"
+          "corepack prepare yarn@4.9.2 --activate",
+          "yarn set version 4.9.2",
+          "yarn install --immutable"
         ]
       },
       "build": {
@@ -20,7 +21,7 @@
     }
   },
   "deploy": {
-    "startCommand": "yarn start",
+    "startCommand": "yarn preview",
     "healthCheckPath": "/health",
     "healthCheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
