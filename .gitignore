@@ -10,7 +10,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -148,7 +147,6 @@ yarn-error.log*
 .next/
 out/
 build/
-dist/
 
 # IDE
 .vscode/
