@@ -3,9 +3,13 @@
  * Simple static file server with health endpoint for Railway deployment
  */
 
-const express = require('express');
-const path = require('path');
-const rateLimit = require('express-rate-limit');
+import express from 'express';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import rateLimit from 'express-rate-limit';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 4173;
@@ -20,7 +24,7 @@ const catchAllLimiter = rateLimit({
 });
 
 // Serve static files from dist directory
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(join(__dirname, 'dist')));
 
 // Health check endpoint required by Railway
 app.get('/api/health', (req, res) => {
@@ -33,7 +37,7 @@ app.get('/api/health', (req, res) => {
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', catchAllLimiter, (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(PORT, HOST, () => {

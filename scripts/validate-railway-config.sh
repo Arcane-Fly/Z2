@@ -1,33 +1,29 @@
 #!/bin/bash
 
-# Railway Deployment Configuration Validator
-# Validates that Railway configuration files are set up correctly
+# ❌ DEPRECATED: This script is outdated and conflicts with Railway Deployment Master Cheat Sheet
+# 
+# 🚨 WARNING: This script references railway.json, Dockerfile, and nginx configurations
+# that should NOT exist in a railpack-only deployment.
+#
+# ✅ USE INSTEAD: scripts/railway-railpack-validation.sh
+# This enforces the correct Railway Deployment Master Cheat Sheet standards:
+# - Railpack-only configuration (no competing build files)
+# - Proper PORT/HOST binding
+# - Health check validation
 
-set -e
-
-echo "🔍 Railway Configuration Validator"
-echo "===================================="
-
-# Check frontend configuration
+echo "❌ DEPRECATED SCRIPT"
+echo "==================="
 echo
-echo "Frontend Configuration:"
-echo "-----------------------"
+echo "This script is deprecated and conflicts with Railway Deployment Master Cheat Sheet."
+echo "It references railway.json and other competing build configurations that should NOT exist."
+echo
+echo "✅ Use the correct validation script instead:"
+echo "   bash scripts/railway-railpack-validation.sh"
+echo
+echo "The new script enforces railpack-only standards per Railway best practices."
+echo
 
-if [ -f "frontend/railway.json" ]; then
-    echo "✅ frontend/railway.json exists"
-    
-    # Check for nginx startCommand
-    if grep -q '"startCommand".*nginx' frontend/railway.json; then
-        echo "✅ nginx startCommand configured"
-    else
-        echo "❌ nginx startCommand missing or incorrect"
-        exit 1
-    fi
-    
-    # Check for Dockerfile builder
-    if grep -q '"builder".*DOCKERFILE' frontend/railway.json; then
-        echo "✅ Dockerfile builder configured"
-    else
+exit 1
         echo "❌ Dockerfile builder not configured"
         exit 1
     fi

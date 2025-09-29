@@ -1,4 +1,20 @@
 #!/bin/bash
+# ⚠️  DEPRECATED: This script validates multi-config setup that conflicts with Railway Master Cheat Sheet
+# 
+# 🔴 WARNING: This script expects multiple build configurations (railway.json, nixpacks.toml, Procfile)
+# which should NOT exist according to Railway Deployment Master Cheat Sheet standards.
+#
+# ✅ USE INSTEAD: scripts/railway-railpack-validation.sh
+# The new script enforces railpack-only configuration as required.
+
+echo "⚠️  DEPRECATED VALIDATION SCRIPT"
+echo "================================"
+echo "This script validates multi-configuration setup that violates Railway best practices."
+echo "Use scripts/railway-railpack-validation.sh instead for correct railpack-only validation."
+echo
+echo "Continuing with legacy validation for compatibility..."
+echo
+
 # Railway Deployment Configuration Validation Script
 
 set -e
