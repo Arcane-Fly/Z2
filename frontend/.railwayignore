@@ -3,9 +3,7 @@ node_modules/
 .env.local
 .env.development
 
-# Build artifacts (will be regenerated)
-dist/
-build/
+# NOTE: dist/ and build/ are NOT ignored as Railway needs these for serving the built frontend
 
 # Testing
 coverage/
