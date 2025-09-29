@@ -1,18 +1,15 @@
 {
   "version": "1",
   "metadata": {
-    "name": "z2-frontend"
+    "name": "z2f-frontend"
   },
   "build": {
     "provider": "node",
-    "nodeVersion": "22",
     "steps": {
       "install": {
         "commands": [
-          "corepack enable",
-          "corepack prepare yarn@4.9.2 --activate",
-          "yarn set version 4.9.2",
-          "yarn install --immutable"
+          "npm install -g yarn@1.22.22",
+          "yarn install --frozen-lockfile --network-timeout 600000"
         ]
       },
       "build": {
@@ -21,8 +18,8 @@
     }
   },
   "deploy": {
-    "startCommand": "yarn preview",
-    "healthCheckPath": "/health",
+    "startCommand": "yarn start",
+    "healthCheckPath": "/",
     "healthCheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
