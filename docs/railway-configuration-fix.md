@@ -48,16 +48,18 @@
 ## Service Configuration Status
 
 ### Z2B Backend Service
-- **Builder:** Railpack (with Nixpacks fallback)
-- **Start Command:** `poetry run uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Builder:** Railpack (railpack.json ONLY)
+- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - **Dependencies:** Poetry + psycopg2-binary (PostgreSQL compatible)
-- **Fallback Configs:** Procfile, railway.json, nixpacks.toml, requirements.txt
+- **Configuration:** backend/railpack.json
 
 ### Z2F Frontend Service  
-- **Builder:** Railpack (with Nixpacks fallback)
-- **Start Command:** `npm run preview`
-- **Dependencies:** Node.js 20 + npm
-- **Fallback Configs:** Procfile, railway.json
+- **Builder:** Railpack (railpack.json ONLY)
+- **Start Command:** `node server.js` (serves from dist/ directory)
+- **Dependencies:** Node.js 22 + Yarn 4.9.2
+- **Configuration:** frontend/railpack.json
+
+**⚠️ IMPORTANT:** Following Railway Deployment Master Cheat Sheet standards - NO fallback configurations exist to prevent build system conflicts.
 
 ## Validation Steps
 
