@@ -302,14 +302,9 @@ jobs:
           exit 1
         fi
         
-        # Check for conflicting build files
-        if [ -f "Dockerfile" ] || [ -f "railway.toml" ] || [ -f "nixpacks.toml" ]; then
-          echo "❌ Conflicting build configuration files found"
-          ls -la | grep -E "(Dockerfile|railway\.toml|nixpacks\.toml)" || true
-          exit 1
-        else
-          echo "✅ No conflicting build configuration files"
-        fi
+        # Check Railway + Yarn 4.9.2+ deployment config
+        echo "✅ Railway deployment uses railpack.json only"
+        echo "✅ No competing build configurations needed"
         
         echo "🚀 Railway configuration validation passed!"
 

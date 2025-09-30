@@ -13,10 +13,9 @@ The Z2 platform is now optimally configured for Railway deployment using **railp
 
 ### ❌ Removed Configurations
 All competing build files have been removed to ensure Railway uses railpack.json:
-- No `Dockerfile` files
-- No `railway.toml` files  
-- No `nixpacks.toml` files
-- No `Procfile` files
+- Railway + Yarn 4.9.2+ + MCP/A2A deployment only
+- Single railpack.json configuration per service
+- No competing build system configurations
 
 ## 🔧 Railway Environment Variables
 
@@ -116,19 +115,21 @@ python -m json.tool frontend/railpack.json
 python -m json.tool backend/railpack.json
 ```
 
-### Check for Competing Configurations
+### Check Railway + Yarn 4.9.2+ Configuration
 ```bash
-find . -name "Dockerfile*" -o -name "railway.toml" -o -name "nixpacks.toml" -o -name "Procfile"
-# Should return empty (no results)
+# Verify railpack.json files are valid
+python -m json.tool railpack.json
+python -m json.tool frontend/railpack.json  
+python -m json.tool backend/railpack.json
 ```
 
 ## 🚨 Troubleshooting
 
-### If Railway Still Uses Nixpacks
+### If Railway Configuration Issues
 
-1. **Check Railway Dashboard**: Ensure no service-level build settings override railpack.json
-2. **Clear Build Cache**: Force a clean rebuild in Railway dashboard
-3. **Verify File Presence**: Ensure `railpack.json` files exist in correct locations
+1. **Check Railway Dashboard**: Ensure explicit build/start commands are set in service settings
+2. **Clear Build Cache**: Force a clean rebuild in Railway dashboard  
+3. **Verify Configuration**: Ensure `railpack.json` files exist and are valid JSON
 
 ### If Start Commands Fail
 
@@ -145,11 +146,11 @@ find . -name "Dockerfile*" -o -name "railway.toml" -o -name "nixpacks.toml" -o -
 ## 📈 Expected Deployment Flow
 
 1. **Railway detects** `railpack.json` configurations
-2. **Uses Railpack builder** as intended (not Nixpacks)
-3. **Installs dependencies** using specified commands
-4. **Executes start commands** from railpack.json  
-5. **Monitors health** using configured endpoints
-6. **✅ Deployment succeeds** with proper build system selection
+2. **Uses explicit build/start commands** from service settings
+3. **Installs dependencies** using Yarn 4.9.2+ and Poetry
+4. **Executes start commands** with proper port binding (0.0.0.0:$PORT)
+5. **Monitors health** using configured endpoints (/health)
+6. **✅ Deployment succeeds** with Railway + Yarn 4.9.2+ + MCP/A2A stack
 
 ---
 

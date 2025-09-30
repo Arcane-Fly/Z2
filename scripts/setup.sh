@@ -87,9 +87,11 @@ cd ..
 echo "⚛️  Setting up React frontend..."
 cd frontend
 
-# Install dependencies
-echo "📦 Installing Node.js dependencies..."
-npm install
+# Install dependencies using Yarn 4.9.2+
+echo "📦 Installing Node.js dependencies with Yarn 4.9.2+..."
+corepack enable
+corepack prepare yarn@4.9.2 --activate  
+yarn install
 
 # Copy environment file
 if [ ! -f .env ]; then
@@ -111,9 +113,9 @@ echo "✅ Development environment setup complete!"
 echo ""
 echo "🎯 Next steps:"
 echo "1. Edit backend/.env with your API keys"
-echo "2. Start PostgreSQL and Redis (or use Docker: docker-compose up postgres redis)"
+echo "2. Start PostgreSQL and Redis locally"
 echo "3. Run backend: cd backend && poetry run uvicorn app.main:app --reload"
-echo "4. Run frontend: cd frontend && npm run dev"
-echo "5. Visit http://localhost:3000 to see the application"
+echo "4. Run frontend: cd frontend && yarn dev"
+echo "5. Visit http://localhost:5173 to see the application"
 echo ""
 echo "📖 For detailed setup instructions, see docs/setup/README.md"

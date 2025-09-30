@@ -30,7 +30,7 @@ Before you begin, ensure you have the following installed:
 - **PostgreSQL 14+** - For database operations
 - **Redis 6+** - For caching and sessions
 - **Git** - For version control
-- **Docker** (optional) - For containerized development
+- **Docker** (optional) - For local service testing only
 
 ### Development Environment Setup
 
@@ -96,10 +96,10 @@ createdb z2_dev
 DATABASE_URL=postgresql://username:password@localhost/z2_dev
 ```
 
-**Option B: Docker**
+**Option B: Local Services** (Recommended for development)
 ```bash
-# Start services with Docker Compose
-docker-compose up postgres redis -d
+# Install and start PostgreSQL and Redis locally
+# See respective installation guides for your OS
 ```
 
 #### 5. Verify Setup
