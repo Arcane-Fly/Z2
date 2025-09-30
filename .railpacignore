@@ -1,10 +1,6 @@
 # Railpack ignore file
-# Prevents Railpack from using conflicting Docker files when railpack.json is preferred
-
-# Ignore Docker files that conflict with railpack config
-Dockerfile
-Dockerfile.*
-docker-compose*.yml
+# Railway + Yarn 4.9.2+ + MCP/A2A deployment configuration
+# Only railpack.json is used - no competing build configs allowed
 
 # Ignore build artifacts
 build/
