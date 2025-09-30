@@ -28,9 +28,6 @@ anthropic>=0.8.1
 groq>=0.4.1
 google-generativeai>=0.3.2
 
-# Vector Store
-chromadb>=0.4.18
-
 # Monitoring and Logging
 structlog>=23.2.0
 tenacity>=8.2.3
