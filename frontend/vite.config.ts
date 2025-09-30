@@ -26,12 +26,24 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    cssCodeSplit: false,
+    cssCodeSplit: true,
     sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['chart.js', 'react-chartjs-2'],
+          query: ['@tanstack/react-query'],
+        },
       },
+      treeshake: true,
     },
   },
 })

@@ -27,6 +27,10 @@ const catchAllLimiter = rateLimit({
 app.use(express.static(join(__dirname, 'dist')));
 
 // Health check endpoint required by Railway
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
