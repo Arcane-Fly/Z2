@@ -17,6 +17,7 @@ from app.api.v1.endpoints import (
     health,
     heavy_analysis,
     mcp,
+    memory_graph,
     models,
     quantum,
     users,
@@ -33,6 +34,7 @@ api_router.include_router(api_keys.router, prefix="/api-keys", tags=["api-keys"]
 api_router.include_router(agents.router, prefix="/agents", tags=["agents"])
 api_router.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
 api_router.include_router(models.router, prefix="/models", tags=["models"])
+api_router.include_router(memory_graph.router, prefix="/memory-graph", tags=["memory-graph"])
 api_router.include_router(health.router, tags=["health", "monitoring"])
 api_router.include_router(heavy_analysis.router, tags=["heavy-analysis"])
 api_router.include_router(mcp.router, prefix="/mcp", tags=["mcp"])
