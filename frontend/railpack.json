@@ -1,17 +1,16 @@
 {
   "version": "1",
   "metadata": {
-    "name": "z2-frontend"
+    "name": "z2f-frontend"
   },
   "build": {
     "provider": "node",
-    "nodeVersion": "22",
     "steps": {
       "install": {
         "commands": [
           "corepack enable",
-          "corepack install -g yarn@4.9.2",
-          "yarn install --no-immutable"
+          "corepack prepare yarn@4.9.2 --activate", 
+          "yarn install --immutable --network-timeout 600000"
         ]
       },
       "build": {
@@ -20,10 +19,8 @@
     }
   },
   "deploy": {
-    "startCommand": "node server.js",
+    "startCommand": "yarn start",
     "healthCheckPath": "/health",
-    "healthCheckTimeout": 300,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3
+    "healthCheckTimeout": 300
   }
 }
