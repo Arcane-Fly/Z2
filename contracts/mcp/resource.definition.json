@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/mcp/resource.definition.json",
+  "title": "mcp.resource.definition",
+  "description": "MCP resource definition schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uri", "name"],
+  "properties": {
+    "uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "Unique resource URI"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable resource name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Resource description"
+    },
+    "mimeType": {
+      "type": "string",
+      "pattern": "^[a-z]+/[a-z0-9.+-]+$",
+      "description": "Resource MIME type",
+      "examples": ["application/json", "text/plain"]
+    }
+  }
+}

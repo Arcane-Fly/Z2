@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/pinecone/upsert.request.json",
+  "title": "pinecone.upsert.request",
+  "description": "Pinecone vector upsert operation request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "vectors"],
+  "properties": {
+    "namespace": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Namespace for vector storage"
+    },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "values"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique vector identifier"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 8,
+            "description": "Vector embedding values"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Optional metadata for the vector"
+          }
+        }
+      },
+      "description": "Array of vectors to upsert"
+    },
+    "batchSize": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 100,
+      "description": "Batch size for upsert operations"
+    }
+  }
+}

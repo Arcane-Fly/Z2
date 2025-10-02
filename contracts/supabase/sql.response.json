@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/supabase/sql.response.json",
+  "title": "supabase.sql.response",
+  "description": "Supabase SQL query execution response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["data"],
+  "properties": {
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Query result rows"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total row count (if requested)"
+    },
+    "status": {
+      "type": "integer",
+      "minimum": 200,
+      "maximum": 299,
+      "description": "HTTP status code"
+    },
+    "statusText": {
+      "type": "string",
+      "description": "HTTP status text"
+    }
+  }
+}

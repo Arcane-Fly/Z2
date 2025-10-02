@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/supabase/sql.request.json",
+  "title": "supabase.sql.request",
+  "description": "Supabase SQL query execution request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query"],
+  "properties": {
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "description": "SQL query to execute"
+    },
+    "params": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "boolean" },
+          { "type": "null" }
+        ]
+      },
+      "description": "Query parameters for prepared statements"
+    },
+    "timeout": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 60000,
+      "default": 30000,
+      "description": "Query timeout in milliseconds"
+    },
+    "readOnly": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether to execute in read-only mode"
+    }
+  }
+}

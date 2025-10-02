@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/github/searchIssues.request.json",
+  "title": "github.searchIssues.request",
+  "description": "GitHub issues search request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query"],
+  "properties": {
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "description": "GitHub search query string",
+      "examples": ["is:issue is:open repo:owner/repo"]
+    },
+    "sort": {
+      "type": "string",
+      "enum": ["comments", "reactions", "interactions", "created", "updated"],
+      "description": "Sort field"
+    },
+    "order": {
+      "type": "string",
+      "enum": ["asc", "desc"],
+      "default": "desc",
+      "description": "Sort order"
+    },
+    "perPage": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 30,
+      "description": "Results per page"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Page number"
+    }
+  }
+}

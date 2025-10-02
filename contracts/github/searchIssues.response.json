@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/github/searchIssues.response.json",
+  "title": "github.searchIssues.response",
+  "description": "GitHub issues search response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["total_count", "items"],
+  "properties": {
+    "total_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total number of results"
+    },
+    "incomplete_results": {
+      "type": "boolean",
+      "description": "Whether results are incomplete"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "number", "title", "state", "html_url"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Issue ID"
+          },
+          "number": {
+            "type": "integer",
+            "description": "Issue number"
+          },
+          "title": {
+            "type": "string",
+            "description": "Issue title"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["open", "closed"],
+            "description": "Issue state"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Issue URL"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        }
+      },
+      "description": "Search results"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "request": {
+    "protocolVersion": "2025-03-26",
+    "capabilities": {
+      "resources": {
+        "subscribe": true
+      },
+      "tools": {
+        "listChanged": true
+      },
+      "prompts": {
+        "listChanged": true
+      },
+      "sampling": {}
+    },
+    "clientInfo": {
+      "name": "test-client",
+      "version": "1.0.0"
+    }
+  },
+  "response": {
+    "protocolVersion": "2025-03-26",
+    "serverInfo": {
+      "name": "Z2 AI Workforce Platform",
+      "version": "1.0.0"
+    },
+    "capabilities": {
+      "resources": {
+        "subscribe": true,
+        "listChanged": true
+      },
+      "tools": {
+        "listChanged": true,
+        "progress": true,
+        "cancellation": true
+      },
+      "prompts": {
+        "listChanged": true
+      },
+      "sampling": {}
+    },
+    "session_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
