@@ -1,7 +1,8 @@
 name: Validate MCP Contracts
+permissions:
+  contents: read
 
 on:
-  push:
     paths:
       - 'contracts/**'
       - 'backend/app/utils/contract_validator.py'
