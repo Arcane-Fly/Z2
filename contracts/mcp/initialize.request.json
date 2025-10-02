@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/mcp/initialize.request.json",
+  "title": "mcp.initialize.request",
+  "description": "MCP protocol initialization request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "capabilities", "clientInfo"],
+  "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "MCP protocol version in YYYY-MM-DD format",
+      "examples": ["2025-03-26"]
+    },
+    "capabilities": {
+      "type": "object",
+      "description": "Client capabilities",
+      "properties": {
+        "resources": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Resource-related capabilities"
+        },
+        "tools": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Tool-related capabilities"
+        },
+        "prompts": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Prompt-related capabilities"
+        },
+        "sampling": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Sampling-related capabilities"
+        }
+      }
+    },
+    "clientInfo": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Client application name"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Client application version"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

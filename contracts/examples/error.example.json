@@ -1,0 +1,50 @@
+{
+  "examples": [
+    {
+      "name": "Invalid Input Error",
+      "payload": {
+        "error": {
+          "code": "INVALID_INPUT",
+          "message": "Required field 'namespace' is missing",
+          "retriable": false,
+          "details": {
+            "field": "namespace",
+            "expected": "string",
+            "received": "undefined"
+          }
+        }
+      }
+    },
+    {
+      "name": "Rate Limit Error",
+      "payload": {
+        "error": {
+          "code": "RATE_LIMIT",
+          "message": "Rate limit exceeded. Please retry after 60 seconds",
+          "retriable": true,
+          "details": {
+            "retryAfter": 60,
+            "limit": 100,
+            "remaining": 0,
+            "reset": "2025-01-15T10:31:00Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "Upstream Error",
+      "payload": {
+        "error": {
+          "code": "UPSTREAM_ERROR",
+          "message": "Pinecone service returned an error",
+          "retriable": true,
+          "details": {
+            "upstream": "pinecone",
+            "statusCode": 503,
+            "upstreamMessage": "Service temporarily unavailable"
+          }
+        }
+      }
+    }
+  ]
+}

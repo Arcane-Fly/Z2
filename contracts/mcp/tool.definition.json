@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/mcp/tool.definition.json",
+  "title": "mcp.tool.definition",
+  "description": "MCP tool definition schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "description", "inputSchema"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_]+$",
+      "description": "Unique tool identifier"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable tool description"
+    },
+    "inputSchema": {
+      "type": "object",
+      "required": ["type", "properties"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "object"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "description": "JSON Schema for tool input parameters"
+    }
+  }
+}

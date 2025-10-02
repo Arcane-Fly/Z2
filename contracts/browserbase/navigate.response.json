@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/browserbase/navigate.response.json",
+  "title": "browserbase.navigate.response",
+  "description": "Browserbase navigation response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["success", "url"],
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether navigation was successful"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Final URL after navigation (may differ due to redirects)"
+    },
+    "title": {
+      "type": "string",
+      "description": "Page title"
+    },
+    "statusCode": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599,
+      "description": "HTTP status code"
+    },
+    "loadTime": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Page load time in milliseconds"
+    }
+  }
+}

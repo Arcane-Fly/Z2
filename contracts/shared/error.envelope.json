@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/shared/error.envelope.json",
+  "title": "error.envelope",
+  "description": "Standard error envelope for all MCP server operations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["error"],
+  "properties": {
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "INVALID_INPUT",
+            "AUTH_REQUIRED",
+            "NOT_FOUND",
+            "RATE_LIMIT",
+            "UPSTREAM_ERROR",
+            "UNAVAILABLE",
+            "INTERNAL_ERROR"
+          ],
+          "description": "Standardized error code for categorizing errors"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message"
+        },
+        "retriable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the operation can be safely retried"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Additional error context and debugging information"
+        }
+      }
+    }
+  }
+}

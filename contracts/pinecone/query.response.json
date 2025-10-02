@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arcane-fly.github.io/z2/contracts/pinecone/query.response.json",
+  "title": "pinecone.query.response",
+  "description": "Pinecone vector query operation response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["matches"],
+  "properties": {
+    "matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "score"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Vector identifier"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Similarity score"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Vector values (if requested)"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Vector metadata (if requested)"
+          }
+        }
+      },
+      "description": "Query results"
+    },
+    "namespace": {
+      "type": "string",
+      "description": "Namespace queried"
+    }
+  }
+}
