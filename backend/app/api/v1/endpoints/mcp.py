@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.database.session import get_db
 from app.services.session_service import SessionService
 from app.services.consent_service import ConsentService
+from app.utils.contract_validator import validate_request, validate_response, ContractValidationError
 
 router = APIRouter()
 
@@ -127,6 +128,15 @@ async def initialize_mcp_session(
     This endpoint implements the MCP handshake protocol for version
     and feature negotiation between client and server.
     """
+    # Validate request against contract schema
+    try:
+        validate_request("mcp.initialize", request.model_dump())
+    except ContractValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    
     # Validate protocol version
     if request.protocolVersion != settings.mcp_protocol_version:
         raise HTTPException(
@@ -166,6 +176,14 @@ async def initialize_mcp_session(
     # Add session ID to response headers
     response_dict = response.model_dump()
     response_dict["session_id"] = session_id
+    
+    # Validate response against contract schema
+    try:
+        validate_response("mcp.initialize", response_dict)
+    except ContractValidationError as e:
+        # Log error but don't fail the request
+        import logging
+        logging.error(f"Response validation failed: {e}")
     
     return response_dict
 
