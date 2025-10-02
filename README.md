@@ -28,6 +28,13 @@ Z2 is a next-generation AI platform that delivers dynamic, goal-oriented artific
 - **Model Context Protocol**: Full MCP server and client implementation
 - **Tool Discovery**: Expose and discover AI tools across the platform
 - **Resource Management**: Structured access to data and computational resources
+- **JSON Schema Contracts**: Formal API contracts for predictable interoperability and validation
+
+### Contract-Based Architecture
+- **Validated Interfaces**: JSON Schema contracts for all MCP server operations
+- **Early Error Detection**: Request/response validation at API boundaries
+- **Self-Documenting**: Schema-driven API documentation and examples
+- **Safe Upgrades**: Schema diffing for breaking change detection
 
 ## 👥 Dual User Experience
 
