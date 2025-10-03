@@ -1,30 +1,11 @@
 {
   "$schema": "https://schema.railpack.com",
-  "provider": "node",
-  "packages": {
-    "node": "20.19.5"
-  },
-  "steps": {
-    "install": {
-      "cache": ["yarn-cache"],
-      "commands": [
-        "corepack enable",
-        "corepack prepare yarn@4.9.2 --activate",
-        "yarn install --immutable"
-      ]
+  "services": {
+    "backend": {
+      "root": "backend"
     },
-    "build": {
-      "inputs": [{ "step": "install" }],
-      "commands": [
-        "yarn workspace z2-backend install",
-        "yarn workspace z2-frontend build"
-      ]
+    "frontend": {
+      "root": "frontend"
     }
-  },
-  "deploy": {
-    "inputs": [{ "step": "build" }],
-    "startCommand": "yarn start",
-    "healthCheckPath": "/health",
-    "healthCheckTimeout": 300
   }
 }
