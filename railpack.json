@@ -1,11 +1,23 @@
 {
   "$schema": "https://schema.railpack.com",
-  "services": {
-    "backend": {
-      "root": "backend"
+  "packages": {
+    "node": "22",
+    "yarn": "4.9.2"
+  },
+  "steps": {
+    "install": {
+      "commands": [
+        "corepack enable",
+        "yarn install --immutable"
+      ]
     },
-    "frontend": {
-      "root": "frontend"
+    "build": {
+      "commands": [
+        "yarn build"
+      ]
     }
+  },
+  "deploy": {
+    "startCommand": "yarn start"
   }
 }
