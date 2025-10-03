@@ -1,24 +1,25 @@
 {
-  "version": "1",
-  "metadata": {
-    "name": "z2f-frontend"
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "packages": {
+    "node": "20.19.5"
   },
-  "build": {
-    "provider": "node",
-    "steps": {
-      "install": {
-        "commands": [
-          "corepack enable",
-          "corepack prepare yarn@4.9.2 --activate", 
-          "yarn install --immutable --network-timeout 600000"
-        ]
-      },
-      "build": {
-        "commands": ["yarn build"]
-      }
+  "steps": {
+    "install": {
+      "cache": ["yarn-cache"],
+      "commands": [
+        "corepack enable",
+        "corepack prepare yarn@4.9.2 --activate",
+        "yarn install --immutable"
+      ]
+    },
+    "build": {
+      "inputs": [{ "step": "install" }],
+      "commands": ["yarn build"]
     }
   },
   "deploy": {
+    "inputs": [{ "step": "build" }],
     "startCommand": "yarn start",
     "healthCheckPath": "/health",
     "healthCheckTimeout": 300

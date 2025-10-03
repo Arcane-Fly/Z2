@@ -1,28 +1,23 @@
 {
-  "version": "1",
-  "metadata": {
-    "name": "z2b-backend"
+  "$schema": "https://schema.railpack.com",
+  "provider": "python",
+  "packages": {
+    "python": "3.11"
   },
-  "build": {
-    "provider": "python",
-    "steps": {
-      "install": {
-        "commands": [
-          "pip install --upgrade pip",
-          "pip install -r requirements.txt"
-        ]
-      }
+  "steps": {
+    "install": {
+      "commands": [
+        "pip install --upgrade pip",
+        "pip install poetry==1.8.5",
+        "poetry config virtualenvs.create false",
+        "poetry install --no-root --only=main"
+      ]
     }
   },
   "deploy": {
+    "inputs": [{ "step": "install" }],
     "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
     "healthCheckPath": "/health",
-    "healthCheckTimeout": 300,
-    "variables": {
-      "JWT_SECRET_KEY": "${{JWT_SECRET_KEY}}",
-      "JWT_ACCESS_TOKEN_EXPIRE_MINUTES": "${{JWT_ACCESS_TOKEN_EXPIRE_MINUTES}}",
-      "JWT_REFRESH_TOKEN_EXPIRE_DAYS": "${{JWT_REFRESH_TOKEN_EXPIRE_DAYS}}",
-      "DATABASE_URL": "${{DATABASE_URL}}"
-    }
+    "healthCheckTimeout": 300
   }
 }

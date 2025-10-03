@@ -1,32 +1,30 @@
 {
-  "version": "1",
-  "metadata": {
-    "name": "z2-platform"
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "packages": {
+    "node": "20.19.5"
   },
-  "services": {
-    "backend": {
-      "root": "backend",
-      "deploy": {
-        "variables": {
-          "CORS_ORIGINS": "${{CORS_ORIGINS}}",
-          "API_V1_PREFIX": "${{API_V1_PREFIX}}",
-          "JWT_SECRET_KEY": "${{JWT_SECRET_KEY}}",
-          "DATABASE_URL": "${{DATABASE_URL}}"
-        }
-      }
+  "steps": {
+    "install": {
+      "cache": ["yarn-cache"],
+      "commands": [
+        "corepack enable",
+        "corepack prepare yarn@4.9.2 --activate",
+        "yarn install --immutable"
+      ]
     },
-    "frontend": {
-      "root": "frontend",
-      "steps": {
-        "build": {
-          "variables": {
-            "VITE_API_BASE_URL": "${{VITE_API_BASE_URL}}",
-            "VITE_WS_BASE_URL": "${{VITE_WS_BASE_URL}}",
-            "VITE_APP_NAME": "${{VITE_APP_NAME}}",
-            "VITE_APP_VERSION": "${{VITE_APP_VERSION}}"
-          }
-        }
-      }
+    "build": {
+      "inputs": [{ "step": "install" }],
+      "commands": [
+        "yarn workspace z2-backend install",
+        "yarn workspace z2-frontend build"
+      ]
     }
+  },
+  "deploy": {
+    "inputs": [{ "step": "build" }],
+    "startCommand": "yarn start",
+    "healthCheckPath": "/health",
+    "healthCheckTimeout": 300
   }
 }
