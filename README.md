@@ -207,6 +207,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [API Reference](docs/api/)
 - [Examples](examples/)
 - [Community](https://github.com/Arcane-Fly/Z2/discussions)
+- [Monorepo Tooling Recommendations](docs/MONOREPO_TOOLING_RECOMMENDATIONS.md) - Decision guide for Nx vs Bazel/Pants
 
 ---
 
