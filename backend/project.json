@@ -1,0 +1,72 @@
+{
+  "name": "backend",
+  "sourceRoot": "backend/app",
+  "projectType": "application",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "install": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry install",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run pytest",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test:coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run pytest --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run ruff check .",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run ruff check . --fix",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run black .",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "format:check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run black . --check",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "poetry run mypy app",
+        "cwd": "{projectRoot}"
+      }
+    }
+  },
+  "tags": ["type:app", "scope:backend", "lang:python"]
+}
