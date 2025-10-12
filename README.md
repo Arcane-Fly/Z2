@@ -139,34 +139,43 @@ Z2 is actively developed with significant functionality already implemented:
 
 ### Railway Deployment
 
-Z2 is optimized for one-click deployment on Railway.com:
+Z2 follows the **Railway + Yarn 4.9.2+ + MCP/A2A Master Cheat Sheet** for production-ready deployments:
 
-1. **Connect to Railway**
+1. **Prerequisites**
+   ```bash
+   # Enable Yarn 4.9.2 via Corepack
+   corepack enable
+   corepack prepare yarn@4.9.2 --activate
+   ```
+
+2. **Connect to Railway**
    ```bash
    npm install -g @railway/cli
    railway login
    railway link
    ```
 
-2. **Deploy services**
+3. **Deploy services**
    ```bash
-   railway up
+   railway up --force  # Force Railpack rebuild
    ```
 
-3. **Set environment variables**
+4. **Set environment variables**
    ```bash
    railway variables set OPENAI_API_KEY=your-key
    railway variables set ANTHROPIC_API_KEY=your-key
    # Add other required API keys
    ```
 
-The `railway.toml` configuration automatically sets up:
-- Backend API service with PostgreSQL and Redis
-- Frontend static site with optimized builds
-- Environment-specific configurations
-- Health checks and monitoring
+Z2 uses **Railpack-only configuration** (no Dockerfile, railway.toml) with:
+- Backend Python service (FastAPI + Poetry)
+- Frontend Node service (Vite + Express)
+- Proper PORT binding and health checks
+- Automatic restart policies
 
-See [Setup Guide](docs/setup.md) for detailed installation instructions.
+📖 **Complete deployment guide**: [Railway + Yarn 4.9.2+ + MCP/A2A Master Implementation Guide](docs/RAILWAY_YARN_MCP_MASTER_GUIDE.md)
+
+See also: [Setup Guide](docs/setup.md) for detailed installation instructions.
 
 ## 📋 Core Principles
 
