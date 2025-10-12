@@ -167,15 +167,17 @@ Z2 follows the **Railway + Yarn 4.9.2+ + MCP/A2A Master Cheat Sheet** for produc
    # Add other required API keys
    ```
 
-Z2 uses **Railpack-only configuration** (no Dockerfile, railway.toml) with:
-- Backend Python service (FastAPI + Poetry)
-- Frontend Node service (Vite + Express)
-- Proper PORT binding and health checks
-- Automatic restart policies
+Z2 uses **Railpack-only configuration** (no Dockerfile, railway.toml) and requires **4 services**:
+- **Z2B Backend**: Python service (FastAPI + Poetry)
+- **Z2F Frontend**: Node service (Vite + Express)
+- **PostgreSQL**: Primary database
+- **Redis**: Cache and session store
 
-📖 **Complete deployment guide**: [Railway + Yarn 4.9.2+ + MCP/A2A Master Implementation Guide](docs/RAILWAY_YARN_MCP_MASTER_GUIDE.md)
+📖 **Service Architecture**: [Railway Service Overview](docs/RAILWAY_SERVICE_OVERVIEW.md) - Complete 4-service setup guide
 
-See also: [Setup Guide](docs/setup.md) for detailed installation instructions.
+📖 **Deployment Guide**: [Railway Deployment Guide](docs/setup/railway-deployment.md) - Step-by-step instructions
+
+📖 **Technical Details**: [Railway + Yarn 4.9.2+ + MCP/A2A Master Guide](docs/RAILWAY_YARN_MCP_MASTER_GUIDE.md)
 
 ## 📋 Core Principles
 

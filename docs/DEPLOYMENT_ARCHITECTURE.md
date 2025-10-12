@@ -94,41 +94,7 @@ This document outlines the standardized deployment architecture for the Z2 AI Wo
 }
 ```
 
-### 2. Railway Configuration (`railway.json`)
-```json
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "version": "1.0",
-  "services": {
-    "frontend": {
-      "root": "frontend",
-      "build": {
-        "builder": "NIXPACKS"
-      },
-      "deploy": {
-        "startCommand": "yarn start",
-        "healthcheckPath": "/",
-        "numReplicas": 1,
-        "restartPolicyType": "ON_FAILURE",
-        "restartPolicyMaxRetries": 3
-      }
-    },
-    "backend": {
-      "root": "backend", 
-      "build": {
-        "builder": "NIXPACKS"
-      },
-      "deploy": {
-        "startCommand": "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT",
-        "healthcheckPath": "/health",
-        "numReplicas": 1,
-        "restartPolicyType": "ON_FAILURE",
-        "restartPolicyMaxRetries": 5
-      }
-    }
-  }
-}
-```
+**Note**: This project uses railpack-only configuration. No `railway.json`, `railway.toml`, `Dockerfile`, or other competing build configurations exist. See `docs/RAILWAY_SERVICE_OVERVIEW.md` for complete service architecture documentation.
 
 ## Key Fixes Implemented
 

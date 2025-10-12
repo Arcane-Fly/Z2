@@ -47,44 +47,31 @@ railway project:link
 
 ### 2. Service Configuration
 
-Railway automatically detects the services from your `railway.toml` file:
+Railway automatically detects the services from `railpack.json` files. You will need to manually create 4 services:
 
-```toml
-# railway.toml (already configured)
-services:
-  backend:
-    source: backend
-    build:
-      buildCommand: poetry install --no-dev
-    deploy:
-      startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-      healthcheckPath: /health
-      restartPolicyType: on_failure
-    variables:
-      PORT: ${{PORT}}
-    domains:
-      - z2-api.railway.app
-    
-  frontend:
-    source: frontend
-    build:
-      buildCommand: npm ci && npm run build
-      publishPath: dist
-    deploy:
-      staticSite: true
-    domains:
-      - z2.railway.app
+#### Z2B Backend Service
+- **Root Directory**: `backend`
+- **Build**: Automatically detected from `backend/railpack.json`
+- **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Health Check**: `/health`
 
-  postgres:
-    image: postgres:15
-    variables:
-      POSTGRES_DB: z2
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${{Postgres.POSTGRES_PASSWORD}}
+#### Z2F Frontend Service
+- **Root Directory**: `frontend`
+- **Build**: Automatically detected from `frontend/railpack.json`
+- **Start Command**: `yarn start`
+- **Health Check**: `/api/health`
 
-  redis:
-    image: redis:7-alpine
-```
+#### PostgreSQL Database
+- **Type**: PostgreSQL 15
+- **Provisioning**: Create via Railway dashboard
+- **Connection**: Automatically injected as `DATABASE_URL` to backend
+
+#### Redis Cache
+- **Type**: Redis 7-alpine
+- **Provisioning**: Create via Railway dashboard
+- **Connection**: Automatically injected as `REDIS_URL` to backend
+
+**Note**: See `docs/RAILWAY_SERVICE_OVERVIEW.md` for complete service architecture and setup instructions.
 
 ## Environment Configuration
 
