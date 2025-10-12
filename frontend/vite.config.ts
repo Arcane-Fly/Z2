@@ -26,7 +26,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    cssCodeSplit: true,
+    cssCodeSplit: false, // Railway optimization: bundle CSS predictably
     sourcemap: false,
     minify: 'terser',
     terserOptions: {

@@ -1,28 +1,30 @@
 {
-  "$schema": "https://schema.railpack.com",
-  "provider": "node",
-  "packages": {
-    "node": "22",
-    "yarn": "4.9.2"
+  "version": "1",
+  "metadata": {
+    "name": "z2-frontend"
   },
-  "steps": {
-    "install": {
-      "cache": ["yarn-cache"],
-      "commands": [
-        "corepack enable",
-        "corepack prepare yarn@4.9.2 --activate",
-        "yarn install --immutable"
-      ]
-    },
-    "build": {
-      "inputs": [{ "step": "install" }],
-      "commands": ["yarn build"]
+  "build": {
+    "provider": "node",
+    "steps": {
+      "install": {
+        "commands": [
+          "corepack enable",
+          "corepack prepare yarn@4.9.2 --activate",
+          "yarn install --frozen-lockfile"
+        ]
+      },
+      "build": {
+        "commands": [
+          "yarn build"
+        ]
+      }
     }
   },
   "deploy": {
-    "inputs": [{ "step": "build" }],
     "startCommand": "yarn start",
     "healthCheckPath": "/health",
-    "healthCheckTimeout": 300
+    "healthCheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
   }
 }
