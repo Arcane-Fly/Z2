@@ -1,23 +1,26 @@
 {
-  "$schema": "https://schema.railpack.com",
-  "provider": "python",
-  "packages": {
-    "python": "3.11"
+  "version": "1",
+  "metadata": {
+    "name": "z2-backend"
   },
-  "steps": {
-    "install": {
-      "commands": [
-        "pip install --upgrade pip",
-        "pip install poetry==1.8.5",
-        "poetry config virtualenvs.create false",
-        "poetry install --no-root --only=main"
-      ]
+  "build": {
+    "provider": "python",
+    "steps": {
+      "install": {
+        "commands": [
+          "pip install --upgrade pip",
+          "pip install poetry==1.8.5",
+          "poetry config virtualenvs.create false",
+          "poetry install --no-root --only=main"
+        ]
+      }
     }
   },
   "deploy": {
-    "inputs": [{ "step": "install" }],
     "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
     "healthCheckPath": "/health",
-    "healthCheckTimeout": 300
+    "healthCheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
   }
 }
