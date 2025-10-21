@@ -25,7 +25,8 @@
     "upgrade:all": "yarn up '*'",
     "constraints": "yarn constraints --fix",
     "graph": "nx graph",
-    "reset": "nx reset"
+    "reset": "nx reset",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -51,6 +52,7 @@
   },
   "homepage": "https://github.com/Arcane-Fly/Z2#readme",
   "devDependencies": {
+    "husky": "^9.1.7",
     "nx": "21.6.3"
   }
 }

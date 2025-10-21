@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+echo "Running pre-commit checks..."
+
+# Run linting (warn but don't block)
+echo "Running lint..."
+yarn lint || echo "⚠️  Linting failed, but allowing commit. Please fix issues before pushing."
+
+# Run type checking (non-blocking)
+echo "Running type check..."
+yarn type-check || echo "⚠️  Type checking found issues, but allowing commit."
+
+echo "✅ Pre-commit checks complete"
+
