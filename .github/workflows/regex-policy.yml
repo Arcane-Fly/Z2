@@ -1,0 +1,128 @@
+name: No-Regex Policy Enforcement
+permissions:
+  contents: read
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.js'
+      - '**.jsx'
+      - 'frontend/**'
+      - '.github/workflows/regex-policy.yml'
+
+jobs:
+  lint-frontend:
+    name: ESLint (Frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Enable Corepack
+        run: corepack enable
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+          cache-dependency-path: 'frontend/yarn.lock'
+      
+      - name: Install dependencies
+        run: |
+          cd frontend
+          yarn install --immutable
+      
+      - name: Run ESLint
+        run: |
+          cd frontend
+          yarn lint
+
+  regex-guard:
+    name: Regex Pattern Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Detect forbidden regex patterns
+        run: |
+          echo "Checking for forbidden regex patterns..."
+          
+          # Get list of changed files
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}... | grep -E '\.(ts|tsx|js|jsx)$' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No TypeScript/JavaScript files changed."
+            exit 0
+          fi
+          
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Check for dangerous patterns in changed files
+          VIOLATIONS=""
+          
+          for file in $CHANGED_FILES; do
+            if [ ! -f "$file" ]; then
+              continue
+            fi
+            
+            # Skip test files and config files (they may legitimately test regex)
+            if [[ "$file" =~ \.(test|spec)\.(ts|tsx|js|jsx)$ ]] || [[ "$file" =~ \.config\.(ts|js)$ ]]; then
+              echo "Skipping test/config file: $file"
+              continue
+            fi
+            
+            # Check for new RegExp()
+            if grep -n "new RegExp" "$file"; then
+              VIOLATIONS="${VIOLATIONS}\n❌ $file: Found 'new RegExp()' - use parsers instead"
+            fi
+            
+            # Check for dangerous regex patterns (catch-all .*)
+            if grep -nE '/\.\*/' "$file" | grep -v "^[[:space:]]*//"; then
+              VIOLATIONS="${VIOLATIONS}\n❌ $file: Found catch-all '.*' pattern - too broad"
+            fi
+            
+            # Check for lookbehind/lookahead
+            if grep -nE '/.*\(\?[<=!]' "$file" | grep -v "^[[:space:]]*//"; then
+              VIOLATIONS="${VIOLATIONS}\n❌ $file: Found lookbehind/lookahead - too complex"
+            fi
+          done
+          
+          if [ -n "$VIOLATIONS" ]; then
+            echo -e "\n⚠️  REGEX POLICY VIOLATIONS DETECTED:\n"
+            echo -e "$VIOLATIONS"
+            echo -e "\n📖 See CONTRIBUTING.md for approved patterns and replacements."
+            echo -e "💡 Use parsers: new URL(), JSON.parse(), DOMParser, csv-parse, etc."
+            exit 1
+          fi
+          
+          echo "✅ No regex policy violations detected."
+
+  typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Enable Corepack
+        run: corepack enable
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'yarn'
+          cache-dependency-path: 'frontend/yarn.lock'
+      
+      - name: Install dependencies
+        run: |
+          cd frontend
+          yarn install --immutable
+      
+      - name: Run type check
+        run: |
+          cd frontend
+          yarn type-check

@@ -211,6 +211,125 @@ npm run type-check
 - Use meaningful component and variable names
 - Keep components focused and under 200 lines
 
+### No-Regex-by-Default Policy
+
+**Why**: Regular expressions are brittle, slow to review, and often incorrect for parsing structured data (DOM/HTML/JSON/URLs/logs). We standardize on **parsers and typed APIs**. Regex is allowed only for **tiny, anchored, literal patterns** (see "Allowed" below).
+
+**Policy**
+
+* ❌ **Disallowed** (must refactor):
+  * DOM selection via regex (use Playwright/Testing Library locators)
+  * Parsing JSON/URLs/HTML/CSV/logs with regex
+  * Catch-all patterns like `.*`, nested groups, lookbehinds, backtracking-prone groups
+  * Any `new RegExp(userInput)` or untrusted input in patterns
+  * Using `.match()`, `.replace()`, `.search()`, `.split()` with regex patterns
+
+* ✅ **Allowed (narrow, anchored)**:
+  * Trivial, fully-anchored literals, max length 30, no quantifiers:
+    * Example: `const PAT = /^(OK|FAIL)$/;` (compile-time constant only)
+    * Example: `const CODE = /^[A-Z]{3}-\d{4}$/;` (fixed format validation)
+  * Only in **validation** or **static routing** where no standard parser exists
+  * Must be documented in PR with justification
+  * Must include property-based tests (fast-check) with fuzzed inputs
+
+**Preferred Replacements**
+
+**DOM (Playwright/Testing Library):**
+```typescript
+// Bad
+await page.locator('div:has-text(/Submit/i)');
+
+// Good
+await page.getByRole('button', { name: 'Submit' });
+await page.getByTestId('submit-btn');
+```
+
+**URLs / Query Strings:**
+```typescript
+// Bad: regex to parse query
+const q = location.href.match(/[?&]q=([^&]+)/)?.[1];
+
+// Good: use URL API
+const url = new URL(location.href);
+const q = url.searchParams.get('q');
+```
+
+**JSON Parsing:**
+```typescript
+// Bad: regex to extract from JSON
+const id = body.match(/"id":"(\w+)"/)?.[1];
+
+// Good: use JSON.parse
+const data = JSON.parse(body);
+const id = data.id;
+```
+
+**HTML Parsing:**
+```typescript
+// Bad: regex scraping
+const titles = html.match(/<h2>(.*?)<\/h2>/g);
+
+// Good: use DOMParser or cheerio
+const parser = new DOMParser();
+const doc = parser.parseFromString(html, 'text/html');
+const titles = Array.from(doc.querySelectorAll('h2')).map(el => el.textContent);
+```
+
+**CSV Parsing:**
+```typescript
+// Bad: split + regex
+const rows = text.split('\n').map(r => r.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/));
+
+// Good: use csv-parse
+import { parse } from 'csv-parse/sync';
+const records = parse(text, { columns: true, skip_empty_lines: true });
+```
+
+**Email / Phone Validation:**
+```typescript
+// Bad: homegrown regex
+const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
+// Good: use validator library
+import { isEmail } from 'validator';
+isEmail(s);
+```
+
+**String Operations:**
+```typescript
+// Bad: regex for simple checks
+if (str.match(/^https:/)) { ... }
+
+// Good: use string methods
+if (str.startsWith('https:')) { ... }
+
+// Bad: regex replace
+str.replace(/\s+/g, ' ');
+
+// Good: use replaceAll or split/join
+str.replaceAll(/\s+/g, ' '); // if you must use regex, use replaceAll
+str.split(/\s+/).join(' '); // or split and join for simple cases
+```
+
+**If You Must Add Regex:**
+
+1. **Justify in PR**: Explain why no standard API works
+2. **Keep it simple**: Anchored (^...$), short (<30 chars), no lookbehind/lookahead, no nested groups
+3. **Add tests**: Property-based tests with fast-check to fuzz inputs
+4. **Document**: Add to allowlist and explain in CONTRIBUTING.md
+
+Example property test:
+```typescript
+import fc from 'fast-check';
+
+fc.assert(fc.property(fc.string(), (input) => {
+  // Your parsing function should never throw or hang
+  const result = myParseFunction(input);
+  // Add assertions about result
+  return typeof result === 'string';
+}));
+```
+
 **Example:**
 ```typescript
 interface AgentCardProps {
