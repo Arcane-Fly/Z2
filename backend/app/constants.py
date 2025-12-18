@@ -115,6 +115,8 @@ class UserRole(str, Enum):
 class MCPProtocol:
     """MCP protocol constants."""
     
+    # Version uses date format as per MCP specification: https://modelcontextprotocol.io/
+    # This is the official MCP protocol version identifier format
     VERSION: Final[str] = "2025-03-26"
     SERVER_NAME: Final[str] = "Z2 AI Workforce Platform"
     SERVER_VERSION: Final[str] = "1.0.0"

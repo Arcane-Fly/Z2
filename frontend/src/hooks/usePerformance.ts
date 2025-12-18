@@ -171,19 +171,41 @@ export function useWindowSize(): { width: number; height: number } {
     };
   });
 
-  const handleResize = useThrottle(() => {
-    setWindowSize({
-      width: window.innerWidth,
-      height: window.innerHeight,
-    });
-  }, 100);
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Create throttled handler inside useEffect to avoid recreation on every render
+    const updateSize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    let timeoutId: NodeJS.Timeout | null = null;
+    let lastExec = 0;
+    const delay = 100;
+
+    const handleResize = () => {
+      const now = Date.now();
+      if (now - lastExec >= delay) {
+        lastExec = now;
+        updateSize();
+      } else {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          lastExec = Date.now();
+          updateSize();
+        }, delay - (now - lastExec));
+      }
+    };
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [handleResize]);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
 
   return windowSize;
 }

@@ -151,7 +151,8 @@ export const VALIDATION = {
   MAX_PASSWORD_LENGTH: 128,
   MIN_USERNAME_LENGTH: 3,
   MAX_USERNAME_LENGTH: 50,
-  // Simplified email regex to avoid backtracking issues
+  // NOTE: Frontend validation is for UX only. Backend must validate all inputs for security.
+  // This regex can be bypassed by malicious users, so never rely on it for security.
   EMAIL_REGEX: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
 } as const;
 
