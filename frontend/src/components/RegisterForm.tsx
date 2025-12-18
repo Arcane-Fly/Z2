@@ -74,7 +74,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps):
     try {
       await register(formData);
       onSuccess?.();
-    } catch (error) {
+    } catch {
       // Error is handled by the auth context
     }
   };

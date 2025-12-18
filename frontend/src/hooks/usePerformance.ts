@@ -171,19 +171,19 @@ export function useWindowSize(): { width: number; height: number } {
     };
   });
 
+  const handleResize = useThrottle(() => {
+    setWindowSize({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+  }, 100);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const handleResize = useThrottle(() => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    }, 100);
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [handleResize]);
 
   return windowSize;
 }
