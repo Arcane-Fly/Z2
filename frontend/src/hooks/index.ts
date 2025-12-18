@@ -42,7 +42,7 @@ export function useAuth() {
   const logout = useCallback(async () => {
     try {
       await apiService.logout();
-    } catch (error) {
+    } catch {
       // Continue with logout even if API call fails
     }
     localStorage.removeItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'z2_auth_token');
@@ -112,7 +112,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
+    } catch {
       return initialValue;
     }
   });
