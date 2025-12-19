@@ -1,21 +1,23 @@
 # Railway Service Status - Z2B & Z2F
 
-**Last Updated**: October 26, 2025  
-**Status**: ✅ FIXED - Configuration Conflict Resolved
+**Last Updated**: December 19, 2025  
+**Status**: ⚠️ CONFIGURATION ERROR - Action Required
 
 ## Quick Summary
 
-The Z2B (Backend) service was experiencing `yarn: command not found` errors due to a configuration conflict. The issue has been resolved by removing the competing `backend/railway.toml` file, ensuring Railway uses only the railpack.json configuration as per the Railway Master Cheat Sheet standards.
+The Z2B (Backend) service is experiencing `yarn: command not found` errors because the Railway service is configured to deploy from the repository root instead of the `backend` directory. This causes Railway to use the root `railpack.json` (Node.js configuration) instead of `backend/railpack.json` (Python configuration).
+
+**ACTION REQUIRED**: Update Railway service settings to set root directory to `backend`. See [RAILWAY_BACKEND_FIX.md](docs/RAILWAY_BACKEND_FIX.md) for detailed instructions.
 
 ## Service Status
 
 ### Z2B Backend
-- **Status**: ✅ FIXED
+- **Status**: ⚠️ CONFIGURATION ERROR
 - **Service ID**: `169631f2-0f90-466d-89b8-a67f240a18b5`
-- **Previous Error**: `/bin/bash: line 1: yarn: command not found`
-- **Root Cause**: Competing configuration files (railway.toml + railpack.json)
-- **Resolution**: Removed backend/railway.toml to use railpack-only configuration
-- **Builder**: Railpack (Python provider)
+- **Current Error**: `/bin/bash: line 1: yarn: command not found`
+- **Root Cause**: Railway service root directory is set to `/` (repo root) instead of `backend`
+- **Resolution**: Must update Railway service settings to use `backend` as root directory
+- **Builder**: Railpack (should use Python provider from backend/railpack.json)
 
 ### Z2F Frontend
 - **Status**: ✅ READY  
@@ -25,21 +27,45 @@ The Z2B (Backend) service was experiencing `yarn: command not found` errors due 
 
 ## Issues Identified & Resolution Status
 
-| Issue | Service | Status | Priority |
-|-------|---------|--------|----------|
-| Competing configuration files (railway.toml + railpack.json) | Z2B | ✅ Fixed | Critical |
-| Yarn command not found error | Z2B | ✅ Fixed | High |
-| Yarn packageManager hash mismatch | Z2F | ✅ Fixed | High |
+| Issue | Service | Status | Priority | Action Required |
+|-------|---------|--------|----------|-----------------|
+| Wrong root directory configuration | Z2B | ⚠️ Needs Railway Dashboard Fix | Critical | Set root directory to `backend` in Railway service settings |
+| Yarn command not found error | Z2B | ⚠️ Symptom of root directory issue | High | Will be fixed by root directory change |
 
-## What Was Done
+## What Needs to Be Done
 
-### Configuration Fixes Applied ✅
+### Critical Action Required ⚠️
+
+**The Railway service configuration must be updated via Railway Dashboard or CLI. This CANNOT be fixed via git commits.**
+
+See detailed instructions in: **[docs/RAILWAY_BACKEND_FIX.md](docs/RAILWAY_BACKEND_FIX.md)**
+
+#### Quick Fix Steps:
+1. Open Railway Dashboard: https://railway.app/project/359de66a-b9de-486c-8fb4-c56fda52344f
+2. Select Z2B service
+3. Go to Settings > Root Directory
+4. Change from `/` to `backend`
+5. Save and redeploy
+
+#### Alternative (Using Railway CLI):
+```bash
+railway link 169631f2-0f90-466d-89b8-a67f240a18b5
+railway service settings --root backend
+railway up --force
+```
+
+### Configuration Status ✅
+
+- ✅ `backend/railpack.json` is correctly configured for Python
+- ✅ No competing configuration files (Dockerfile, railway.toml, etc.)
+- ✅ Health check endpoint exists at `/health`
+- ✅ Start command uses `$PORT` and binds to `0.0.0.0`
+- ✅ All Railway deployment standards are met in the code
+
+### What Was Already Fixed ✅
 1. **Railway.toml Removal (Oct 26, 2025)**: Removed `backend/railway.toml` to eliminate configuration conflicts
-   - Railway now uses only railpack.json (single source of truth)
-   - Follows Railway Master Cheat Sheet standards
-   - Fixes "yarn: command not found" error
-2. **Z2B Start Command (Oct 11, 2025)**: Updated Railway service settings from `yarn start` to `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-3. **Yarn Hash Removal (Oct 11, 2025)**: Removed SHA-512 hashes from `/package.json` and `/frontend/package.json` to resolve corepack validation errors
+2. **Z2B Start Command (Oct 11, 2025)**: Updated to `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3. **Yarn Hash Removal (Oct 11, 2025)**: Removed SHA-512 hashes from package.json files
 
 ### Inspection Completed ✅
 - Comprehensive service inspection using Railway MCP
@@ -48,37 +74,53 @@ The Z2B (Backend) service was experiencing `yarn: command not found` errors due 
 - Environment variables verification
 - Health check endpoint validation
 - Service configuration audit
+- **Issue Identified**: Root directory configuration incorrect
 
 ### Documentation Created ✅
-- Detailed inspection report: `docs/railway-service-inspection-2025-10-11.md`
-- Root cause analysis for all identified issues
-- Recommendations for short-term and long-term fixes
+- Root cause analysis: `docs/RAILWAY_BACKEND_FIX.md` ⭐ **READ THIS**
+- Service inspection report: `docs/railway-service-inspection-2025-10-11.md`
+- Updated status tracking: `RAILWAY_SERVICE_STATUS.md`
 
 ## Current Status
 
-**All Configuration Issues Resolved ✅**
+**Configuration Error - Action Required ⚠️**
 
-The backend service is now properly configured with:
-- Railpack-only build system (no competing configurations)
-- Correct Python/Poetry provider setup
-- Proper uvicorn start command
-- Health check endpoint configured at `/health`
+The backend code and railpack.json configuration are correct. However, the Railway service itself is configured with the wrong root directory:
 
-Validation script confirms all Railway deployment standards are met.
+- ❌ **Current**: Root directory = `/` (uses root railpack.json with Node.js/yarn)
+- ✅ **Required**: Root directory = `backend` (uses backend/railpack.json with Python/uvicorn)
+
+**This must be fixed in Railway Dashboard, not via git commits.**
+
+See **[docs/RAILWAY_BACKEND_FIX.md](docs/RAILWAY_BACKEND_FIX.md)** for complete instructions.
 
 ## Next Steps
 
-### Deployment
-1. ✅ **Configuration Fixed**: Backend railway.toml removed
-2. ✅ **Validation Passed**: All Railway deployment standards met
-3. 🚀 **Ready to Deploy**: Services can now be deployed to Railway
-   - Backend will use: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-   - Frontend will use: `yarn start` (node server.js)
+### Immediate Action Required 🚨
+1. **Fix Railway Service Configuration** (via Dashboard or CLI)
+   - Open: https://railway.app/project/359de66a-b9de-486c-8fb4-c56fda52344f
+   - Select: Z2B service
+   - Set: Root Directory = `backend`
+   - Save and redeploy
+   - See: [docs/RAILWAY_BACKEND_FIX.md](docs/RAILWAY_BACKEND_FIX.md)
 
-### Monitoring
-1. **Monitor Initial Deployment**: Verify successful startup
-2. **Check Health Endpoints**: Ensure health checks respond correctly
-3. **Review Logs**: Confirm no configuration errors
+### After Configuration Fix
+1. **Monitor Deployment**: Watch build logs to confirm correct railpack.json is used
+2. **Check Health Endpoint**: Verify `/health` endpoint responds with status 200
+3. **Review Logs**: Confirm no yarn errors and uvicorn starts successfully
+
+### Validation
+```bash
+# After fixing, verify deployment
+curl https://z2b-production.up.railway.app/health
+
+# Expected response
+{
+  "status": "healthy",
+  "app": "Z2 Backend",
+  ...
+}
+```
 
 ## How to Monitor
 
@@ -106,15 +148,23 @@ railway logs -s Z2F
 
 ## Service Configuration
 
-### Z2B Backend
+### Z2B Backend (CURRENT - INCORRECT ❌)
 ```json
 {
-  "root_directory": "backend",
-  "start_command": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
-  "health_check": "/health",
-  "builder": "Nixpacks",
-  "region": "Not set",
-  "replicas": 1
+  "root_directory": "/",              // ❌ WRONG - Uses root railpack.json (Node.js)
+  "start_command": "yarn start",       // ❌ WRONG - Tries to use yarn
+  "health_check": "/api/health",       // ⚠️ Path mismatch
+  "builder": "Railpack"
+}
+```
+
+### Z2B Backend (REQUIRED - CORRECT ✅)
+```json
+{
+  "root_directory": "backend",                              // ✅ CORRECT - Uses backend/railpack.json
+  "start_command": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",  // ✅ CORRECT
+  "health_check": "/health",                                // ✅ CORRECT
+  "builder": "Railpack"
 }
 ```
 
@@ -132,6 +182,7 @@ railway logs -s Z2F
 
 ## Related Documentation
 
+- **⭐ FIX INSTRUCTIONS**: [`docs/RAILWAY_BACKEND_FIX.md`](docs/RAILWAY_BACKEND_FIX.md) **READ THIS FIRST**
 - **Detailed Inspection Report**: [`docs/railway-service-inspection-2025-10-11.md`](docs/railway-service-inspection-2025-10-11.md)
 - **Railway Deployment Guide**: [`docs/RAILWAY_DEPLOYMENT_GUIDE.md`](docs/RAILWAY_DEPLOYMENT_GUIDE.md)
 - **Railway Railpack Guide**: [`docs/RAILWAY_RAILPACK_GUIDE.md`](docs/RAILWAY_RAILPACK_GUIDE.md)
