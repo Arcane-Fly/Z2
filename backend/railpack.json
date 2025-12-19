@@ -1,26 +1,43 @@
 {
+  "$schema": "https://schema.railpack.com",
   "version": "1",
   "metadata": {
-    "name": "z2-backend"
+    "name": "Z2B"
   },
   "build": {
     "provider": "python",
+    "packages": {
+      "python": "3.11"
+    },
+    "buildAptPackages": [
+      "libpq-dev",
+      "gcc"
+    ],
     "steps": {
       "install": {
         "commands": [
-          "pip install --upgrade pip",
-          "pip install poetry==1.8.5",
-          "poetry config virtualenvs.create false",
-          "poetry install --no-root --only=main"
+          "uv sync --frozen"
         ]
       }
     }
   },
   "deploy": {
-    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
-    "healthCheckPath": "/health",
+    "startCommand": "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "healthCheckPath": "/health/live",
     "healthCheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3
+    "restartPolicyMaxRetries": 3,
+    "aptPackages": [
+      "libpq5"
+    ],
+    "variables": {
+      "APP_NAME": "Z2 AI Workforce Platform",
+      "APP_VERSION": "0.1.0",
+      "DEBUG": "false",
+      "LOG_LEVEL": "INFO",
+      "API_V1_PREFIX": "/api/v1",
+      "PYTHONUNBUFFERED": "1",
+      "PYTHONDONTWRITEBYTECODE": "1"
+    }
   }
 }
