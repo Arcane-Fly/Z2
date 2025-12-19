@@ -82,16 +82,19 @@ body {
   
   /* Ensure icons in buttons are properly sized */
   button svg {
-    @apply w-5 h-5;
+    width: 1.25rem;
+    height: 1.25rem;
   }
   
   /* Navigation icons get standard sizing */
   nav svg {
-    @apply w-6 h-6;
+    width: 1.5rem;
+    height: 1.5rem;
   }
   
   /* Small action buttons get smaller icons */
   .inline-flex svg {
-    @apply w-4 h-4;
+    width: 1rem;
+    height: 1rem;
   }
 }
