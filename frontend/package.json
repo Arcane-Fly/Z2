@@ -67,7 +67,7 @@
     "tailwindcss": "^4.1.12",
     "terser": "^5.44.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.12",
+    "vite": "^7.2.3",
     "vitest": "^3.2.4"
   },
   "packageManager": "yarn@4.9.2",
