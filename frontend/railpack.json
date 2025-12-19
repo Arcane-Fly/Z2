@@ -1,7 +1,8 @@
 {
+  "$schema": "https://schema.railpack.com",
   "version": "1",
   "metadata": {
-    "name": "z2-frontend"
+    "name": "Z2F"
   },
   "build": {
     "provider": "node",
@@ -10,7 +11,7 @@
         "commands": [
           "corepack enable",
           "corepack prepare yarn@4.9.2 --activate",
-          "yarn install --frozen-lockfile"
+          "yarn install --immutable"
         ]
       },
       "build": {
