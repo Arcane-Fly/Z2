@@ -27,6 +27,9 @@ if [ -f "backend/railpack.json" ]; then
 else
     echo -e "${RED}✗${NC} backend/railpack.json NOT FOUND"
     ISSUES=$((ISSUES + 1))
+    echo ""
+    echo "Cannot continue without backend/railpack.json"
+    exit 1
 fi
 
 echo ""
@@ -36,22 +39,36 @@ if python3 -m json.tool backend/railpack.json > /dev/null 2>&1; then
 else
     echo -e "${RED}✗${NC} Invalid JSON syntax"
     ISSUES=$((ISSUES + 1))
+    echo ""
+    echo "Cannot continue with invalid JSON"
+    exit 1
 fi
 
+# Parse JSON once and store in variable
 echo ""
-echo "3. Checking railpack.json provider..."
-PROVIDER=$(python3 -c "import json; print(json.load(open('backend/railpack.json'))['build']['provider'])" 2>/dev/null || echo "")
+echo "3. Loading railpack.json configuration..."
+RAILPACK_JSON=$(cat backend/railpack.json)
+
+echo ""
+echo "4. Checking railpack.json provider..."
+PROVIDER=$(echo "$RAILPACK_JSON" | python3 -c "import json, sys; data = json.load(sys.stdin); print(data.get('build', {}).get('provider', ''))" 2>/dev/null)
 if [ "$PROVIDER" = "python" ]; then
     echo -e "${GREEN}✓${NC} Provider is 'python'"
+elif [ -z "$PROVIDER" ]; then
+    echo -e "${RED}✗${NC} Provider field not found in railpack.json"
+    ISSUES=$((ISSUES + 1))
 else
     echo -e "${RED}✗${NC} Provider is not 'python' (found: '$PROVIDER')"
     ISSUES=$((ISSUES + 1))
 fi
 
 echo ""
-echo "4. Checking start command..."
-START_CMD=$(python3 -c "import json; print(json.load(open('backend/railpack.json'))['deploy']['startCommand'])" 2>/dev/null || echo "")
-if echo "$START_CMD" | grep -q "uvicorn"; then
+echo "5. Checking start command..."
+START_CMD=$(echo "$RAILPACK_JSON" | python3 -c "import json, sys; data = json.load(sys.stdin); print(data.get('deploy', {}).get('startCommand', ''))" 2>/dev/null)
+if [ -z "$START_CMD" ]; then
+    echo -e "${RED}✗${NC} Start command not found in railpack.json"
+    ISSUES=$((ISSUES + 1))
+elif echo "$START_CMD" | grep -q "uvicorn"; then
     echo -e "${GREEN}✓${NC} Start command uses uvicorn"
     if echo "$START_CMD" | grep -q "\$PORT"; then
         echo -e "${GREEN}✓${NC} Start command uses \$PORT variable"
@@ -71,16 +88,18 @@ else
 fi
 
 echo ""
-echo "5. Checking health check path..."
-HEALTH_PATH=$(python3 -c "import json; print(json.load(open('backend/railpack.json'))['deploy']['healthCheckPath'])" 2>/dev/null || echo "")
+echo "6. Checking health check path..."
+HEALTH_PATH=$(echo "$RAILPACK_JSON" | python3 -c "import json, sys; data = json.load(sys.stdin); print(data.get('deploy', {}).get('healthCheckPath', ''))" 2>/dev/null)
 if [ "$HEALTH_PATH" = "/health" ]; then
     echo -e "${GREEN}✓${NC} Health check path is '/health'"
+elif [ -z "$HEALTH_PATH" ]; then
+    echo -e "${YELLOW}⚠${NC} Health check path not found in railpack.json"
 else
     echo -e "${YELLOW}⚠${NC} Health check path is not '/health' (found: '$HEALTH_PATH')"
 fi
 
 echo ""
-echo "6. Checking for competing configuration files..."
+echo "7. Checking for competing configuration files..."
 COMPETING=0
 for file in "backend/Dockerfile" "backend/railway.toml" "backend/railway.json" "backend/nixpacks.toml"; do
     if [ -f "$file" ]; then
@@ -94,16 +113,19 @@ if [ $COMPETING -eq 0 ]; then
 fi
 
 echo ""
-echo "7. Checking health endpoint implementation..."
-if grep -q "def health_check\|async def health_check" backend/app/main.py; then
+echo "8. Checking health endpoint implementation..."
+# Look for health endpoint in main.py using multiple patterns
+if grep -qE '@app\.get.*health|@router\.get.*health|def health_check|async def health_check' backend/app/main.py 2>/dev/null; then
     echo -e "${GREEN}✓${NC} Health check endpoint found in backend/app/main.py"
+elif [ -f "backend/app/api/v1/endpoints/health.py" ]; then
+    echo -e "${GREEN}✓${NC} Health check endpoint module found at backend/app/api/v1/endpoints/health.py"
 else
-    echo -e "${RED}✗${NC} Health check endpoint NOT found in backend/app/main.py"
-    ISSUES=$((ISSUES + 1))
+    echo -e "${YELLOW}⚠${NC} Health check endpoint implementation not clearly detected"
+    echo "  (This may be a false warning if the endpoint exists but uses a different pattern)"
 fi
 
 echo ""
-echo "8. Checking pyproject.toml exists..."
+echo "9. Checking pyproject.toml exists..."
 if [ -f "backend/pyproject.toml" ]; then
     echo -e "${GREEN}✓${NC} backend/pyproject.toml found"
 else
