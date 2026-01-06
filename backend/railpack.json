@@ -6,9 +6,6 @@
   },
   "build": {
     "provider": "python",
-    "packages": {
-      "python": "3.11"
-    },
     "buildAptPackages": [
       "libpq-dev",
       "gcc"
@@ -16,7 +13,8 @@
     "steps": {
       "install": {
         "commands": [
-          "uv sync --frozen"
+          "pip install --upgrade pip",
+          "pip install -r requirements.txt"
         ]
       }
     }
