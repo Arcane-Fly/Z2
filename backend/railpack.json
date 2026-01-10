@@ -16,6 +16,11 @@
           "pip install --upgrade pip",
           "pip install -r requirements.txt"
         ]
+      },
+      "build": {
+        "commands": [
+          "echo 'No build step required - using requirements.txt'"
+        ]
       }
     }
   },
